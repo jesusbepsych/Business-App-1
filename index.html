@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f8fa" />
+  <meta name="description" content="Phase 0 foundation for a fast, traceable business finance workspace." />
+  <title>Business Ledger — Phase 0</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand-row">
+        <div class="brand-mark" aria-hidden="true">B</div>
+        <div class="brand-copy">
+          <strong>Business Ledger</strong>
+          <span>Phase 0 foundation</span>
+        </div>
+      </div>
+
+      <button class="business-switcher" id="businessSwitcher" aria-haspopup="dialog">
+        <span class="business-icon">PF</span>
+        <span class="business-text">
+          <strong>Play It Forward</strong>
+          <small>Sole proprietor</small>
+        </span>
+        <span class="chevron" aria-hidden="true">⌄</span>
+      </button>
+
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="home">
+          <span class="nav-icon">⌂</span><span>Home</span>
+        </button>
+        <button class="nav-item" data-view="work">
+          <span class="nav-icon">◫</span><span>Work</span>
+        </button>
+        <button class="nav-item" data-view="money">
+          <span class="nav-icon">$</span><span>Money</span>
+        </button>
+        <button class="nav-item" data-view="records">
+          <span class="nav-icon">▤</span><span>Records</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-footer">
+        <button class="nav-item" id="openSettings">
+          <span class="nav-icon">⚙</span><span>Settings</span>
+        </button>
+        <div class="profile-chip">
+          <div class="avatar">JG</div>
+          <div><strong>Account</strong><span>Owner</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <button class="mobile-business" id="mobileBusinessSwitcher" aria-haspopup="dialog">
+          <span class="business-icon small">PF</span>
+          <span>Play It Forward</span>
+          <span class="chevron">⌄</span>
+        </button>
+
+        <div class="topbar-actions">
+          <button class="search-trigger" id="searchTrigger" aria-label="Open command search">
+            <span>⌕</span><span class="search-label">Search anything</span><kbd>/</kbd>
+          </button>
+          <button class="icon-btn" id="notificationBtn" aria-label="Notifications">◌</button>
+          <button class="avatar-btn" aria-label="Profile">JG</button>
+        </div>
+      </header>
+
+      <section class="view active" data-page="home">
+        <div class="content-wrap">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">PLAY IT FORWARD</p>
+              <h1>Your business, in one place.</h1>
+              <p class="subtitle">A clean foundation for work, money, records, taxes, and traceability.</p>
+            </div>
+            <button class="primary-btn" id="quickAddBtn"><span>＋</span> Add</button>
+          </div>
+
+          <div class="status-strip" role="status">
+            <span class="status-dot"></span>
+            <span><strong>Foundation ready.</strong> Phase 0 is focused on navigation, structure, speed, and future-proof data relationships.</span>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card">
+              <div class="metric-head"><span>Revenue</span><span class="muted-chip">This month</span></div>
+              <strong class="metric-value">—</strong>
+              <span class="metric-caption">Appears once payments are added</span>
+            </article>
+            <article class="metric-card">
+              <div class="metric-head"><span>Outstanding</span><span class="muted-chip">Invoices</span></div>
+              <strong class="metric-value">—</strong>
+              <span class="metric-caption">Invoice engine arrives in Phase 2</span>
+            </article>
+            <article class="metric-card">
+              <div class="metric-head"><span>Expenses</span><span class="muted-chip">Business</span></div>
+              <strong class="metric-value">—</strong>
+              <span class="metric-caption">Expense ledger arrives in Phase 4</span>
+            </article>
+          </div>
+
+          <div class="two-column">
+            <article class="panel-card focus-card">
+              <div class="panel-title-row">
+                <div>
+                  <p class="eyebrow">TODAY</p>
+                  <h2>Nothing needs your attention.</h2>
+                </div>
+                <span class="quiet-badge">0 items</span>
+              </div>
+              <p class="panel-copy">As the app gains data, this area becomes the single place for overdue invoices, missing receipts, uncategorized expenses, mileage review, and tax reminders.</p>
+              <div class="empty-illustration" aria-hidden="true">
+                <div class="line l1"></div><div class="line l2"></div><div class="line l3"></div>
+                <div class="check">✓</div>
+              </div>
+            </article>
+
+            <article class="panel-card">
+              <div class="panel-title-row">
+                <div>
+                  <p class="eyebrow">FOUNDATION</p>
+                  <h2>Core workspace</h2>
+                </div>
+                <span class="quiet-badge green">Active</span>
+              </div>
+              <div class="foundation-list">
+                <div class="foundation-row"><span class="foundation-icon">01</span><div><strong>Multi-business ready</strong><small>Separate Play It Forward, future gigs, and personal records cleanly.</small></div></div>
+                <div class="foundation-row"><span class="foundation-icon">02</span><div><strong>Traceability first</strong><small>Every future summary can drill back to its source record and evidence.</small></div></div>
+                <div class="foundation-row"><span class="foundation-icon">03</span><div><strong>Progressive disclosure</strong><small>Simple first glance; deeper accounting details only when requested.</small></div></div>
+              </div>
+            </article>
+          </div>
+
+          <article class="panel-card roadmap-card">
+            <div class="panel-title-row">
+              <div>
+                <p class="eyebrow">UP NEXT</p>
+                <h2>Phase 1 — Clients, gigs, and work sessions</h2>
+              </div>
+              <span class="quiet-badge">Planned</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill"></div></div>
+            <div class="roadmap-steps">
+              <span class="done">Foundation</span><span>Work</span><span>Invoices</span><span>Payments</span><span>Expenses</span><span>Mileage</span><span>Taxes</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" data-page="work">
+        <div class="content-wrap narrow">
+          <div class="placeholder-page">
+            <div class="placeholder-icon">◫</div>
+            <p class="eyebrow">WORK</p>
+            <h1>Clients and sessions will live here.</h1>
+            <p>Phase 1 will turn this into the operational center for clients, gigs, schedules, rates, and completed work sessions.</p>
+            <button class="secondary-btn" data-open-add="work">Preview quick add</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-page="money">
+        <div class="content-wrap narrow">
+          <div class="placeholder-page">
+            <div class="placeholder-icon">$</div>
+            <p class="eyebrow">MONEY</p>
+            <h1>Income and expenses, without the clutter.</h1>
+            <p>Invoices, payments, expenses, mileage deductions, tax reserves, and reconciliations will progressively appear here as their phases are completed.</p>
+            <button class="secondary-btn" data-open-add="money">Preview quick add</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-page="records">
+        <div class="content-wrap narrow">
+          <div class="placeholder-page">
+            <div class="placeholder-icon">▤</div>
+            <p class="eyebrow">RECORDS</p>
+            <h1>Evidence stays attached to the numbers.</h1>
+            <p>Receipts, invoices, tax documents, W-9s, contracts, mileage logs, and audit history will become searchable from this workspace.</p>
+            <button class="secondary-btn" data-open-add="records">Preview quick add</button>
+          </div>
+        </div>
+      </section>
+
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <button class="mobile-nav-item active" data-view="home"><span>⌂</span><small>Home</small></button>
+        <button class="mobile-nav-item" data-view="work"><span>◫</span><small>Work</small></button>
+        <button class="mobile-add" id="mobileAddBtn" aria-label="Add new record">＋</button>
+        <button class="mobile-nav-item" data-view="money"><span>$</span><small>Money</small></button>
+        <button class="mobile-nav-item" data-view="records"><span>▤</span><small>Records</small></button>
+      </nav>
+    </main>
+  </div>
+
+  <div class="overlay" id="overlay" hidden></div>
+
+  <section class="sheet" id="quickAddSheet" role="dialog" aria-modal="true" aria-labelledby="quickAddTitle" hidden>
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div><p class="eyebrow">QUICK ADD</p><h2 id="quickAddTitle">What are you adding?</h2></div>
+      <button class="close-btn" data-close aria-label="Close">×</button>
+    </div>
+    <div class="quick-grid">
+      <button class="quick-card"><span class="quick-icon">◫</span><strong>Work session</strong><small>Phase 1</small></button>
+      <button class="quick-card"><span class="quick-icon">⌁</span><strong>Client</strong><small>Phase 1</small></button>
+      <button class="quick-card"><span class="quick-icon">▧</span><strong>Invoice</strong><small>Phase 2</small></button>
+      <button class="quick-card"><span class="quick-icon">$</span><strong>Payment</strong><small>Phase 3</small></button>
+      <button class="quick-card"><span class="quick-icon">−</span><strong>Expense</strong><small>Phase 4</small></button>
+      <button class="quick-card"><span class="quick-icon">↝</span><strong>Mileage</strong><small>Phase 5</small></button>
+    </div>
+    <p class="sheet-note">The actions are intentionally visible but inactive in Phase 0 so we can validate the navigation and interaction pattern before building their workflows.</p>
+  </section>
+
+  <section class="command-palette" id="commandPalette" role="dialog" aria-modal="true" aria-labelledby="commandTitle" hidden>
+    <div class="command-input-row">
+      <span>⌕</span>
+      <input id="commandInput" aria-label="Search" placeholder="Search clients, invoices, expenses, records…" autocomplete="off" />
+      <kbd>Esc</kbd>
+    </div>
+    <div class="command-body">
+      <p class="command-label" id="commandTitle">Quick navigation</p>
+      <button class="command-result" data-command-view="home"><span>⌂</span><div><strong>Home</strong><small>Dashboard and attention queue</small></div><kbd>H</kbd></button>
+      <button class="command-result" data-command-view="work"><span>◫</span><div><strong>Work</strong><small>Clients, gigs, and sessions</small></div><kbd>W</kbd></button>
+      <button class="command-result" data-command-view="money"><span>$</span><div><strong>Money</strong><small>Invoices, payments, expenses</small></div><kbd>M</kbd></button>
+      <button class="command-result" data-command-view="records"><span>▤</span><div><strong>Records</strong><small>Documents and evidence</small></div><kbd>R</kbd></button>
+    </div>
+  </section>
+
+  <section class="sheet compact" id="businessSheet" role="dialog" aria-modal="true" aria-labelledby="businessSheetTitle" hidden>
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div><p class="eyebrow">WORKSPACE</p><h2 id="businessSheetTitle">Choose a business</h2></div>
+      <button class="close-btn" data-close aria-label="Close">×</button>
+    </div>
+    <button class="workspace-option selected">
+      <span class="business-icon">PF</span><span><strong>Play It Forward</strong><small>Current workspace</small></span><span class="workspace-check">✓</span>
+    </button>
+    <button class="workspace-option disabled" aria-disabled="true">
+      <span class="business-icon neutral">＋</span><span><strong>Add another business or gig</strong><small>Enabled in Phase 1</small></span>
+    </button>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
