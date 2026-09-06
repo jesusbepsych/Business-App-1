@@ -1,36 +1,61 @@
-# Phase 0 Architecture
+# Business Ledger — Foundation Architecture
+
+## Current build
+
+Phase 0 foundation is implemented and the first vertical slice of Phase 1 is active: business workspaces, clients, work sessions, local persistence, search, record details, and audit-event creation.
 
 ## Product principle
 
 Enter information once, then reuse it everywhere. Every summarized dollar should ultimately be traceable to a source record and its supporting evidence.
 
+## Device strategy
+
+The application is currently browser-first and responsive across desktop, iPad, and iPhone widths. The product boundary deliberately separates domain/data logic from device-specific capabilities so the same core can later sit inside a native iOS/iPadOS shell or PWA without redesigning the financial model.
+
+## Persistence strategy
+
+The prototype uses a versioned `LocalRepository` backed by browser local storage. This is **not** the intended production security model; it exists only so early workflows can be tested without pretending cloud authentication already exists.
+
+A production repository should implement the same application-facing contract while adding:
+
+- authenticated account/session identity
+- server-side workspace authorization
+- secure cross-device synchronization
+- conflict handling and record versions
+- encrypted file/object storage
+- backups and recovery
+- sync cursors / timestamps
+- offline queueing where useful
+
+The UI therefore labels the current state as **Local preview** rather than “synced.”
+
 ## Core domain relationships
 
 ```text
-Business
-  ├── Clients
-  │     └── Work Sessions
-  │            ├── Invoice Line Items ──> Invoice ──> Payments
-  │            ├── Expenses
-  │            └── Trips / Mileage
-  ├── Direct Income (non-invoice)
-  ├── Expenses ──> Receipts / Documents
-  ├── Vehicles ──> Trips
-  ├── Tax Years ──> Estimated Payments
-  └── Documents
+Account / Identity
+  └── Business Workspace
+        ├── Clients
+        │     └── Work Sessions
+        │            ├── Invoice Line Items ──> Invoice ──> Payments
+        │            ├── Expenses
+        │            └── Trips / Mileage
+        ├── Direct Income (non-invoice)
+        ├── Expenses ──> Receipts / Documents
+        ├── Vehicles ──> Trips
+        ├── Tax Years ──> Estimated Payments
+        └── Documents
 
-All financial records ──> Audit Events / Traceability
+All material record mutations ──> Audit Events / Traceability
 All structured records ──> Analytics / Automation / AI (later phases)
 ```
 
-## Reserved domain entities
+## Phase 1 entities now exercised
 
 ### Business
 - id
-- legal_name
 - display_name
+- legal_name
 - entity_type
-- tax_identifier_reference (never plaintext in UI logs)
 - default_currency
 - timezone
 - status
@@ -41,161 +66,93 @@ All structured records ──> Analytics / Automation / AI (later phases)
 - business_id
 - display_name
 - status
-- default_rate
-- billing_preferences
-- location references
+- default_rate_cents
 - notes
-
-### Gig / Engagement
-- id
-- business_id
-- client_id (optional)
-- name
-- rate rules
-- status
-- start/end dates
+- created_at / updated_at
 
 ### WorkSession
 - id
 - business_id
 - client_id
-- engagement_id (optional)
-- started_at / ended_at
-- duration
-- rate_snapshot
-- location references
+- date
+- start_time / end_time
+- duration_minutes
+- rate_snapshot_cents
 - notes
-- invoicing_status
-
-### Invoice
-- id
-- business_id
-- client_id
-- invoice_number
-- issue_date / due_date
-- status
-- immutable monetary snapshot
-- revision lineage
-
-### Payment
-- id
-- business_id
-- invoice_id (optional)
-- amount
-- method
-- received_at
-- reconciliation_status
-
-### Expense
-- id
-- business_id
-- client_id / work_session_id (optional)
-- merchant
-- amount
-- business_use_amount / percentage
-- category
-- business_purpose
-- tax_review_status
-- occurred_at
-
-### Receipt / Document
-- id
-- business_id
-- linked_record_type / id
-- file metadata
-- checksum
-- upload timestamp
-- retention status
-
-### Vehicle
-- id
-- business_id
-- label
-- year / make / model
-- mileage method metadata by tax year
-
-### Trip
-- id
-- business_id
-- vehicle_id
-- work_session_id (optional)
-- start/end time
-- origin / destination references
-- distance
-- business purpose
-- classification status
-
-### TaxYear
-- id
-- business_id
-- year
-- configuration version
-- estimated payments
-- review flags
+- invoice_status
+- created_at / updated_at
 
 ### AuditEvent
 - id
 - business_id
-- actor_id
-- entity_type / entity_id
 - event_type
-- timestamp
-- before/after references
-- reason (when required)
+- entity_type / entity_id
+- details (prototype only; production audit design will be stricter)
+- occurred_at
 
-## Data rules established now
+## Reserved later entities
+
+Invoice, Payment, Expense, Receipt/Document, Vehicle, Trip, TaxYear, EstimatedTaxPayment, ReconciliationMatch, Grant/Fund, and external account/import records remain reserved in the model.
+
+## Data rules
 
 1. Money is stored in integer minor units (cents), never floating point.
-2. Financial records are never silently overwritten; material changes generate revision/audit events.
+2. Historical work sessions store a rate snapshot so changing a client's default rate does not rewrite history.
 3. Invoices and payments are separate concepts to prevent double-counting revenue.
 4. Tax classification is separate from bookkeeping classification.
-5. Business/personal/mixed-use status must be representable without destroying the original transaction amount.
+5. Business/personal/mixed-use status must be representable without destroying an original transaction amount.
 6. Files are linked records, not embedded business logic.
-7. Every entity belongs to a Business workspace, even when the app only has one business initially.
-8. User-facing IDs are different from internal database IDs where useful (for example invoice numbers).
-9. Tax rules and mileage rates must be versioned by tax year rather than hard-coded globally.
-10. AI may suggest classifications later; sensitive accounting/tax changes require explicit user confirmation.
+7. Every entity belongs to a Business workspace, even when only one business exists.
+8. User-facing IDs can differ from internal IDs (for example invoice numbers).
+9. Tax rules and mileage rates must be versioned by tax year.
+10. AI may suggest classifications later; sensitive financial/tax changes require confirmation.
+11. Material financial edits should produce immutable audit/revision records in production.
+12. A summarized value must eventually be explainable by drilling into its source records.
 
 ## UI architecture
 
-Primary navigation remains intentionally small:
+Permanent navigation stays intentionally small:
 
 - Home
 - Work
 - Money
 - Records
 
-Complexity appears contextually through detail views, sheets, command search, and progressive disclosure rather than adding permanent navigation tabs.
+Complexity appears contextually through detail panels, sheets, global search, Quick Add, and progressive disclosure.
 
-### Interaction targets
-- Common navigation feedback: <= 150 ms perceived response.
-- Motion: generally 120–220 ms, subtle and interruptible.
-- Uploads: instant local preview; processing may continue asynchronously in the UI without blocking navigation.
-- Mobile: bottom navigation with centered Quick Add.
-- Desktop/tablet: compact sidebar plus global command search.
-- Reduced-motion OS preference is respected.
+### Interaction goals
+- navigation feedback is immediate
+- most motion stays around 120–220 ms
+- mobile workflows do not become compressed desktop forms
+- uploads will show immediate local previews before server processing
+- OS reduced-motion preference is respected
 
-## Security foundation
+## Security direction for cloud phase
 
-Phase 0 stores no sensitive financial data. Future persistence should include:
+Production sync should include:
 
-- server-side authorization on every workspace-scoped query
+- authorization on every workspace-scoped query
 - encryption in transit and at rest
-- passkey/MFA support
-- secure file storage with short-lived signed access
-- strict separation between application secrets and client code
-- immutable audit events for material financial changes
-- rate limiting and session/device management
-- backups and exportability
+- passkeys and/or MFA
+- short-lived signed access for stored documents
+- no application secrets shipped in client code
+- session/device management
+- rate limiting and abuse controls
+- backups, exportability, and account recovery
+- least-privilege third-party integrations
 - no plaintext bank credentials
-- least-privilege external integrations
+- append-only or otherwise tamper-resistant audit history for material records
 
-## Phase 0 completion criteria
+## Next engineering slice
 
-- Responsive shell works at phone, tablet, and desktop widths.
-- Home / Work / Money / Records navigation is instant and coherent.
-- Business switcher pattern exists without forcing multi-business complexity into every screen.
-- Quick Add pattern exists and is reachable on desktop and mobile.
-- Command/search interaction is reserved globally.
-- Design system handles light/dark OS appearance and reduced motion.
-- Domain model can support all later roadmap phases without redefining the basic ownership relationships.
+Complete Phase 1 before invoices by adding:
+
+- optional engagement/gig records beneath a client
+- recurring work defaults / schedule templates
+- stronger session validation and conflict warnings
+- archive/reactivate behavior for clients
+- optional work locations without exposing unnecessary address data
+- import path for historical work records
+- final choice of production cloud/auth provider
+
+Only after those work records feel correct should Phase 2 introduce invoice generation.

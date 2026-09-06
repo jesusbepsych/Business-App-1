@@ -1,31 +1,51 @@
-# Business Finance App — Phase 0
+# Business Ledger — Foundation + Phase 1 Alpha
 
-A dependency-free interactive prototype of the Phase 0 product foundation.
+A dependency-free interactive prototype for a business finance and traceability app.
 
-## Run
+## Run locally
 
-Open `index.html` directly, or serve the folder locally:
+For best behavior, serve the folder rather than double-clicking the HTML file:
 
 ```bash
+cd business-finance-app-phase0
 python3 -m http.server 8000
 ```
 
 Then open `http://localhost:8000`.
 
-## What is implemented
+## Implemented now
 
-- Responsive desktop/tablet/mobile shell
+### Phase 0 foundation
+- responsive desktop / tablet / mobile shell
 - Home, Work, Money, Records navigation
-- Business switcher interaction
-- Global command/search palette (`/` shortcut)
+- business workspace switcher
+- global command/search palette (`/` shortcut)
 - Quick Add sheet
-- Empty/placeholder states for future phases
-- System light/dark appearance
-- Reduced-motion accessibility support
-- Phase 0 architecture and data model document
+- system light/dark appearance
+- reduced-motion accessibility
+- explicit local-vs-cloud sync state
+- provider-neutral repository boundary
+- structured JSON backup export
 
-No financial data is persisted yet. That is intentional for Phase 0.
+### Phase 1 alpha
+- multiple business/gig workspaces
+- client creation and editing
+- client default hourly rates
+- work-session creation and editing
+- rate snapshot stored on each session
+- session duration and estimated work value
+- client/session search
+- client and session detail views
+- home metrics fed by real work records
+- local persistence across browser refreshes
+- audit events for create/update/workspace actions
+
+## Important security note
+
+This build stores prototype data in browser local storage. It is **not** yet appropriate for sensitive production financial information or identifying client information. Use aliases/test data during this stage.
+
+The cloud/auth boundary is reserved specifically so secure cross-device synchronization can replace local persistence without rewriting feature logic.
 
 ## Working name
 
-“Business Ledger” is a placeholder product name and can be replaced once naming/branding is decided.
+“Business Ledger” remains a placeholder name.

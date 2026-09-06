@@ -1,7 +1,7 @@
 {
   "name": "Business Ledger",
   "short_name": "Ledger",
-  "description": "Business finance and traceability workspace",
+  "description": "Business work, finance, tax, and traceability workspace",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f6f7f9",
