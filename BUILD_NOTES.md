@@ -1,41 +1,40 @@
-# Build Notes — Phase 2 Invoice Alpha
+# Build Notes — Phase 3 Payments Alpha
 
-## Main additions
+## Main objective
 
-- Upgraded local schema from version 2 to version 3 with automatic migration of existing Phase 1 data.
-- Existing clients/sessions stored under the same local-storage key are preserved.
-- Added Invoice records and per-business invoice-number/default settings.
-- Added optional client billing email/address fields behind progressive disclosure.
-- Replaced the Money placeholder with an invoice dashboard and history.
-- Added invoice creation from existing work sessions without re-entering hours/rates.
-- Added selectable multi-session billing and optional custom line items.
-- Added Draft, Sent, Overdue (derived), and Void behavior.
-- Added printable invoice rendering for browser print / Save as PDF.
-- Added sender and recipient snapshots so old invoice content does not silently change when business/client defaults change.
-- Linked sessions now show `Uninvoiced`, `In draft`, or `Invoiced`.
-- Sent invoice sessions are protected from direct edit/delete until the invoice is moved back to Draft or voided.
-- Draft invoice deletion and sent invoice voiding release linked work sessions for reuse.
-- Client deletion is blocked while active invoices still reference that client.
-- Added invoice search and simple status filters.
-- Added invoice settings for prefix, due days, sender contact information, address, and payment instructions.
+Introduce cash-received records without conflating them with invoice value.
 
-## Intentionally deferred
+## Phase 3 additions
 
-- actual payment records / partial payments
-- direct income without invoices
-- expenses / receipts
-- mileage
-- tax calculations
-- cloud auth / sync
-- file uploads
-- banking integrations
-- AI classification
+- Added schema v4 with `payments` as a first-class collection.
+- Existing schema v2/v3 local data migrates forward automatically.
+- Added invoice-linked payments and direct/other income using one Payment entity.
+- Added full/partial payment support.
+- Added payment-aware invoice balances and statuses.
+- Added invoice-payment history and payment detail records.
+- Added payment edit/delete with audit events.
+- Added overpayment validation.
+- Added payment methods, received date, optional reference, and note fields.
+- Added optional direct-income client linking.
+- Added Payments ledger and Money tabs.
+- Added payment search to global command palette.
+- Updated printable invoices to show total, paid, and amount due.
+- Added integrity lock: invoices with received payments cannot be rewritten, reverted to Draft, or voided until linked payment records are corrected or removed.
 
-These remain separate roadmap phases to keep the financial model testable and avoid treating an issued invoice as money actually received.
+## Accounting-model rule
 
+Invoices represent **billing/amount earned**. Payments represent **cash actually received**. Money dashboard “Received” totals are calculated from Payment records only.
 
-## Phase 2 refinement — viewport + invoice totals
-- Invoice builder now respects the dynamic visible viewport (`dvh`) with safe top/bottom breathing room, preventing the title/header from being clipped on iPad/Safari-sized browser windows.
-- Invoice previews and printable/PDF invoices now show both **Total hours** and **Amount due** at a glance.
-- Total hours include work-session line items only; custom charges do not inflate labor time.
-- Draft invoice summary also shows selected work duration next to line-item count.
+This prevents a common double-counting mistake where both the invoice and the corresponding deposit are treated as received revenue.
+
+## Deferred intentionally
+
+- bank account imports and automatic reconciliation
+- payment file attachments / deposit screenshots
+- refunds and chargebacks
+- payment processing through the app
+- accounting-basis / tax-year engine
+- receipt ingestion and expense workflows
+- secure production cloud database and authentication
+
+These remain later roadmap phases so Phase 3 can be tested independently.

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, records, and taxes." />
-  <title>Business Ledger — Phase 2 Invoices Alpha</title>
+  <title>Business Ledger — Phase 3 Payments Alpha</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -14,7 +14,7 @@
     <aside class="sidebar" aria-label="Primary navigation">
       <div class="brand-row">
         <div class="brand-mark" aria-hidden="true">B</div>
-        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 2 · Invoices alpha</span></div>
+        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 3 · Payments</span></div>
       </div>
 
       <button class="business-switcher" id="businessSwitcher" aria-haspopup="dialog">
@@ -57,7 +57,7 @@
             <button class="primary-btn" id="quickAddBtn"><span>＋</span> Add</button>
           </div>
 
-          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 2 is now active.</strong> Work sessions can flow into invoice drafts and issued invoice records; data is still local-only until secure cloud sync is connected.</span></div>
+          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 3 is now active.</strong> Invoices and actual money received are now separate, traceable records; data is still local-only until secure cloud sync is connected.</span></div>
 
           <div class="metric-grid">
             <article class="metric-card"><div class="metric-head"><span>Active clients</span><span class="muted-chip">Work</span></div><strong class="metric-value" id="metricClients">0</strong><span class="metric-caption">In this workspace</span></article>
@@ -79,9 +79,9 @@
           </div>
 
           <article class="panel-card roadmap-card">
-            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 2 — Invoice engine</h2></div><span class="quiet-badge green">Active</span></div>
-            <div class="progress-track"><div class="progress-fill phase-two"></div></div>
-            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="current">Invoices</span><span>Payments</span><span>Expenses</span><span>Mileage</span><span>Taxes</span></div>
+            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 3 — Payments + income ledger</h2></div><span class="quiet-badge green">Active</span></div>
+            <div class="progress-track"><div class="progress-fill phase-three"></div></div>
+            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="done">Invoices</span><span class="current">Payments</span><span>Expenses</span><span>Mileage</span><span>Taxes</span></div>
           </article>
         </div>
       </section>
@@ -119,22 +119,37 @@
       <section class="view" data-page="money">
         <div class="content-wrap">
           <div class="page-heading money-heading">
-            <div><p class="eyebrow">MONEY</p><h1>Invoices, without re-entry.</h1><p class="subtitle">Select completed work, save a draft, then issue a stable billing snapshot. Payments remain separate for the next phase.</p></div>
-            <div class="heading-actions"><button class="secondary-btn" id="invoiceSettingsBtn">Invoice settings</button><button class="primary-btn" id="addInvoiceBtn">＋ Invoice</button></div>
+            <div><p class="eyebrow">MONEY</p><h1>Earned and received, separately.</h1><p class="subtitle">Invoices show what was billed. Payments show what actually arrived. Linking them keeps balances and cash received accurate without double counting.</p></div>
+            <div class="heading-actions money-actions"><button class="utility-text-btn" id="invoiceSettingsBtn">Invoice settings</button><button class="secondary-btn" id="addPaymentBtn">＋ Payment</button><button class="primary-btn" id="addInvoiceBtn">＋ Invoice</button></div>
           </div>
 
           <div class="money-metric-grid">
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Issued total</span><span class="muted-chip">Invoices</span></div><strong class="metric-value" id="moneyIssuedTotal">$0</strong><span class="metric-caption">Sent invoice value</span></article>
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Draft total</span><span class="muted-chip">In progress</span></div><strong class="metric-value" id="moneyDraftTotal">$0</strong><span class="metric-caption">Not yet issued</span></article>
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Overdue</span><span class="muted-chip">Attention</span></div><strong class="metric-value" id="moneyOverdueCount">0</strong><span class="metric-caption">Based on invoice due dates</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Received</span><span class="muted-chip">Cash in</span></div><strong class="metric-value" id="moneyReceivedTotal">$0</strong><span class="metric-caption">From recorded payments</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Outstanding</span><span class="muted-chip">Invoices</span></div><strong class="metric-value" id="moneyOutstandingTotal">$0</strong><span class="metric-caption">Still due on sent invoices</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Overdue</span><span class="muted-chip">Attention</span></div><strong class="metric-value" id="moneyOverdueCount">0</strong><span class="metric-caption">Invoices with balance past due</span></article>
           </div>
 
-          <div class="money-list-head">
-            <div><p class="eyebrow">INVOICES</p><h2>Invoice history <span class="section-count" id="invoiceCount">0</span></h2></div>
-            <button class="filter-pill" id="invoiceFilterBtn">All invoices</button>
+          <div class="segment-control money-segments" role="tablist" aria-label="Money sections">
+            <button class="segment active" data-money-tab="invoices" role="tab">Invoices <span id="invoiceCount">0</span></button>
+            <button class="segment" data-money-tab="payments" role="tab">Payments <span id="paymentCount">0</span></button>
           </div>
-          <div class="data-card" id="invoicesContainer"></div>
-          <div class="phase-next-note"><span>→</span><div><strong>Payments stay separate.</strong><small>Phase 3 will match actual money received to these invoices instead of treating “sent” as “paid.”</small></div></div>
+
+          <div class="money-tab active" data-money-panel="invoices">
+            <div class="money-list-head">
+              <div><p class="eyebrow">INVOICES</p><h2>Invoice history</h2></div>
+              <button class="filter-pill" id="invoiceFilterBtn">All invoices</button>
+            </div>
+            <div class="data-card" id="invoicesContainer"></div>
+          </div>
+
+          <div class="money-tab" data-money-panel="payments">
+            <div class="money-list-head">
+              <div><p class="eyebrow">INCOME LEDGER</p><h2>Money received</h2></div>
+              <button class="filter-pill" id="paymentFilterBtn">All payments</button>
+            </div>
+            <div class="data-card" id="paymentsContainer"></div>
+          </div>
+          <div class="phase-next-note"><span>↳</span><div><strong>One cash record, one source.</strong><small>Invoice payments link back to the invoice; other income can be recorded directly. Future bank matching will reconcile deposits to these payment records instead of creating duplicate income.</small></div></div>
         </div>
       </section>
 
@@ -162,14 +177,14 @@
       <button class="quick-card enabled" data-action="add-session"><span class="quick-icon">◫</span><strong>Work session</strong><small>Active</small></button>
       <button class="quick-card enabled" data-action="add-client"><span class="quick-icon">⌁</span><strong>Client</strong><small>Active</small></button>
       <button class="quick-card enabled" data-action="add-invoice"><span class="quick-icon">▧</span><strong>Invoice</strong><small>Active</small></button>
-      <button class="quick-card"><span class="quick-icon">$</span><strong>Payment</strong><small>Phase 3</small></button>
+      <button class="quick-card enabled" data-action="add-payment"><span class="quick-icon">$</span><strong>Payment</strong><small>Active</small></button>
       <button class="quick-card"><span class="quick-icon">−</span><strong>Expense</strong><small>Phase 4</small></button>
       <button class="quick-card"><span class="quick-icon">↝</span><strong>Mileage</strong><small>Phase 5</small></button>
     </div>
   </section>
 
   <section class="command-palette" id="commandPalette" role="dialog" aria-modal="true" aria-labelledby="commandTitle" hidden>
-    <div class="command-input-row"><span>⌕</span><input id="commandInput" aria-label="Search" placeholder="Search clients, sessions, invoices, records…" autocomplete="off" /><kbd>Esc</kbd></div>
+    <div class="command-input-row"><span>⌕</span><input id="commandInput" aria-label="Search" placeholder="Search clients, sessions, invoices, payments, records…" autocomplete="off" /><kbd>Esc</kbd></div>
     <div class="command-body" id="commandBody"><p class="command-label" id="commandTitle">Quick navigation</p></div>
   </section>
 

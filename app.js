@@ -6,7 +6,7 @@
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
 
   const initialData = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     activeBusinessId: 'biz_play_it_forward',
     businesses: [{
       id: 'biz_play_it_forward',
@@ -23,6 +23,7 @@
     clients: [],
     sessions: [],
     invoices: [],
+    payments: [],
     auditEvents: [],
   };
 
@@ -35,8 +36,9 @@
   function migrateData(parsed) {
     if (!parsed || typeof parsed !== 'object') return deepClone(initialData);
     if (parsed.schemaVersion === 2) {
-      parsed.schemaVersion = 3;
+      parsed.schemaVersion = 4;
       parsed.invoices = [];
+      parsed.payments = [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       const clientNames = new Map((parsed.clients || []).map(c => [c.id, c.displayName]));
       parsed.clients = (parsed.clients || []).map(c => ({ billingEmail: '', billingAddress: '', ...c }));
@@ -44,7 +46,17 @@
       return parsed;
     }
     if (parsed.schemaVersion === 3) {
+      parsed.schemaVersion = 4;
       parsed.invoices ||= [];
+      parsed.payments = [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      parsed.clients = (parsed.clients || []).map(c => ({ billingEmail: '', billingAddress: '', ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
+      return parsed;
+    }
+    if (parsed.schemaVersion === 4) {
+      parsed.invoices ||= [];
+      parsed.payments ||= [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       parsed.clients = (parsed.clients || []).map(c => ({ billingEmail: '', billingAddress: '', ...c }));
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
@@ -76,7 +88,7 @@
   // load/save contract plus authenticated sync without changing domain/UI code.
   const repository = new LocalRepository();
   const data = repository.load();
-  const ui = { activeView: 'home', modal: null, workTab: 'sessions', formMode: null, formRecordId: null, sessionFilter: 'all', invoiceFilter: 'all', invoiceFormId: null };
+  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', invoiceFilter: 'all', paymentFilter: 'all', invoiceFormId: null };
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -109,8 +121,13 @@
     return data.invoices.filter(invoice => invoice.businessId === businessId);
   }
 
+  function businessPayments(businessId = data.activeBusinessId) {
+    return data.payments.filter(payment => payment.businessId === businessId);
+  }
+
   function clientById(id) { return data.clients.find(c => c.id === id); }
   function invoiceById(id) { return data.invoices.find(invoice => invoice.id === id); }
+  function paymentById(id) { return data.payments.find(payment => payment.id === id); }
 
   function invoiceTotalCents(invoice) {
     return (invoice?.lineItems || []).reduce((sum, item) => sum + Number(item.amountCents || 0), 0);
@@ -118,6 +135,24 @@
 
   function invoiceTotalMinutes(invoice) {
     return (invoice?.lineItems || []).reduce((sum, item) => item.type === 'session' ? sum + Number(item.quantityMinutes || 0) : sum, 0);
+  }
+
+  function invoicePayments(invoiceOrId) {
+    const invoiceId = typeof invoiceOrId === 'string' ? invoiceOrId : invoiceOrId?.id;
+    return data.payments.filter(payment => payment.businessId === data.activeBusinessId && payment.kind === 'invoice' && payment.invoiceId === invoiceId);
+  }
+
+  function invoicePaidCents(invoiceOrId) {
+    return invoicePayments(invoiceOrId).reduce((sum, payment) => sum + Number(payment.amountCents || 0), 0);
+  }
+
+  function invoiceBalanceCents(invoice) {
+    return Math.max(0, invoiceTotalCents(invoice) - invoicePaidCents(invoice));
+  }
+
+  function paymentSourceLabel(payment) {
+    if (payment?.kind === 'invoice') return payment.invoiceNumberSnapshot || invoiceById(payment.invoiceId)?.number || 'Invoice';
+    return payment?.sourceName || payment?.clientNameSnapshot || 'Other income';
   }
 
   function durationExactLabel(minutes = 0) {
@@ -133,8 +168,13 @@
     if (!invoice) return 'Draft';
     if (invoice.status === 'void') return 'Void';
     if (invoice.status === 'draft') return 'Draft';
+    const paid = invoicePaidCents(invoice);
+    const total = invoiceTotalCents(invoice);
+    const balance = Math.max(0, total - paid);
+    if (total > 0 && balance === 0) return 'Paid';
     const today = new Date().toISOString().slice(0,10);
-    if (invoice.status === 'sent' && invoice.dueDate && invoice.dueDate < today) return 'Overdue';
+    if (invoice.status === 'sent' && balance > 0 && invoice.dueDate && invoice.dueDate < today) return 'Overdue';
+    if (paid > 0 && balance > 0) return 'Partially paid';
     return invoice.status === 'sent' ? 'Sent' : invoice.status;
   }
 
@@ -312,7 +352,7 @@
     const incomplete = sessions.filter(s => !s.clientId || !s.date || !s.startTime || !s.endTime);
     const overdue = businessInvoices().filter(invoice => invoiceDisplayStatus(invoice) === 'Overdue');
     const attentionItems = [
-      ...overdue.map(invoice => ({ type: 'invoice', id: invoice.id, title: `${invoice.number} is overdue`, sub: `${invoice.recipientSnapshot?.displayName || 'Client'} · ${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}` })),
+      ...overdue.map(invoice => ({ type: 'invoice', id: invoice.id, title: `${invoice.number} is overdue`, sub: `${invoice.recipientSnapshot?.displayName || 'Client'} · ${formatMoney(invoiceBalanceCents(invoice), activeBusiness().currency)} still due` })),
       ...incomplete.map(session => ({ type: 'session', id: session.id, title: 'Incomplete work session', sub: `${clientById(session.clientId)?.displayName || session.clientNameSnapshot || 'No client'} · ${formatDate(session.date)}` }))
     ];
     $('#attentionCount').textContent = `${attentionItems.length} ${attentionItems.length === 1 ? 'item' : 'items'}`;
@@ -379,39 +419,77 @@
 
   function invoiceStatusClass(invoice) {
     const status = invoiceDisplayStatus(invoice).toLowerCase();
-    if (status === 'sent') return 'success';
+    if (status === 'paid') return 'success';
+    if (status === 'partially paid') return 'accent';
     if (status === 'overdue') return 'danger';
     if (status === 'draft') return 'accent';
     return '';
   }
 
+  function paymentKindLabel(payment) {
+    return payment.kind === 'invoice' ? 'Invoice payment' : 'Other income';
+  }
+
+  function paymentMethodLabel(method) {
+    return ({ cash:'Cash', check:'Check', zelle:'Zelle', venmo:'Venmo', ach:'ACH', direct_deposit:'Direct deposit', card:'Card', other:'Other' })[method] || 'Other';
+  }
+
   function renderMoney() {
     const invoices = businessInvoices().slice().sort((a,b) => `${b.issueDate || ''}${b.createdAt || ''}`.localeCompare(`${a.issueDate || ''}${a.createdAt || ''}`));
-    const visible = invoices.filter(invoice => ui.invoiceFilter === 'all' || invoiceDisplayStatus(invoice).toLowerCase() === ui.invoiceFilter);
-    const draft = invoices.filter(invoice => invoice.status === 'draft');
-    const issued = invoices.filter(invoice => invoice.status === 'sent');
-    const issuedTotal = issued.reduce((sum, invoice) => sum + invoiceTotalCents(invoice), 0);
-    const draftTotal = draft.reduce((sum, invoice) => sum + invoiceTotalCents(invoice), 0);
+    const payments = businessPayments().slice().sort((a,b) => `${b.receivedDate || ''}${b.createdAt || ''}`.localeCompare(`${a.receivedDate || ''}${a.createdAt || ''}`));
+    const visibleInvoices = invoices.filter(invoice => ui.invoiceFilter === 'all' || invoiceDisplayStatus(invoice).toLowerCase().replace(/ /g,'_') === ui.invoiceFilter);
+    const visiblePayments = payments.filter(payment => ui.paymentFilter === 'all' || payment.kind === ui.paymentFilter);
+    const sentInvoices = invoices.filter(invoice => invoice.status === 'sent');
+    const receivedTotal = payments.reduce((sum, payment) => sum + Number(payment.amountCents || 0), 0);
+    const outstandingTotal = sentInvoices.reduce((sum, invoice) => sum + invoiceBalanceCents(invoice), 0);
     const overdueCount = invoices.filter(invoice => invoiceDisplayStatus(invoice) === 'Overdue').length;
 
-    $('#moneyIssuedTotal').textContent = formatMoney(issuedTotal, activeBusiness().currency);
-    $('#moneyDraftTotal').textContent = formatMoney(draftTotal, activeBusiness().currency);
+    $('#moneyReceivedTotal').textContent = formatMoney(receivedTotal, activeBusiness().currency);
+    $('#moneyOutstandingTotal').textContent = formatMoney(outstandingTotal, activeBusiness().currency);
     $('#moneyOverdueCount').textContent = overdueCount;
     $('#invoiceCount').textContent = invoices.length;
-    $('#invoiceFilterBtn').textContent = ui.invoiceFilter === 'all' ? 'All invoices' : ui.invoiceFilter[0].toUpperCase() + ui.invoiceFilter.slice(1);
+    $('#paymentCount').textContent = payments.length;
+    const invoiceFilterLabels = { all:'All invoices', draft:'Draft', sent:'Sent', partially_paid:'Partially paid', paid:'Paid', overdue:'Overdue', void:'Void' };
+    $('#invoiceFilterBtn').textContent = invoiceFilterLabels[ui.invoiceFilter] || 'All invoices';
+    const paymentFilterLabels = { all:'All payments', invoice:'Invoice payments', direct:'Other income' };
+    $('#paymentFilterBtn').textContent = paymentFilterLabels[ui.paymentFilter] || 'All payments';
 
-    $('#invoicesContainer').innerHTML = visible.length ? `
-      <div class="table-head invoice-grid"><span>Invoice</span><span>Client</span><span>Issued</span><span>Due</span><span>Total</span><span>Status</span></div>
-      ${visible.map(invoice => `<button class="table-row invoice-grid" data-invoice-detail="${invoice.id}"><span><strong>${escapeHtml(invoice.number)}</strong><small>${(invoice.lineItems || []).length} ${(invoice.lineItems || []).length === 1 ? 'item' : 'items'}</small></span><span><strong>${escapeHtml(invoice.recipientSnapshot?.displayName || clientById(invoice.clientId)?.displayName || 'Client')}</strong><small>${escapeHtml(invoice.recipientSnapshot?.billingEmail || 'No billing email')}</small></span><span><strong>${formatDate(invoice.issueDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(invoice.issueDate,{year:'numeric'})}</small></span><span><strong>${formatDate(invoice.dueDate,{month:'short',day:'numeric'})}</strong><small>${invoice.dueDate ? formatDate(invoice.dueDate,{weekday:'short'}) : '—'}</small></span><span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong><small>${invoice.status === 'void' ? 'Voided' : 'Snapshot total'}</small></span><span><span class="status-pill ${invoiceStatusClass(invoice)}">${escapeHtml(invoiceDisplayStatus(invoice))}</span></span></button>`).join('')}`
+    $('#invoicesContainer').innerHTML = visibleInvoices.length ? `
+      <div class="table-head invoice-grid"><span>Invoice</span><span>Client</span><span>Issued</span><span>Due</span><span>Balance</span><span>Status</span></div>
+      ${visibleInvoices.map(invoice => {
+        const paid = invoicePaidCents(invoice);
+        const balance = invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice);
+        const total = invoiceTotalCents(invoice);
+        const paymentNote = invoice.status === 'void' ? 'Voided' : paid ? `${formatMoney(paid, activeBusiness().currency)} paid of ${formatMoney(total, activeBusiness().currency)}` : `${formatMoney(total, activeBusiness().currency)} total`;
+        return `<button class="table-row invoice-grid" data-invoice-detail="${invoice.id}"><span><strong>${escapeHtml(invoice.number)}</strong><small>${(invoice.lineItems || []).length} ${(invoice.lineItems || []).length === 1 ? 'item' : 'items'}</small></span><span><strong>${escapeHtml(invoice.recipientSnapshot?.displayName || clientById(invoice.clientId)?.displayName || 'Client')}</strong><small>${escapeHtml(invoice.recipientSnapshot?.billingEmail || 'No billing email')}</small></span><span><strong>${formatDate(invoice.issueDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(invoice.issueDate,{year:'numeric'})}</small></span><span><strong>${formatDate(invoice.dueDate,{month:'short',day:'numeric'})}</strong><small>${invoice.dueDate ? formatDate(invoice.dueDate,{weekday:'short'}) : '—'}</small></span><span><strong>${formatMoney(balance, activeBusiness().currency)}</strong><small>${escapeHtml(paymentNote)}</small></span><span><span class="status-pill ${invoiceStatusClass(invoice)}">${escapeHtml(invoiceDisplayStatus(invoice))}</span></span></button>`;
+      }).join('')}`
       : emptyState(invoices.length ? 'No invoices match this filter' : 'No invoices yet', invoices.length ? 'Choose another invoice status to see the rest.' : 'Turn completed work into a clean invoice without entering the hours twice.', invoices.length ? 'Show all invoices' : 'Create first invoice', invoices.length ? 'all-invoices' : 'add-invoice');
 
+    $('#paymentsContainer').innerHTML = visiblePayments.length ? `
+      <div class="table-head payment-grid"><span>Received</span><span>Source</span><span>Type</span><span>Method</span><span>Amount</span></div>
+      ${visiblePayments.map(payment => {
+        const invoice = payment.invoiceId ? invoiceById(payment.invoiceId) : null;
+        const sourcePrimary = payment.kind === 'invoice' ? (payment.invoiceNumberSnapshot || invoice?.number || 'Invoice') : (payment.sourceName || payment.clientNameSnapshot || 'Other income');
+        const sourceSecondary = payment.kind === 'invoice' ? (payment.clientNameSnapshot || invoice?.recipientSnapshot?.displayName || 'Client') : (payment.description || 'Direct income');
+        return `<button class="table-row payment-grid" data-payment-detail="${payment.id}"><span><strong>${formatDate(payment.receivedDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(payment.receivedDate,{year:'numeric'})}</small></span><span><strong>${escapeHtml(sourcePrimary)}</strong><small>${escapeHtml(sourceSecondary)}</small></span><span><span class="status-pill ${payment.kind === 'invoice' ? 'accent' : 'success'}">${escapeHtml(paymentKindLabel(payment))}</span></span><span><strong>${escapeHtml(paymentMethodLabel(payment.method))}</strong><small>${escapeHtml(payment.reference || 'No reference')}</small></span><span><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong><small>Received</small></span></button>`;
+      }).join('')}`
+      : emptyState(payments.length ? 'No payments match this filter' : 'No payments recorded yet', payments.length ? 'Choose another payment type to see the rest.' : 'Record actual money received. Link it to an invoice or capture income that did not require one.', payments.length ? 'Show all payments' : 'Record first payment', payments.length ? 'all-payments' : 'add-payment');
+
     $$('[data-invoice-detail]', $('#invoicesContainer')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
+    $$('[data-payment-detail]', $('#paymentsContainer')).forEach(btn => btn.addEventListener('click', () => openPaymentDetail(btn.dataset.paymentDetail)));
     bindMoneyEmptyActions();
   }
 
   function bindMoneyEmptyActions() {
     $$('[data-empty-action="add-invoice"]').forEach(btn => btn.addEventListener('click', () => openInvoiceForm()));
     $$('[data-empty-action="all-invoices"]').forEach(btn => btn.addEventListener('click', () => { ui.invoiceFilter = 'all'; renderMoney(); }));
+    $$('[data-empty-action="add-payment"]').forEach(btn => btn.addEventListener('click', () => openPaymentForm()));
+    $$('[data-empty-action="all-payments"]').forEach(btn => btn.addEventListener('click', () => { ui.paymentFilter = 'all'; renderMoney(); }));
+  }
+
+  function syncMoneyTabs() {
+    $$('[data-money-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.moneyTab === ui.moneyTab));
+    $$('[data-money-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.moneyPanel === ui.moneyTab));
   }
 
   function invoiceSessionDescription(session) {
@@ -439,6 +517,7 @@
     }
     const existing = existingId ? invoiceById(existingId) : null;
     if (existing?.status === 'void') { showToast('Voided invoices are preserved as read-only records.'); return; }
+    if (existing && invoicePayments(existing).length) { showToast('Correct or delete linked payments before editing this invoice.'); return; }
     ui.invoiceFormId = existingId;
     const selectedClientId = existing?.clientId || clientId || (sessionId ? data.sessions.find(s => s.id === sessionId)?.clientId : '') || (clients.length === 1 ? clients[0].id : '');
     const today = new Date().toISOString().slice(0,10);
@@ -484,11 +563,35 @@
     row.className = 'manual-line-row';
     row.dataset.lineId = item.id || uid('line');
     const quantity = item.quantity ?? 1;
-    row.innerHTML = `<label><span>Description</span><input class="manual-description" maxlength="180" placeholder="Service, reimbursement, or flat-rate item" value="${escapeHtml(item.description || '')}" /></label><label class="manual-qty"><span>Qty</span><input class="manual-quantity" type="number" min="0.01" step="0.25" inputmode="decimal" value="${escapeHtml(quantity)}" /></label><label class="manual-rate"><span>Rate</span><div class="money-input compact"><span>$</span><input class="manual-rate-input" type="number" min="0" step="0.01" inputmode="decimal" value="${item.rateCents != null ? (item.rateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div></label><button type="button" class="line-remove" aria-label="Remove line item">×</button>`;
+    row.innerHTML = `<label><span>Description</span><input class="manual-description" maxlength="180" placeholder="Service, reimbursement, or flat-rate item" value="${escapeHtml(item.description || '')}" /></label><label class="manual-qty"><span>Qty</span><input class="manual-quantity" type="number" min="0.01" step="any" inputmode="decimal" value="${escapeHtml(quantity)}" /></label><label class="manual-rate"><span>Rate</span><div class="money-input compact"><span>$</span><input class="manual-rate-input" type="number" min="0" step="0.01" inputmode="decimal" value="${item.rateCents != null ? (item.rateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div></label><button type="button" class="line-remove" aria-label="Remove line item">×</button>`;
     $('#invoiceManualItems').appendChild(row);
     $$('input', row).forEach(input => input.addEventListener('input', updateInvoiceDraftTotal));
     $('.line-remove', row).addEventListener('click', () => { row.remove(); updateInvoiceDraftTotal(); });
     updateInvoiceDraftTotal();
+  }
+
+  function validateManualInvoiceRows() {
+    for (const row of $$('.manual-line-row', $('#invoiceManualItems'))) {
+      const description = $('.manual-description', row).value.trim();
+      const quantityInput = $('.manual-quantity', row);
+      const rateInput = $('.manual-rate-input', row);
+      const hasAnyEntry = description || quantityInput.value.trim() || rateInput.value.trim();
+      if (!hasAnyEntry) continue;
+
+      const quantity = Number(quantityInput.value);
+      const rate = Number(rateInput.value || 0);
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        quantityInput.focus();
+        showToast('Quantity must be greater than 0.');
+        return false;
+      }
+      if (!Number.isFinite(rate) || rate < 0) {
+        rateInput.focus();
+        showToast('Rate cannot be negative.');
+        return false;
+      }
+    }
+    return true;
   }
 
   function collectInvoiceLineItems() {
@@ -536,6 +639,7 @@
     event.preventDefault();
     const clientId = $('#invoiceClient').value;
     const client = clientById(clientId);
+    if (!validateManualInvoiceRows()) return;
     const lineItems = collectInvoiceLineItems();
     if (!client) { showToast('Choose a client for this invoice.'); return; }
     if (!lineItems.length) { showToast('Add at least one work session or custom line item.'); return; }
@@ -574,32 +678,54 @@
   function openInvoiceDetail(id) {
     const invoice = invoiceById(id); if (!invoice) return;
     const displayStatus = invoiceDisplayStatus(invoice);
-    const canEdit = invoice.status !== 'void';
+    const payments = invoicePayments(invoice).slice().sort((a,b) => `${b.receivedDate}${b.createdAt}`.localeCompare(`${a.receivedDate}${a.createdAt}`));
+    const paidCents = invoicePaidCents(invoice);
+    const balanceCents = invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice);
+    const hasPayments = payments.length > 0;
+    const canEdit = invoice.status !== 'void' && !hasPayments;
     $('#detailEyebrow').textContent = 'INVOICE';
     $('#detailTitle').textContent = invoice.number;
     const lineRows = (invoice.lineItems || []).map(item => {
       const qty = item.type === 'session' ? `${hoursLabel(item.quantityMinutes || 0)}` : `${Number(item.quantity || 0).toLocaleString('en-US',{maximumFractionDigits:2})}`;
       return `<div class="invoice-preview-line"><span><strong>${escapeHtml(item.description)}</strong><small>${item.type === 'session' ? 'Linked work session' : 'Custom line item'}</small></span><span>${escapeHtml(qty)}</span><span>${formatMoney(item.rateCents || 0, activeBusiness().currency)}</span><strong>${formatMoney(item.amountCents || 0, activeBusiness().currency)}</strong></div>`;
     }).join('');
-    const primaryAction = invoice.status === 'draft' ? `<button class="primary-btn" data-mark-invoice-sent="${invoice.id}">Mark sent</button>` : invoice.status === 'sent' ? `<button class="primary-btn disabled-action" title="Payment tracking arrives in Phase 3">Record payment · Phase 3</button>` : '';
-    const destructive = invoice.status === 'draft' ? `<button type="button" class="danger-menu-item" data-delete-invoice="${invoice.id}">Delete draft</button>` : invoice.status === 'sent' ? `<button type="button" data-invoice-draft="${invoice.id}">Move back to draft</button><button type="button" class="danger-menu-item" data-void-invoice="${invoice.id}">Void invoice</button>` : '';
+    const primaryAction = invoice.status === 'draft'
+      ? `<button class="primary-btn" data-mark-invoice-sent="${invoice.id}">Mark sent</button>`
+      : invoice.status === 'sent' && balanceCents > 0
+        ? `<button class="primary-btn" data-record-invoice-payment="${invoice.id}">＋ Record payment</button>`
+        : '';
+    const destructive = invoice.status === 'draft'
+      ? `<button type="button" class="danger-menu-item" data-delete-invoice="${invoice.id}">Delete draft</button>`
+      : invoice.status === 'sent'
+        ? hasPayments
+          ? `<button type="button" class="disabled-menu-item" disabled title="Delete linked payments first">Payments lock invoice reversal</button>`
+          : `<button type="button" data-invoice-draft="${invoice.id}">Move back to draft</button><button type="button" class="danger-menu-item" data-void-invoice="${invoice.id}">Void invoice</button>`
+        : '';
+    const summary = paidCents > 0
+      ? `<div><span>Total hours</span><strong>${durationExactLabel(invoiceTotalMinutes(invoice))}</strong></div><div><span>Invoice total</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div><div><span>Paid</span><strong>${formatMoney(paidCents, activeBusiness().currency)}</strong></div><div class="invoice-preview-amount"><span>Amount due</span><strong>${formatMoney(balanceCents, activeBusiness().currency)}</strong></div>`
+      : `<div><span>Total hours</span><strong>${durationExactLabel(invoiceTotalMinutes(invoice))}</strong></div><div class="invoice-preview-amount"><span>Amount due</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div>`;
+    const paymentHistory = payments.length ? `<div class="invoice-payment-history"><div class="panel-title-row"><div><p class="eyebrow">PAYMENTS</p><h3>Received toward this invoice</h3></div><span class="quiet-badge green">${formatMoney(paidCents, activeBusiness().currency)}</span></div><div class="payment-mini-list">${payments.map(payment => `<button data-payment-detail="${payment.id}"><span><strong>${formatDate(payment.receivedDate)}</strong><small>${escapeHtml(paymentMethodLabel(payment.method))}${payment.reference ? ` · ${escapeHtml(payment.reference)}` : ''}</small></span><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong></button>`).join('')}</div></div>` : '';
+    const lockNote = hasPayments ? `<div class="trace-banner payment-lock-banner"><span>✓</span><div><strong>Payment-linked invoice</strong><small>This invoice has received money. Its billable contents and reversal actions are locked until the linked payment records are corrected or removed.</small></div></div>` : '';
     $('#detailBody').innerHTML = `<div class="detail-actions invoice-detail-actions"><button class="secondary-btn" data-print-invoice="${invoice.id}">Print / Save PDF</button>${canEdit ? `<button class="secondary-btn" data-edit-invoice="${invoice.id}">Edit</button>` : ''}${primaryAction}${destructive ? `<details class="record-more"><summary aria-label="More invoice actions" title="More actions">•••</summary><div class="record-more-popover">${destructive}</div></details>` : ''}</div><div id="detailDeleteConfirm"></div>
       <div class="invoice-preview-card">
         <div class="invoice-preview-top"><div><span class="invoice-wordmark">${escapeHtml(invoice.senderSnapshot?.displayName || activeBusiness().displayName)}</span><small>${escapeHtml(invoice.senderSnapshot?.senderEmail || '')}${invoice.senderSnapshot?.senderEmail && invoice.senderSnapshot?.senderPhone ? ' · ' : ''}${escapeHtml(invoice.senderSnapshot?.senderPhone || '')}</small></div><div class="invoice-preview-number"><span class="status-pill ${invoiceStatusClass(invoice)}">${escapeHtml(displayStatus)}</span><strong>${escapeHtml(invoice.number)}</strong></div></div>
         <div class="invoice-preview-parties"><div><small>BILL TO</small><strong>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')}</strong><p>${escapeHtml(invoice.recipientSnapshot?.billingEmail || '')}${invoice.recipientSnapshot?.billingEmail && invoice.recipientSnapshot?.billingAddress ? '<br>' : ''}${escapeHtml(invoice.recipientSnapshot?.billingAddress || '')}</p></div><div class="invoice-date-pair"><span><small>Issued</small><strong>${formatDate(invoice.issueDate)}</strong></span><span><small>Due</small><strong>${formatDate(invoice.dueDate)}</strong></span></div></div>
         <div class="invoice-preview-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span></div>${lineRows}
-        <div class="invoice-preview-summary"><div><span>Total hours</span><strong>${durationExactLabel(invoiceTotalMinutes(invoice))}</strong></div><div class="invoice-preview-amount"><span>Amount due</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div></div>
+        <div class="invoice-preview-summary">${summary}</div>
         ${invoice.note ? `<div class="invoice-preview-note"><small>NOTE</small><p>${escapeHtml(invoice.note)}</p></div>` : ''}
         ${invoice.senderSnapshot?.paymentInstructions ? `<div class="invoice-preview-note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}
       </div>
-      <div class="trace-banner"><span>↳</span><div><strong>${(invoice.lineItems || []).filter(item => item.type === 'session').length} linked work ${(invoice.lineItems || []).filter(item => item.type === 'session').length === 1 ? 'session' : 'sessions'}</strong><small>The invoice stores its own client, sender, rate, and line-item snapshots so later edits do not silently rewrite this record.</small></div></div>`;
+      ${paymentHistory}${lockNote}
+      <div class="trace-banner"><span>↳</span><div><strong>${(invoice.lineItems || []).filter(item => item.type === 'session').length} linked work ${(invoice.lineItems || []).filter(item => item.type === 'session').length === 1 ? 'session' : 'sessions'}</strong><small>The invoice stores its own client, sender, rate, and line-item snapshots. Payments are separate cash records and never make the invoice itself count as cash received twice.</small></div></div>`;
     openModal($('#detailPanel'));
     $('[data-edit-invoice]')?.addEventListener('click', () => openInvoiceForm({ existingId: id }));
     $('[data-print-invoice]')?.addEventListener('click', () => printInvoice(id));
     $('[data-mark-invoice-sent]')?.addEventListener('click', () => markInvoiceSent(id));
+    $('[data-record-invoice-payment]')?.addEventListener('click', () => openPaymentForm({ invoiceId: id }));
     $('[data-invoice-draft]')?.addEventListener('click', () => moveInvoiceToDraft(id));
     $('[data-delete-invoice]')?.addEventListener('click', () => showInvoiceActionConfirmation('delete', id));
     $('[data-void-invoice]')?.addEventListener('click', () => showInvoiceActionConfirmation('void', id));
+    $$('[data-payment-detail]', $('#detailBody')).forEach(btn => btn.addEventListener('click', () => openPaymentDetail(btn.dataset.paymentDetail)));
   }
 
   function markInvoiceSent(id) {
@@ -613,6 +739,7 @@
 
   function moveInvoiceToDraft(id) {
     const invoice = invoiceById(id); if (!invoice || invoice.status !== 'sent') return;
+    if (invoicePayments(invoice).length) { showToast('Delete or correct linked payments before moving this invoice back to Draft.'); return; }
     invoice.status = 'draft'; invoice.sentAt = null; invoice.updatedAt = nowIso();
     assignInvoiceSessions(invoice);
     persist('status_changed', 'Invoice', invoice.id, { to: 'draft' });
@@ -639,6 +766,7 @@
 
   function voidInvoice(id) {
     const invoice = invoiceById(id); if (!invoice || invoice.status !== 'sent') return;
+    if (invoicePayments(invoice).length) { showToast('Delete or correct linked payments before voiding this invoice.'); return; }
     invoice.status = 'void'; invoice.voidedAt = nowIso(); invoice.updatedAt = nowIso();
     releaseInvoiceSessions(invoice);
     persist('status_changed', 'Invoice', invoice.id, { to: 'void' });
@@ -647,11 +775,191 @@
 
   function printInvoice(id) {
     const invoice = invoiceById(id); if (!invoice) return;
+    const payments = invoicePayments(invoice).slice().sort((a,b) => `${a.receivedDate}${a.createdAt}`.localeCompare(`${b.receivedDate}${b.createdAt}`));
+    const paidCents = invoicePaidCents(invoice);
+    const balanceCents = invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice);
     const lineRows = (invoice.lineItems || []).map(item => `<tr><td><strong>${escapeHtml(item.description)}</strong></td><td>${item.type === 'session' ? hoursLabel(item.quantityMinutes || 0) : Number(item.quantity || 0).toLocaleString('en-US',{maximumFractionDigits:2})}</td><td>${formatMoney(item.rateCents || 0, activeBusiness().currency)}</td><td><strong>${formatMoney(item.amountCents || 0, activeBusiness().currency)}</strong></td></tr>`).join('');
+    const paymentRows = payments.map(payment => `<tr><td>${formatDate(payment.receivedDate)}</td><td>${escapeHtml(paymentMethodLabel(payment.method))}</td><td>${escapeHtml(payment.reference || '—')}</td><td><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong></td></tr>`).join('');
     const popup = window.open('', '_blank');
     if (!popup) { showToast('Allow pop-ups to print or save the invoice as PDF.'); return; }
-    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(invoice.number)}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#15171b;margin:0;padding:48px}*{box-sizing:border-box}.top{display:flex;justify-content:space-between;gap:30px;margin-bottom:50px}.brand{font-size:24px;font-weight:800}.num{text-align:right}.num strong{display:block;font-size:28px;margin-top:8px}.meta{display:grid;grid-template-columns:1fr auto;gap:40px;margin-bottom:38px}.meta small,.note small{color:#7b8088;font-weight:700;letter-spacing:.08em}.dates{display:flex;gap:34px}.dates span{display:flex;flex-direction:column;gap:5px}table{width:100%;border-collapse:collapse}th{font-size:11px;color:#7b8088;text-align:left;border-bottom:1px solid #ddd;padding:10px 8px}td{padding:14px 8px;border-bottom:1px solid #eee;font-size:13px}th:last-child,td:last-child{text-align:right}.invoice-summary{display:flex;justify-content:flex-end;gap:48px;padding:22px 8px 4px}.invoice-summary>div{display:flex;flex-direction:column;gap:5px;min-width:120px}.invoice-summary span{font-size:11px;color:#7b8088;font-weight:700;letter-spacing:.04em}.invoice-summary strong{font-size:18px}.invoice-summary .amount{text-align:right}.invoice-summary .amount strong{font-size:22px}.note{margin-top:30px;max-width:650px;white-space:pre-wrap}.muted{color:#777}@media print{body{padding:20px}}</style></head><body><div class="top"><div><div class="brand">${escapeHtml(invoice.senderSnapshot?.displayName || activeBusiness().displayName)}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderEmail || '')}${invoice.senderSnapshot?.senderPhone ? ` · ${escapeHtml(invoice.senderSnapshot.senderPhone)}` : ''}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderAddress || '')}</div></div><div class="num"><span>INVOICE</span><strong>${escapeHtml(invoice.number)}</strong></div></div><div class="meta"><div><small>BILL TO</small><h3>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')}</h3><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingEmail || '')}</div><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingAddress || '')}</div></div><div class="dates"><span><small>ISSUED</small><strong>${formatDate(invoice.issueDate)}</strong></span><span><small>DUE</small><strong>${formatDate(invoice.dueDate)}</strong></span></div></div><table><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${lineRows}</tbody></table><div class="invoice-summary"><div><span>TOTAL HOURS</span><strong>${durationExactLabel(invoiceTotalMinutes(invoice))}</strong></div><div class="amount"><span>AMOUNT DUE</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div></div>${invoice.note ? `<div class="note"><small>NOTE</small><p>${escapeHtml(invoice.note)}</p></div>` : ''}${invoice.senderSnapshot?.paymentInstructions ? `<div class="note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}<script>window.onload=()=>setTimeout(()=>window.print(),150);<\/script></body></html>`);
+    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(invoice.number)}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#15171b;margin:0;padding:48px}*{box-sizing:border-box}.top{display:flex;justify-content:space-between;gap:30px;margin-bottom:50px}.brand{font-size:24px;font-weight:800}.num{text-align:right}.num strong{display:block;font-size:28px;margin-top:8px}.meta{display:grid;grid-template-columns:1fr auto;gap:40px;margin-bottom:38px}.meta small,.note small,.payments small{color:#7b8088;font-weight:700;letter-spacing:.08em}.dates{display:flex;gap:34px}.dates span{display:flex;flex-direction:column;gap:5px}table{width:100%;border-collapse:collapse}th{font-size:11px;color:#7b8088;text-align:left;border-bottom:1px solid #ddd;padding:10px 8px}td{padding:14px 8px;border-bottom:1px solid #eee;font-size:13px}th:last-child,td:last-child{text-align:right}.invoice-summary{display:flex;justify-content:flex-end;gap:38px;padding:22px 8px 4px;flex-wrap:wrap}.invoice-summary>div{display:flex;flex-direction:column;gap:5px;min-width:105px}.invoice-summary span{font-size:11px;color:#7b8088;font-weight:700;letter-spacing:.04em}.invoice-summary strong{font-size:18px}.invoice-summary .amount{text-align:right}.invoice-summary .amount strong{font-size:22px}.note{margin-top:30px;max-width:650px;white-space:pre-wrap}.payments{margin-top:32px}.payments h3{margin:5px 0 8px}.muted{color:#777}@media print{body{padding:20px}}</style></head><body><div class="top"><div><div class="brand">${escapeHtml(invoice.senderSnapshot?.displayName || activeBusiness().displayName)}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderEmail || '')}${invoice.senderSnapshot?.senderPhone ? ` · ${escapeHtml(invoice.senderSnapshot.senderPhone)}` : ''}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderAddress || '')}</div></div><div class="num"><span>INVOICE</span><strong>${escapeHtml(invoice.number)}</strong></div></div><div class="meta"><div><small>BILL TO</small><h3>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')}</h3><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingEmail || '')}</div><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingAddress || '')}</div></div><div class="dates"><span><small>ISSUED</small><strong>${formatDate(invoice.issueDate)}</strong></span><span><small>DUE</small><strong>${formatDate(invoice.dueDate)}</strong></span></div></div><table><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${lineRows}</tbody></table><div class="invoice-summary"><div><span>TOTAL HOURS</span><strong>${durationExactLabel(invoiceTotalMinutes(invoice))}</strong></div><div><span>INVOICE TOTAL</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div>${paidCents ? `<div><span>PAID</span><strong>${formatMoney(paidCents, activeBusiness().currency)}</strong></div>` : ''}<div class="amount"><span>AMOUNT DUE</span><strong>${formatMoney(balanceCents, activeBusiness().currency)}</strong></div></div>${payments.length ? `<div class="payments"><small>PAYMENTS RECEIVED</small><h3>${formatMoney(paidCents, activeBusiness().currency)} received</h3><table><thead><tr><th>Date</th><th>Method</th><th>Reference</th><th>Amount</th></tr></thead><tbody>${paymentRows}</tbody></table></div>` : ''}${invoice.note ? `<div class="note"><small>NOTE</small><p>${escapeHtml(invoice.note)}</p></div>` : ''}${invoice.senderSnapshot?.paymentInstructions ? `<div class="note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}<script>window.onload=()=>setTimeout(()=>window.print(),150);<\/script></body></html>`);
     popup.document.close();
+  }
+
+  function eligiblePaymentInvoices(existingPayment = null) {
+    return businessInvoices().filter(invoice => {
+      if (invoice.status !== 'sent') return false;
+      const currentAmount = existingPayment?.invoiceId === invoice.id ? Number(existingPayment.amountCents || 0) : 0;
+      const remainingBeforeCurrent = invoiceTotalCents(invoice) - Math.max(0, invoicePaidCents(invoice) - currentAmount);
+      return remainingBeforeCurrent > 0 || existingPayment?.invoiceId === invoice.id;
+    }).sort((a,b) => `${b.issueDate || ''}${b.createdAt || ''}`.localeCompare(`${a.issueDate || ''}${a.createdAt || ''}`));
+  }
+
+  function paymentRemainingBeforeCurrent(invoice, existingPayment = null) {
+    if (!invoice) return 0;
+    const currentAmount = existingPayment?.invoiceId === invoice.id ? Number(existingPayment.amountCents || 0) : 0;
+    return Math.max(0, invoiceTotalCents(invoice) - Math.max(0, invoicePaidCents(invoice) - currentAmount));
+  }
+
+  function openPaymentForm({ existingId = null, invoiceId = null } = {}) {
+    $('#formSheet').classList.remove('session-form-sheet');
+    const existing = existingId ? paymentById(existingId) : null;
+    const invoices = eligiblePaymentInvoices(existing);
+    const preselectedInvoice = invoiceId ? invoiceById(invoiceId) : existing?.invoiceId ? invoiceById(existing.invoiceId) : null;
+    const defaultKind = preselectedInvoice ? 'invoice' : existing?.kind ? existing.kind : invoices.length ? 'invoice' : 'direct';
+    ui.formMode = 'payment';
+    ui.formRecordId = existingId;
+    $('#formEyebrow').textContent = existing ? 'EDIT PAYMENT' : 'MONEY RECEIVED';
+    $('#formTitle').textContent = existing ? 'Edit payment' : 'Record payment';
+    $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Record payment';
+    const today = new Date().toISOString().slice(0,10);
+    const selectedInvoiceId = preselectedInvoice?.id || (defaultKind === 'invoice' && invoices.length === 1 ? invoices[0].id : '');
+    const selectedInvoice = selectedInvoiceId ? invoiceById(selectedInvoiceId) : null;
+    const startingAmountCents = existing?.amountCents ?? (selectedInvoice ? paymentRemainingBeforeCurrent(selectedInvoice, existing) : 0);
+    const clients = businessClients();
+    const defaultMethod = existing?.method || businessPayments().slice().sort((a,b) => `${b.receivedDate || ''}${b.createdAt || ''}`.localeCompare(`${a.receivedDate || ''}${a.createdAt || ''}`))[0]?.method || 'zelle';
+    $('#formFields').innerHTML = `
+      <div class="payment-type-switch" role="group" aria-label="Payment source">
+        <button type="button" class="payment-type-option ${defaultKind === 'invoice' ? 'active' : ''}" data-payment-kind="invoice"><span>Invoice payment</span><small>Apply money to a sent invoice</small></button>
+        <button type="button" class="payment-type-option ${defaultKind === 'direct' ? 'active' : ''}" data-payment-kind="direct"><span>Other income</span><small>Money received without an invoice</small></button>
+      </div>
+      <input type="hidden" name="kind" id="paymentKind" value="${defaultKind}" />
+      <div id="paymentInvoiceFields" ${defaultKind === 'invoice' ? '' : 'hidden'}>
+        <label class="field"><span>Invoice</span><select name="invoiceId" id="paymentInvoice">${invoices.length ? `<option value="">Choose invoice</option>${invoices.map(invoice => `<option value="${invoice.id}" ${invoice.id === selectedInvoiceId ? 'selected' : ''}>${escapeHtml(invoice.number)} · ${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(paymentRemainingBeforeCurrent(invoice, existing), activeBusiness().currency)} remaining</option>`).join('')}` : '<option value="">No unpaid sent invoices</option>'}</select><small id="paymentInvoiceHint">${selectedInvoice ? `${formatMoney(paymentRemainingBeforeCurrent(selectedInvoice, existing), activeBusiness().currency)} can be applied to this invoice.` : 'Only sent invoices with an outstanding balance appear.'}</small></label>
+      </div>
+      <div id="paymentDirectFields" ${defaultKind === 'direct' ? '' : 'hidden'}>
+        <div class="field-row"><label class="field"><span>Source / payer</span><input name="sourceName" id="paymentSourceName" maxlength="120" placeholder="e.g. Client, platform, cash job" value="${escapeHtml(existing?.sourceName || '')}" /></label><label class="field"><span>Client <em>optional</em></span><select name="directClientId" id="paymentDirectClient"><option value="">No linked client</option>${clients.map(client => `<option value="${client.id}" ${client.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}</select></label></div>
+        <label class="field"><span>Description <em>optional</em></span><input name="description" maxlength="180" placeholder="What was this income for?" value="${escapeHtml(existing?.description || '')}" /></label>
+      </div>
+      <div class="field-row payment-core-row"><label class="field"><span>Amount received</span><div class="money-input"><span>$</span><input name="amount" id="paymentAmount" required inputmode="decimal" min="0.01" step="0.01" type="number" value="${startingAmountCents ? (startingAmountCents/100).toFixed(2) : ''}" placeholder="0.00" /></div></label><label class="field"><span>Date received</span><input name="receivedDate" type="date" required value="${escapeHtml(existing?.receivedDate || today)}" /></label></div>
+      <div class="field-row"><label class="field"><span>Method</span><select name="method"><option value="zelle" ${defaultMethod === 'zelle' ? 'selected' : ''}>Zelle</option><option value="venmo" ${defaultMethod === 'venmo' ? 'selected' : ''}>Venmo</option><option value="ach" ${defaultMethod === 'ach' ? 'selected' : ''}>ACH</option><option value="direct_deposit" ${defaultMethod === 'direct_deposit' ? 'selected' : ''}>Direct deposit</option><option value="cash" ${defaultMethod === 'cash' ? 'selected' : ''}>Cash</option><option value="check" ${defaultMethod === 'check' ? 'selected' : ''}>Check</option><option value="card" ${defaultMethod === 'card' ? 'selected' : ''}>Card</option><option value="other" ${defaultMethod === 'other' ? 'selected' : ''}>Other</option></select></label><label class="field"><span>Reference <em>optional</em></span><input name="reference" maxlength="100" placeholder="Confirmation, check #, memo…" value="${escapeHtml(existing?.reference || '')}" /></label></div>
+      <label class="field"><span>Note <em>optional</em></span><textarea name="notes" rows="2" maxlength="500" placeholder="Anything useful about this payment…">${escapeHtml(existing?.notes || '')}</textarea></label>
+      <div class="form-info-note payment-trace-note"><strong>Received-money rule:</strong> this payment becomes money received. A linked invoice remains the billing record and is not counted again as a second cash entry.</div>`;
+    openModal($('#formSheet'));
+    setupPaymentFormInteractions(existing);
+  }
+
+  function setupPaymentFormInteractions(existing = null) {
+    const kindInput = $('#paymentKind');
+    const invoiceFields = $('#paymentInvoiceFields');
+    const directFields = $('#paymentDirectFields');
+    const invoiceSelect = $('#paymentInvoice');
+    const amountInput = $('#paymentAmount');
+    const hint = $('#paymentInvoiceHint');
+
+    function setKind(kind) {
+      kindInput.value = kind;
+      $$('[data-payment-kind]', $('#formFields')).forEach(btn => btn.classList.toggle('active', btn.dataset.paymentKind === kind));
+      invoiceFields.hidden = kind !== 'invoice';
+      directFields.hidden = kind !== 'direct';
+      if (kind === 'invoice') refreshInvoice(false);
+    }
+
+    function refreshInvoice(forceAmount = true) {
+      const invoice = invoiceById(invoiceSelect?.value);
+      if (!invoice) {
+        if (hint) hint.textContent = 'Only sent invoices with an outstanding balance appear.';
+        return;
+      }
+      const remaining = paymentRemainingBeforeCurrent(invoice, existing);
+      if (hint) hint.textContent = `${formatMoney(remaining, activeBusiness().currency)} can be applied to this invoice.`;
+      if (forceAmount && amountInput) amountInput.value = remaining ? (remaining/100).toFixed(2) : '';
+    }
+
+    $$('[data-payment-kind]', $('#formFields')).forEach(btn => btn.addEventListener('click', () => setKind(btn.dataset.paymentKind)));
+    invoiceSelect?.addEventListener('change', () => refreshInvoice(true));
+    setKind(kindInput.value);
+  }
+
+  function savePayment(form) {
+    const kind = form.get('kind');
+    const amountCents = Math.round(Number(form.get('amount')) * 100);
+    const receivedDate = form.get('receivedDate');
+    if (!Number.isFinite(amountCents) || amountCents <= 0) { showToast('Payment amount must be greater than $0.'); return false; }
+    if (!receivedDate) { showToast('Choose the date the money was received.'); return false; }
+
+    const existing = ui.formRecordId ? paymentById(ui.formRecordId) : null;
+    let payload;
+    if (kind === 'invoice') {
+      const invoiceId = form.get('invoiceId');
+      const invoice = invoiceById(invoiceId);
+      if (!invoice || invoice.status !== 'sent') { showToast('Choose a sent invoice with an outstanding balance.'); return false; }
+      const remainingBeforeCurrent = paymentRemainingBeforeCurrent(invoice, existing);
+      if (amountCents > remainingBeforeCurrent) {
+        showToast(`This invoice has ${formatMoney(remainingBeforeCurrent, activeBusiness().currency)} remaining. Record any extra as Other income.`);
+        return false;
+      }
+      payload = {
+        kind: 'invoice', invoiceId: invoice.id, invoiceNumberSnapshot: invoice.number,
+        clientId: invoice.clientId || null, clientNameSnapshot: invoice.recipientSnapshot?.displayName || clientById(invoice.clientId)?.displayName || 'Client',
+        sourceName: '', description: '', amountCents, receivedDate, method: form.get('method'),
+        reference: (form.get('reference') || '').trim(), notes: (form.get('notes') || '').trim()
+      };
+    } else {
+      const sourceName = (form.get('sourceName') || '').trim();
+      if (!sourceName) { showToast('Add a source or payer for other income.'); return false; }
+      const client = clientById(form.get('directClientId'));
+      payload = {
+        kind: 'direct', invoiceId: null, invoiceNumberSnapshot: '', clientId: client?.id || null,
+        clientNameSnapshot: client?.displayName || '', sourceName, description: (form.get('description') || '').trim(),
+        amountCents, receivedDate, method: form.get('method'), reference: (form.get('reference') || '').trim(), notes: (form.get('notes') || '').trim()
+      };
+    }
+
+    if (existing) {
+      const before = deepClone(existing);
+      Object.assign(existing, payload, { updatedAt: nowIso() });
+      persist('updated', 'Payment', existing.id, { before, after: deepClone(existing) });
+      showToast('Payment updated');
+    } else {
+      const payment = { id: uid('payment'), businessId: data.activeBusinessId, ...payload, createdAt: nowIso(), updatedAt: nowIso() };
+      data.payments.push(payment);
+      persist('created', 'Payment', payment.id, { kind: payment.kind, invoiceId: payment.invoiceId, amountCents: payment.amountCents });
+      ui.formRecordId = payment.id;
+      showToast(payment.kind === 'invoice' ? `Payment applied to ${payment.invoiceNumberSnapshot}` : 'Income recorded');
+    }
+    return true;
+  }
+
+  function openPaymentDetail(id) {
+    const payment = paymentById(id); if (!payment) return;
+    const invoice = payment.invoiceId ? invoiceById(payment.invoiceId) : null;
+    $('#detailEyebrow').textContent = payment.kind === 'invoice' ? 'PAYMENT' : 'OTHER INCOME';
+    $('#detailTitle').textContent = formatMoney(payment.amountCents || 0, activeBusiness().currency);
+    const sourceTitle = payment.kind === 'invoice' ? (payment.invoiceNumberSnapshot || invoice?.number || 'Invoice') : (payment.sourceName || 'Other income');
+    const sourceSub = payment.kind === 'invoice' ? (payment.clientNameSnapshot || invoice?.recipientSnapshot?.displayName || 'Client') : (payment.clientNameSnapshot || payment.description || 'Direct income');
+    const invoiceBalance = invoice ? invoiceBalanceCents(invoice) : null;
+    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-payment="${payment.id}">Edit</button>${invoice ? `<button class="primary-btn" data-payment-invoice="${invoice.id}">View ${escapeHtml(invoice.number)}</button>` : ''}<details class="record-more"><summary aria-label="More payment actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-payment="${payment.id}">Delete payment</button></div></details></div><div id="detailDeleteConfirm"></div>
+      <div class="detail-metrics payment-detail-metrics"><div><small>Received</small><strong>${formatDate(payment.receivedDate)}</strong></div><div><small>Method</small><strong>${escapeHtml(paymentMethodLabel(payment.method))}</strong></div><div><small>Type</small><strong>${escapeHtml(paymentKindLabel(payment))}</strong></div></div>
+      <div class="payment-hero-card"><small>SOURCE</small><strong>${escapeHtml(sourceTitle)}</strong><span>${escapeHtml(sourceSub)}</span>${invoice ? `<div class="payment-balance-line"><span>Invoice balance now</span><strong>${formatMoney(invoiceBalance, activeBusiness().currency)}</strong></div>` : ''}</div>
+      ${payment.reference ? `<div class="detail-section"><p class="eyebrow">REFERENCE</p><p>${escapeHtml(payment.reference)}</p></div>` : ''}
+      ${payment.description && payment.kind === 'direct' ? `<div class="detail-section"><p class="eyebrow">DESCRIPTION</p><p>${escapeHtml(payment.description)}</p></div>` : ''}
+      ${payment.notes ? `<div class="detail-section"><p class="eyebrow">NOTE</p><p>${escapeHtml(payment.notes)}</p></div>` : ''}
+      <div class="trace-banner"><span>↳</span><div><strong>${payment.kind === 'invoice' ? 'Linked cash record' : 'Direct income record'}</strong><small>${payment.kind === 'invoice' ? `This payment is the cash-received record for ${escapeHtml(payment.invoiceNumberSnapshot || invoice?.number || 'the invoice')}. The invoice itself remains separate and is not counted again as received income.` : 'This income did not require an invoice, so this payment record itself is the source of the received-income entry.'}</small></div></div>`;
+    openModal($('#detailPanel'));
+    $('[data-edit-payment]')?.addEventListener('click', () => openPaymentForm({ existingId: id }));
+    $('[data-payment-invoice]')?.addEventListener('click', () => { closeModal(); setView('money'); setTimeout(() => openInvoiceDetail(invoice.id), 20); });
+    $('[data-delete-payment]')?.addEventListener('click', () => showPaymentDeleteConfirmation(id));
+  }
+
+  function showPaymentDeleteConfirmation(id) {
+    const payment = paymentById(id); const host = $('#detailDeleteConfirm'); if (!payment || !host) return;
+    $('.record-more[open]', $('#detailBody'))?.removeAttribute('open');
+    host.innerHTML = `<div class="delete-confirm-card"><div><strong>Delete this ${formatMoney(payment.amountCents || 0, activeBusiness().currency)} payment?</strong><p>${payment.kind === 'invoice' ? `It will be removed from ${escapeHtml(payment.invoiceNumberSnapshot || 'the linked invoice')} and that invoice’s outstanding balance will increase again.` : 'It will be removed from received income.'} This cannot be undone.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-payment-delete>Delete payment</button></div></div>`;
+    $('[data-cancel-delete]', host)?.addEventListener('click', () => { host.innerHTML = ''; });
+    $('[data-confirm-payment-delete]', host)?.addEventListener('click', () => deletePayment(id));
+  }
+
+  function deletePayment(id) {
+    const payment = paymentById(id); if (!payment) return;
+    const invoiceId = payment.invoiceId;
+    data.payments = data.payments.filter(item => item.id !== id);
+    data.auditEvents = data.auditEvents.filter(event => event.entityId !== id);
+    data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Payment', entityId: id, details: { kind: payment.kind, invoiceId, amountCents: payment.amountCents }, occurredAt: nowIso() });
+    repository.save(data);
+    closeModal(); renderAll(); setView('money');
+    showToast('Payment deleted');
+    if (invoiceId && invoiceById(invoiceId)) setTimeout(() => openInvoiceDetail(invoiceId), 35);
   }
 
   function renderCommandPalette() {
@@ -664,16 +972,19 @@
       const c = clientById(s.clientId); return term && `${c?.displayName || s.clientNameSnapshot || ''} ${s.date} ${s.notes || ''}`.toLowerCase().includes(term);
     }).slice(0,5);
     const invoices = businessInvoices().filter(invoice => term && `${invoice.number} ${invoice.recipientSnapshot?.displayName || ''} ${invoiceDisplayStatus(invoice)}`.toLowerCase().includes(term)).slice(0,5);
+    const payments = businessPayments().filter(payment => term && `${paymentSourceLabel(payment)} ${payment.clientNameSnapshot || ''} ${payment.description || ''} ${payment.reference || ''} ${paymentMethodLabel(payment.method)} ${payment.amountCents || 0}`.toLowerCase().includes(term)).slice(0,5);
 
     $('#commandBody').innerHTML = `${navigation.length ? `<p class="command-label">Navigation</p>${navigation.map(n => `<button class="command-result" data-command-view="${n[0]}"><span>${n[1]}</span><div><strong>${n[2]}</strong><small>${n[3]}</small></div></button>`).join('')}` : ''}
       ${clients.length ? `<p class="command-label">Clients</p>${clients.map(c => `<button class="command-result" data-command-client="${c.id}"><span>${escapeHtml(initials(c.displayName))}</span><div><strong>${escapeHtml(c.displayName)}</strong><small>Client · ${formatMoney(c.defaultRateCents || 0)}/hr</small></div></button>`).join('')}` : ''}
       ${sessions.length ? `<p class="command-label">Sessions</p>${sessions.map(s => `<button class="command-result" data-command-session="${s.id}"><span>◫</span><div><strong>${escapeHtml(clientById(s.clientId)?.displayName || s.clientNameSnapshot || 'Unassigned')}</strong><small>${formatDate(s.date)} · ${hoursLabel(sessionMinutes(s))}</small></div></button>`).join('')}` : ''}
-      ${invoices.length ? `<p class="command-label">Invoices</p>${invoices.map(invoice => `<button class="command-result" data-command-invoice="${invoice.id}"><span>▧</span><div><strong>${escapeHtml(invoice.number)}</strong><small>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)} · ${escapeHtml(invoiceDisplayStatus(invoice))}</small></div></button>`).join('')}` : ''}
-      ${term && !navigation.length && !clients.length && !sessions.length && !invoices.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
+      ${invoices.length ? `<p class="command-label">Invoices</p>${invoices.map(invoice => `<button class="command-result" data-command-invoice="${invoice.id}"><span>▧</span><div><strong>${escapeHtml(invoice.number)}</strong><small>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice), activeBusiness().currency)} due · ${escapeHtml(invoiceDisplayStatus(invoice))}</small></div></button>`).join('')}` : ''}
+      ${payments.length ? `<p class="command-label">Payments</p>${payments.map(payment => `<button class="command-result" data-command-payment="${payment.id}"><span>$</span><div><strong>${escapeHtml(paymentSourceLabel(payment))}</strong><small>${formatMoney(payment.amountCents || 0, activeBusiness().currency)} · ${escapeHtml(paymentMethodLabel(payment.method))} · ${formatDate(payment.receivedDate)}</small></div></button>`).join('')}` : ''}
+      ${term && !navigation.length && !clients.length && !sessions.length && !invoices.length && !payments.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
     $$('[data-command-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.commandView)));
     $$('[data-command-client]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openClientDetail(btn.dataset.commandClient); }));
     $$('[data-command-session]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openSessionDetail(btn.dataset.commandSession); }));
     $$('[data-command-invoice]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); openInvoiceDetail(btn.dataset.commandInvoice); }));
+    $$('[data-command-payment]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); ui.moneyTab = 'payments'; syncMoneyTabs(); openPaymentDetail(btn.dataset.commandPayment); }));
   }
 
   function openClientForm(existingId = null) {
@@ -938,6 +1249,14 @@
   function handleFormSubmit(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    if (ui.formMode === 'payment') {
+      if (!savePayment(form)) return;
+      const paymentId = ui.formRecordId;
+      ui.moneyTab = 'payments';
+      closeModal(); renderAll(); setView('money');
+      if (paymentId) setTimeout(() => openPaymentDetail(paymentId), 35);
+      return;
+    }
     if (ui.formMode === 'client') {
       const payload = { displayName: form.get('displayName').trim(), defaultRateCents: Math.round(Number(form.get('rate')) * 100), status: form.get('status'), billingEmail: (form.get('billingEmail') || '').trim(), billingAddress: (form.get('billingAddress') || '').trim(), notes: form.get('notes').trim() };
       if (ui.formRecordId) {
@@ -1105,7 +1424,7 @@
   }
 
   function renderAll() {
-    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); renderCommandPalette();
+    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); syncMoneyTabs(); renderCommandPalette();
   }
 
   navButtons.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
@@ -1133,6 +1452,7 @@
     if (btn.dataset.action === 'add-client') { closeModal(); openClientForm(); return; }
     if (btn.dataset.action === 'add-session') { closeModal(); openSessionForm(); return; }
     if (btn.dataset.action === 'add-invoice') { closeModal(); openInvoiceForm(); return; }
+    if (btn.dataset.action === 'add-payment') { closeModal(); openPaymentForm(); return; }
     showToast(`${$('strong', btn).textContent} activates in its roadmap phase.`);
   }));
 
@@ -1150,12 +1470,19 @@
     renderSessions();
   });
   $('#clientFilterBtn').addEventListener('click', () => showToast('All client states are currently shown.'));
+  $$('[data-money-tab]').forEach(btn => btn.addEventListener('click', () => { ui.moneyTab = btn.dataset.moneyTab; syncMoneyTabs(); }));
   $('#addInvoiceBtn').addEventListener('click', () => openInvoiceForm());
+  $('#addPaymentBtn').addEventListener('click', () => openPaymentForm());
   $('#invoiceSettingsBtn').addEventListener('click', () => openInvoiceSettingsForm());
   $('#invoiceSettingsFromSettings').addEventListener('click', () => { closeModal(); openInvoiceSettingsForm(); });
   $('#invoiceFilterBtn').addEventListener('click', () => {
-    const order = ['all','draft','sent','overdue','void'];
+    const order = ['all','draft','sent','partially_paid','paid','overdue','void'];
     ui.invoiceFilter = order[(order.indexOf(ui.invoiceFilter) + 1) % order.length];
+    renderMoney();
+  });
+  $('#paymentFilterBtn').addEventListener('click', () => {
+    const order = ['all','invoice','direct'];
+    ui.paymentFilter = order[(order.indexOf(ui.paymentFilter) + 1) % order.length];
     renderMoney();
   });
   $('#invoiceForm').addEventListener('submit', saveInvoice);
