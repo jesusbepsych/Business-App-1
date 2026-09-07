@@ -92,6 +92,9 @@
   const repository = new LocalRepository();
   const data = repository.load();
   const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', paymentFilter: 'all', invoiceFormId: null };
+  let homeRecentRotationTimer = null;
+  let homeRecentSignature = '';
+  let homeRecentSwapTimer = null;
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -370,13 +373,78 @@
       ? `<div class="attention-list">${attentionItems.slice(0,3).map(item => `<button ${item.type === 'invoice' ? `data-invoice-detail="${item.id}"` : `data-session-detail="${item.id}"`}><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sub)}</small></button>`).join('')}</div>`
       : `<p class="panel-copy">Overdue invoices, incomplete records, missing receipts, mileage review, and tax reminders will collect here.</p>`;
 
-    $('#recentSessions').innerHTML = sessions.length ? sessions
-      .slice().sort((a,b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`)).slice(0,4)
-      .map(sessionRowCompact).join('') : `<div class="inline-empty"><strong>No sessions yet</strong><small>Add your first work session and it will appear here.</small></div>`;
+    renderRandomHomeSessions(sessions, false);
+    startHomeRecentRotation();
 
     $$('[data-session-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
     $$('[data-invoice-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
+  }
+
+  function randomSample(items, count) {
+    const copy = items.slice();
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy.slice(0, Math.min(count, copy.length));
+  }
+
+  function bindHomeRecentSessionClicks() {
     $$('[data-session-detail]', $('#recentSessions')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
+  }
+
+  function pickHomeRecentSessions(sessions) {
+    // Keep the card genuinely "recent" while randomizing what appears and in what order.
+    const pool = sessions.slice().sort((a,b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`)).slice(0,12);
+    if (pool.length <= 4) return randomSample(pool, 4);
+    let chosen = randomSample(pool, 4);
+    let signature = chosen.map(item => item.id).sort().join('|');
+    for (let attempts = 0; attempts < 5 && signature === homeRecentSignature; attempts += 1) {
+      chosen = randomSample(pool, 4);
+      signature = chosen.map(item => item.id).sort().join('|');
+    }
+    return chosen;
+  }
+
+  function renderRandomHomeSessions(sessions = businessSessions(), animate = true) {
+    const host = $('#recentSessions');
+    if (!host) return;
+    if (!sessions.length) {
+      homeRecentSignature = '';
+      host.classList.remove('is-rotating');
+      host.innerHTML = `<div class="inline-empty"><strong>No sessions yet</strong><small>Add your first work session and it will appear here.</small></div>`;
+      return;
+    }
+
+    const chosen = pickHomeRecentSessions(sessions);
+    const nextSignature = chosen.map(item => item.id).sort().join('|');
+    const commit = () => {
+      host.innerHTML = chosen.map(sessionRowCompact).join('');
+      homeRecentSignature = nextSignature;
+      bindHomeRecentSessionClicks();
+      requestAnimationFrame(() => host.classList.remove('is-rotating'));
+    };
+
+    clearTimeout(homeRecentSwapTimer);
+    if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      host.classList.remove('is-rotating');
+      commit();
+      return;
+    }
+
+    host.classList.add('is-rotating');
+    homeRecentSwapTimer = setTimeout(commit, 280);
+  }
+
+  function startHomeRecentRotation() {
+    clearInterval(homeRecentRotationTimer);
+    homeRecentRotationTimer = setInterval(() => {
+      if (ui.activeView !== 'home' || document.hidden || ui.modal) return;
+      const recentHost = $('#recentSessions');
+      if (recentHost?.matches(':hover') || recentHost?.contains(document.activeElement)) return;
+      if (businessSessions().length < 2) return;
+      renderRandomHomeSessions(businessSessions(), true);
+    }, 6200);
   }
 
   function sessionRowCompact(s) {
@@ -1550,6 +1618,10 @@
   document.addEventListener('keydown', event => {
     if (event.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) { event.preventDefault(); $('#commandInput').value = ''; renderCommandPalette(); openModal($('#commandPalette')); }
     if (event.key === 'Escape' && ui.modal) closeModal();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && ui.activeView === 'home') startHomeRecentRotation();
   });
 
   renderAll();

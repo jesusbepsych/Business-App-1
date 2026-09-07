@@ -176,3 +176,8 @@ Phase 4 should introduce expenses + receipt evidence:
 - expense search and totals
 
 Mileage remains Phase 5 so vehicle deduction logic can be built as its own focused workflow instead of being buried inside generic expenses.
+
+
+## Phase 3 refinement 4 UI behavior
+
+The invoice work-session selector is a bounded nested scroll region; this is presentation-only and does not change invoice/session relationships. Home recent-session rotation is also presentation-only: it samples from the twelve most recent session records and never mutates or reorders stored data.

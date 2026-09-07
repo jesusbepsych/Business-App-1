@@ -1,3 +1,9 @@
+# Phase 3 usability refinement 4
+
+- Invoice session selection is now an independently scrollable region (max ~330px / 36dvh) with touch momentum, natural scroll chaining back to the invoice sheet at the top/bottom, and a subtle accent scrollbar. This prevents clients with many sessions from stretching the entire invoice builder and keeps custom line items, notes, and save controls closer at hand.
+- Home `Latest sessions` now behaves as a quiet rotating snapshot. Up to four sessions are selected randomly from the twelve most recent records, fade out/in approximately every 6.2 seconds, and avoid immediately repeating the exact same set when possible. Rotation pauses while the app is hidden, another view is active, a modal is open, or the user is actively hovering/focusing the recent-session card.
+- Reduced-motion preferences disable the fade animation.
+
 # Build Notes — Phase 3 Payments Alpha
 
 ## Main objective
