@@ -1,3 +1,11 @@
+# Phase 3 usability refinement 6
+
+- Rebuilt the Home Recent Work transition as a true layered cross-dissolve instead of a single-container opacity swap.
+- The outgoing and incoming session sets now coexist during the animation; old rows dissolve while new rows gradually emerge underneath them.
+- Added a subtle blur/softening effect plus small per-row staggering so the transition visibly leaves/removes remnants rather than flashing between DOM states.
+- Each dissolve stage is roughly 1.55 seconds with overlap, and the rotation cadence is now about 9 seconds so the animation has enough room to read naturally.
+- Hover/focus pause and reduced-motion behavior are preserved.
+
 # Phase 3 usability refinement 5
 
 - Reworked Home Recent Work rotation into a slower two-stage fade rather than a fast flash swap.

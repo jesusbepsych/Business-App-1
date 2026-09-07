@@ -116,3 +116,7 @@ Clients now have an optional visual color identity chosen from a compact curated
 ## Refinement 4 interaction updates
 
 The invoice builder now keeps long client work histories inside their own scrollable session-selection pane instead of lengthening the entire dialog. The Home recent-work card also rotates through randomized recent session snapshots with a restrained crossfade, pausing when the page is not active and respecting reduced-motion preferences.
+
+## Refinement 6 — true recent-work dissolve
+
+The Home Recent Work rotation now uses two temporary overlapping layers. The outgoing rows progressively soften, blur, and fade while the next randomized set begins appearing underneath them. This replaces the prior fade-then-swap behavior that could still look like a flash in Safari. The transition is intentionally more visible and slower, while still pausing during hover/focus and honoring reduced-motion settings.

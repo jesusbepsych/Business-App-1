@@ -411,29 +411,49 @@
     if (!host) return;
     if (!sessions.length) {
       homeRecentSignature = '';
-      host.classList.remove('is-rotating');
+      host.dataset.transitioning = 'false';
+      host.classList.remove('is-crossfading');
+      host.style.height = '';
       host.innerHTML = `<div class="inline-empty"><strong>No sessions yet</strong><small>Add your first work session and it will appear here.</small></div>`;
       return;
     }
 
     const chosen = pickHomeRecentSessions(sessions);
     const nextSignature = chosen.map(item => item.id).sort().join('|');
+    const incomingHtml = chosen.map(sessionRowCompact).join('');
     const commit = () => {
-      host.innerHTML = chosen.map(sessionRowCompact).join('');
+      host.dataset.transitioning = 'false';
+      host.classList.remove('is-crossfading');
+      host.style.height = '';
+      host.innerHTML = incomingHtml;
       homeRecentSignature = nextSignature;
       bindHomeRecentSessionClicks();
-      requestAnimationFrame(() => host.classList.remove('is-rotating'));
     };
 
     clearTimeout(homeRecentSwapTimer);
     if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      host.classList.remove('is-rotating');
       commit();
       return;
     }
+    if (host.dataset.transitioning === 'true') return;
 
-    host.classList.add('is-rotating');
-    homeRecentSwapTimer = setTimeout(commit, 780);
+    const outgoingHtml = host.innerHTML;
+    const currentHeight = Math.max(host.getBoundingClientRect().height, 1);
+    host.dataset.transitioning = 'true';
+    host.classList.add('is-crossfading');
+    host.style.height = `${currentHeight}px`;
+    host.innerHTML = `
+      <div class="recent-transition-layer recent-transition-outgoing">${outgoingHtml}</div>
+      <div class="recent-transition-layer recent-transition-incoming">${incomingHtml}</div>`;
+
+    const outgoingRows = $$('.recent-transition-outgoing .recent-row', host);
+    const incomingRows = $$('.recent-transition-incoming .recent-row', host);
+    outgoingRows.forEach((row, index) => row.style.setProperty('--recent-stagger', `${index * 110}ms`));
+    incomingRows.forEach((row, index) => row.style.setProperty('--recent-stagger', `${index * 120}ms`));
+
+    // Keep both sets alive during the transition so this is a true dissolve/crossfade,
+    // not an opacity fade followed by an abrupt DOM replacement.
+    homeRecentSwapTimer = setTimeout(commit, 2550);
   }
 
   function startHomeRecentRotation() {
@@ -444,7 +464,7 @@
       if (recentHost?.matches(':hover') || recentHost?.contains(document.activeElement)) return;
       if (businessSessions().length < 2) return;
       renderRandomHomeSessions(businessSessions(), true);
-    }, 7600);
+    }, 9000);
   }
 
   function sessionRowCompact(s) {
