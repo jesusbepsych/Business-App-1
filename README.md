@@ -107,6 +107,12 @@ Home financial labels now use semantic colors, logged-hours display includes its
 Clients now have an optional visual color identity chosen from a compact curated palette. That color follows the client into the Sessions table (and client avatar) so repeated client work can be recognized at a glance without filtering. Existing local clients receive starter colors automatically and can be changed through Edit Client. Money summary chips now also use semantic green/amber coloring for Cash in and Outstanding invoices.
 
 
+## Refinement 5 transition polish
+
+- Home Recent Work now uses a true slow fade-out / fade-in transition instead of a quick flash-like content swap.
+- Each fade stage lasts about 0.8 seconds, with a slightly longer display interval between rotations.
+- Hover/focus pause and reduced-motion safeguards are preserved.
+
 ## Refinement 4 interaction updates
 
 The invoice builder now keeps long client work histories inside their own scrollable session-selection pane instead of lengthening the entire dialog. The Home recent-work card also rotates through randomized recent session snapshots with a restrained crossfade, pausing when the page is not active and respecting reduced-motion preferences.

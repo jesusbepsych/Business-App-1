@@ -1,3 +1,10 @@
+# Phase 3 usability refinement 5
+
+- Reworked Home Recent Work rotation into a slower two-stage fade rather than a fast flash swap.
+- Outgoing session rows now dissolve over ~780 ms before the content changes; the incoming randomized set then fades back in over the same duration.
+- Rotation cadence was lengthened slightly so each set remains readable between transitions.
+- Reduced-motion behavior remains unchanged: users who request reduced motion get immediate swaps without animation.
+
 # Phase 3 usability refinement 4
 
 - Invoice session selection is now an independently scrollable region (max ~330px / 36dvh) with touch momentum, natural scroll chaining back to the invoice sheet at the top/bottom, and a subtle accent scrollbar. This prevents clients with many sessions from stretching the entire invoice builder and keeps custom line items, notes, and save controls closer at hand.

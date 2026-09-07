@@ -353,8 +353,8 @@ h2 { font-size:20px; margin:0; letter-spacing:-.035em; }
 .large-empty > strong { font-size:16px; margin-top:10px; }.large-empty p { max-width:430px; color:var(--muted); font-size:11px; line-height:1.55; margin:7px 0 15px; }
 .placeholder-icon.small { width:45px; height:45px; border-radius:14px; font-size:18px; }
 
-.recent-list { display:flex; flex-direction:column; opacity:1; transform:translateY(0); transition:opacity .28s var(--ease), transform .28s var(--ease); }
-.recent-list.is-rotating { opacity:0; transform:translateY(3px); }
+.recent-list { display:flex; flex-direction:column; opacity:1; transform:translateY(0); transition:opacity .78s cubic-bezier(.22,.61,.36,1), transform .78s cubic-bezier(.22,.61,.36,1); will-change:opacity, transform; }
+.recent-list.is-rotating { opacity:0; transform:translateY(2px); }
 .recent-row { width:100%; min-height:58px; display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:10px; align-items:center; border:0; border-bottom:1px solid var(--line); padding:8px 0; background:transparent; color:var(--text); text-align:left; cursor:pointer; }
 .recent-row:last-child { border-bottom:0; }.recent-row:hover .recent-main strong { color:var(--accent); }
 .recent-date { width:38px; height:40px; border-radius:10px; background:var(--surface-2); display:flex; flex-direction:column; align-items:center; justify-content:center; }

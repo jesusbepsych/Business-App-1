@@ -433,7 +433,7 @@
     }
 
     host.classList.add('is-rotating');
-    homeRecentSwapTimer = setTimeout(commit, 280);
+    homeRecentSwapTimer = setTimeout(commit, 780);
   }
 
   function startHomeRecentRotation() {
@@ -444,7 +444,7 @@
       if (recentHost?.matches(':hover') || recentHost?.contains(document.activeElement)) return;
       if (businessSessions().length < 2) return;
       renderRandomHomeSessions(businessSessions(), true);
-    }, 6200);
+    }, 7600);
   }
 
   function sessionRowCompact(s) {
