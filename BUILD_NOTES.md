@@ -53,3 +53,12 @@ These remain later roadmap phases so Phase 3 can be tested independently.
 - Home `Invoice earnings` label now uses the existing paid/received success green.
 - Home hours metric appends `h` for immediate unit recognition.
 - Quick Add is vertically centered on tablet/desktop viewports; narrow mobile retains the thumb-friendly bottom-sheet pattern.
+
+## Phase 3 usability refinement 3
+- Added client-level color categorization with eight curated, accessible swatches.
+- Existing clients receive deterministic starter colors during schema migration; colors can be changed from Edit Client.
+- New clients automatically start on the next palette color while keeping one-click color selection.
+- Session-table client names inherit the selected client color for faster visual scanning across pages.
+- Client cards reinforce the same identity color through the avatar without adding extra labels or controls.
+- Money metric chips now follow semantic color language: `Cash in` uses received/success green and `Invoices` on Outstanding uses pending amber.
+- Schema advanced to v5 to persist `Client.colorKey`.

@@ -36,7 +36,7 @@ Material mutations ──> Audit Events / Traceability
 Structured records ──> Analytics / Automation / AI (later phases)
 ```
 
-## Schema version 4
+## Schema version 5
 
 ### Business
 - id
@@ -58,6 +58,7 @@ Structured records ──> Analytics / Automation / AI (later phases)
 - display_name
 - status
 - default_rate_cents
+- color_key (curated visual identity; presentation aid only)
 - billing_email / billing_address
 - notes
 - created_at / updated_at
@@ -136,6 +137,7 @@ Structured records ──> Analytics / Automation / AI (later phases)
 10. Future bank imports should match a bank deposit to an existing Payment record instead of creating a second income record.
 11. Invoice sender, recipient, descriptions, rates, and totals remain historical snapshots.
 12. Invoice numbers remain sequential per business and are never reused.
+13. Client color is a presentation attribute only; it never changes billing, tax, or accounting behavior.
 
 ## Broader data rules
 

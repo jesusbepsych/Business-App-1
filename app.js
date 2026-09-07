@@ -4,9 +4,11 @@
   const STORAGE_KEY = 'business-ledger:v0.2';
   const nowIso = () => new Date().toISOString();
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+  const CLIENT_COLOR_KEYS = ['blue','teal','green','amber','coral','purple','pink','sky'];
+  const defaultClientColorForIndex = (index = 0) => CLIENT_COLOR_KEYS[Math.abs(Number(index) || 0) % CLIENT_COLOR_KEYS.length];
 
   const initialData = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     activeBusinessId: 'biz_play_it_forward',
     businesses: [{
       id: 'biz_play_it_forward',
@@ -36,29 +38,30 @@
   function migrateData(parsed) {
     if (!parsed || typeof parsed !== 'object') return deepClone(initialData);
     if (parsed.schemaVersion === 2) {
-      parsed.schemaVersion = 4;
+      parsed.schemaVersion = 5;
       parsed.invoices = [];
       parsed.payments = [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       const clientNames = new Map((parsed.clients || []).map(c => [c.id, c.displayName]));
-      parsed.clients = (parsed.clients || []).map(c => ({ billingEmail: '', billingAddress: '', ...c }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: clientNames.get(s.clientId) || '', ...s }));
       return parsed;
     }
     if (parsed.schemaVersion === 3) {
-      parsed.schemaVersion = 4;
+      parsed.schemaVersion = 5;
       parsed.invoices ||= [];
       parsed.payments = [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
-      parsed.clients = (parsed.clients || []).map(c => ({ billingEmail: '', billingAddress: '', ...c }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
       return parsed;
     }
-    if (parsed.schemaVersion === 4) {
+    if (parsed.schemaVersion === 4 || parsed.schemaVersion === 5) {
+      parsed.schemaVersion = 5;
       parsed.invoices ||= [];
       parsed.payments ||= [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
-      parsed.clients = (parsed.clients || []).map(c => ({ billingEmail: '', billingAddress: '', ...c }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
       return parsed;
     }
@@ -128,6 +131,8 @@
   function clientById(id) { return data.clients.find(c => c.id === id); }
   function invoiceById(id) { return data.invoices.find(invoice => invoice.id === id); }
   function paymentById(id) { return data.payments.find(payment => payment.id === id); }
+  function clientColorKey(client) { return CLIENT_COLOR_KEYS.includes(client?.colorKey) ? client.colorKey : 'blue'; }
+  function clientColorClass(client) { return `client-color-${clientColorKey(client)}`; }
 
   function invoiceTotalCents(invoice) {
     return (invoice?.lineItems || []).reduce((sum, item) => sum + Number(item.amountCents || 0), 0);
@@ -404,7 +409,7 @@
       <div class="table-head session-grid"><span>Client</span><span>Date</span><span>Time</span><span>Value</span><span>Status</span></div>
       ${pageSessions.map(s => {
         const client = clientById(s.clientId);
-        return `<button class="table-row session-grid" data-session-detail="${s.id}"><span><strong>${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(s.notes || 'No session note')}</small></span><span><strong>${formatDate(s.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(s.date,{weekday:'short'})}</small></span><span><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong><small>${hoursLabel(sessionMinutes(s))}</small></span><span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong><small>@ ${formatMoney(s.rateCents || 0)}/hr</small></span><span><span class="status-pill ${sessionInvoiceStatusClass(s)}">${sessionInvoiceStatusLabel(s)}</span></span></button>`;
+        return `<button class="table-row session-grid" data-session-detail="${s.id}"><span><strong class="client-session-name ${clientColorClass(client)}">${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(s.notes || 'No session note')}</small></span><span><strong>${formatDate(s.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(s.date,{weekday:'short'})}</small></span><span><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong><small>${hoursLabel(sessionMinutes(s))}</small></span><span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong><small>@ ${formatMoney(s.rateCents || 0)}/hr</small></span><span><span class="status-pill ${sessionInvoiceStatusClass(s)}">${sessionInvoiceStatusLabel(s)}</span></span></button>`;
       }).join('')}${pagination}` : emptyState('No work sessions yet', 'Log completed work here. Later, this same record will flow into invoices and mileage.', 'Add work session', 'add-session');
 
     $$('[data-session-detail]', $('#sessionsContainer')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
@@ -445,7 +450,7 @@
     $('#clientsContainer').innerHTML = clients.length ? clients.map(c => {
       const sessions = businessSessions().filter(s => s.clientId === c.id);
       const minutes = sessions.reduce((sum,s) => sum + sessionMinutes(s), 0);
-      return `<button class="client-card" data-client-detail="${c.id}"><div class="client-top"><span class="client-avatar">${escapeHtml(initials(c.displayName))}</span><span class="status-pill ${c.status === 'active' ? 'success' : ''}">${escapeHtml(c.status)}</span></div><strong>${escapeHtml(c.displayName)}</strong><small>${escapeHtml(c.notes || 'No notes yet')}</small><div class="client-meta"><span><b>${formatMoney(c.defaultRateCents || 0)}</b><small>/hr default</small></span><span><b>${sessions.length}</b><small>sessions</small></span><span><b>${hoursLabel(minutes)}</b><small>logged</small></span></div></button>`;
+      return `<button class="client-card" data-client-detail="${c.id}"><div class="client-top"><span class="client-avatar client-avatar-color client-bg-${clientColorKey(c)}">${escapeHtml(initials(c.displayName))}</span><span class="status-pill ${c.status === 'active' ? 'success' : ''}">${escapeHtml(c.status)}</span></div><strong>${escapeHtml(c.displayName)}</strong><small>${escapeHtml(c.notes || 'No notes yet')}</small><div class="client-meta"><span><b>${formatMoney(c.defaultRateCents || 0)}</b><small>/hr default</small></span><span><b>${sessions.length}</b><small>sessions</small></span><span><b>${hoursLabel(minutes)}</b><small>logged</small></span></div></button>`;
     }).join('') : emptyState('No clients yet', 'Add the people or organizations you do work for. Names can be aliases if you prefer.', 'Add first client', 'add-client');
     $$('[data-client-detail]').forEach(btn => btn.addEventListener('click', () => openClientDetail(btn.dataset.clientDetail)));
     bindEmptyActions();
@@ -1040,8 +1045,10 @@
     $('#formEyebrow').textContent = existing ? 'EDIT CLIENT' : 'ADD CLIENT';
     $('#formTitle').textContent = existing ? existing.displayName : 'New client';
     $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Add client';
+    const selectedColorKey = clientColorKey(existing || { colorKey: defaultClientColorForIndex(businessClients().length) });
     $('#formFields').innerHTML = `
       <label class="field"><span>Client / payer name</span><input name="displayName" required maxlength="100" placeholder="e.g. Client A" value="${escapeHtml(existing?.displayName || '')}" /><small>You can use an alias if you do not want identifying client information in the prototype.</small></label>
+      <fieldset class="client-color-field"><legend>Client color</legend><div class="client-color-picker" role="radiogroup" aria-label="Client color">${CLIENT_COLOR_KEYS.map((key, index) => `<label class="client-color-option" title="${key[0].toUpperCase()+key.slice(1)}"><input type="radio" name="colorKey" value="${key}" ${selectedColorKey === key ? 'checked' : ''}/><span class="client-color-swatch client-bg-${key}" aria-hidden="true"></span><span class="sr-only">${key}</span></label>`).join('')}</div><small>Used as a quick visual identifier in work views.</small></fieldset>
       <div class="field-row"><label class="field"><span>Default hourly rate</span><div class="money-input"><span>$</span><input name="rate" required inputmode="decimal" min="0" step="0.01" type="number" placeholder="0.00" value="${existing ? (existing.defaultRateCents/100).toFixed(2) : ''}" /></div></label><label class="field"><span>Status</span><select name="status"><option value="active" ${existing?.status !== 'inactive' ? 'selected' : ''}>Active</option><option value="inactive" ${existing?.status === 'inactive' ? 'selected' : ''}>Inactive</option></select></label></div>
       <details class="optional-fields" ${existing?.billingEmail || existing?.billingAddress ? 'open' : ''}><summary>Billing details <span>optional</span></summary><div class="optional-fields-body"><label class="field"><span>Billing email</span><input name="billingEmail" type="email" maxlength="160" placeholder="payer@example.com" value="${escapeHtml(existing?.billingEmail || '')}" /></label><label class="field"><span>Billing address</span><textarea name="billingAddress" rows="2" maxlength="300" placeholder="Optional address shown on invoices">${escapeHtml(existing?.billingAddress || '')}</textarea></label></div></details>
       <label class="field"><span>Notes <em>optional</em></span><textarea name="notes" rows="3" maxlength="500" placeholder="Billing arrangement, general context, or reminder…">${escapeHtml(existing?.notes || '')}</textarea></label>`;
@@ -1304,7 +1311,7 @@
       return;
     }
     if (ui.formMode === 'client') {
-      const payload = { displayName: form.get('displayName').trim(), defaultRateCents: Math.round(Number(form.get('rate')) * 100), status: form.get('status'), billingEmail: (form.get('billingEmail') || '').trim(), billingAddress: (form.get('billingAddress') || '').trim(), notes: form.get('notes').trim() };
+      const payload = { displayName: form.get('displayName').trim(), colorKey: CLIENT_COLOR_KEYS.includes(form.get('colorKey')) ? form.get('colorKey') : 'blue', defaultRateCents: Math.round(Number(form.get('rate')) * 100), status: form.get('status'), billingEmail: (form.get('billingEmail') || '').trim(), billingAddress: (form.get('billingAddress') || '').trim(), notes: form.get('notes').trim() };
       if (ui.formRecordId) {
         const client = data.clients.find(c => c.id === ui.formRecordId);
         const before = deepClone(client); Object.assign(client, payload, { updatedAt: nowIso() });
