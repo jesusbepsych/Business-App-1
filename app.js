@@ -107,6 +107,11 @@
     return `${hour12}:${String(minute).padStart(2,'0')} ${period}`;
   }
 
+  function sessionTimeRangeLabel(session) {
+    if (!session?.startTime || !session?.endTime) return '—';
+    return `${clockTimeLabel(session.startTime)}–${clockTimeLabel(session.endTime)}`;
+  }
+
   function timeToMinutes(value) {
     if (!value) return null;
     const [hour, minute] = value.split(':').map(Number);
@@ -230,7 +235,7 @@
 
   function sessionRowCompact(s) {
     const client = clientById(s.clientId);
-    return `<button class="recent-row" data-session-detail="${s.id}"><span class="recent-date"><strong>${formatDate(s.date,{month:'short'})}</strong><small>${formatDate(s.date,{day:'numeric'})}</small></span><span class="recent-main"><strong>${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(s.startTime || '—')}–${escapeHtml(s.endTime || '—')} · ${hoursLabel(sessionMinutes(s))}</small></span><span class="recent-amount">${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</span></button>`;
+    return `<button class="recent-row" data-session-detail="${s.id}"><span class="recent-date"><strong>${formatDate(s.date,{month:'short'})}</strong><small>${formatDate(s.date,{day:'numeric'})}</small></span><span class="recent-main"><strong>${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(sessionTimeRangeLabel(s))} · ${hoursLabel(sessionMinutes(s))}</small></span><span class="recent-amount">${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</span></button>`;
   }
 
   function renderSessions() {
@@ -244,7 +249,7 @@
       <div class="table-head session-grid"><span>Date</span><span>Client</span><span>Time</span><span>Value</span><span>Status</span></div>
       ${sessions.map(s => {
         const client = clientById(s.clientId);
-        return `<button class="table-row session-grid" data-session-detail="${s.id}"><span><strong>${formatDate(s.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(s.date,{weekday:'short'})}</small></span><span><strong>${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(s.notes || 'No session note')}</small></span><span><strong>${escapeHtml(s.startTime || '—')}–${escapeHtml(s.endTime || '—')}</strong><small>${hoursLabel(sessionMinutes(s))}</small></span><span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong><small>@ ${formatMoney(s.rateCents || 0)}/hr</small></span><span><span class="status-pill ${s.invoiceStatus === 'invoiced' ? 'success' : ''}">${s.invoiceStatus === 'invoiced' ? 'Invoiced' : 'Uninvoiced'}</span></span></button>`;
+        return `<button class="table-row session-grid" data-session-detail="${s.id}"><span><strong>${formatDate(s.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(s.date,{weekday:'short'})}</small></span><span><strong>${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(s.notes || 'No session note')}</small></span><span><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong><small>${hoursLabel(sessionMinutes(s))}</small></span><span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong><small>@ ${formatMoney(s.rateCents || 0)}/hr</small></span><span><span class="status-pill ${s.invoiceStatus === 'invoiced' ? 'success' : ''}">${s.invoiceStatus === 'invoiced' ? 'Invoiced' : 'Uninvoiced'}</span></span></button>`;
       }).join('')}` : emptyState('No work sessions yet', 'Log completed work here. Later, this same record will flow into invoices and mileage.', 'Add work session', 'add-session');
 
     $$('[data-session-detail]').forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
@@ -569,13 +574,14 @@
     const sessions = data.sessions.filter(s => s.clientId === id).sort((a,b) => b.date.localeCompare(a.date));
     const minutes = sessions.reduce((sum,s) => sum + sessionMinutes(s), 0);
     $('#detailEyebrow').textContent = 'CLIENT'; $('#detailTitle').textContent = client.displayName;
-    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-client="${client.id}">Edit</button><button class="primary-btn" data-new-session-client="${client.id}">＋ Log session</button></div>
+    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-client="${client.id}">Edit</button><button class="primary-btn" data-new-session-client="${client.id}">＋ Log session</button><details class="record-more"><summary aria-label="More client actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-client="${client.id}">Delete client</button></div></details></div><div id="detailDeleteConfirm"></div>
       <div class="detail-metrics"><div><small>Default rate</small><strong>${formatMoney(client.defaultRateCents || 0)}/hr</strong></div><div><small>Sessions</small><strong>${sessions.length}</strong></div><div><small>Hours logged</small><strong>${hoursLabel(minutes)}</strong></div></div>
       <div class="detail-section"><p class="eyebrow">NOTES</p><p>${escapeHtml(client.notes || 'No client notes yet.')}</p></div>
       <div class="detail-section"><div class="panel-title-row"><p class="eyebrow">RECENT SESSIONS</p></div>${sessions.length ? `<div class="recent-list">${sessions.slice(0,5).map(sessionRowCompact).join('')}</div>` : '<div class="inline-empty"><small>No sessions for this client yet.</small></div>'}</div>`;
     openModal($('#detailPanel'));
     $('[data-edit-client]')?.addEventListener('click', () => openClientForm(id));
     $('[data-new-session-client]')?.addEventListener('click', () => { closeModal(); openSessionForm(); setTimeout(() => { $('#sessionClient').value = id; $('#sessionRate').value = (client.defaultRateCents/100).toFixed(2); }, 20); });
+    $('[data-delete-client]')?.addEventListener('click', () => showDeleteConfirmation('client', id));
     $$('[data-session-detail]', $('#detailBody')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
   }
 
@@ -583,13 +589,63 @@
     const s = data.sessions.find(session => session.id === id); if (!s) return;
     const client = clientById(s.clientId);
     $('#detailEyebrow').textContent = 'WORK SESSION'; $('#detailTitle').textContent = client?.displayName || 'Unassigned session';
-    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-session="${s.id}">Edit session</button><button class="primary-btn disabled-action" title="Invoice engine arrives in Phase 2">Create invoice · Phase 2</button></div>
-      <div class="detail-metrics"><div><small>Date</small><strong>${formatDate(s.date,{month:'short',day:'numeric',year:'numeric'})}</strong></div><div><small>Time</small><strong>${escapeHtml(s.startTime)}–${escapeHtml(s.endTime)}</strong></div><div><small>Duration</small><strong>${hoursLabel(sessionMinutes(s))}</strong></div></div>
+    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-session="${s.id}">Edit session</button><button class="primary-btn disabled-action" title="Invoice engine arrives in Phase 2">Create invoice · Phase 2</button><details class="record-more"><summary aria-label="More session actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-session="${s.id}">Delete session</button></div></details></div><div id="detailDeleteConfirm"></div>
+      <div class="detail-metrics"><div><small>Date</small><strong>${formatDate(s.date,{month:'short',day:'numeric',year:'numeric'})}</strong></div><div><small>Time</small><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong></div><div><small>Duration</small><strong>${hoursLabel(sessionMinutes(s))}</strong></div></div>
       <div class="detail-section"><div class="trace-row"><span>Session value</span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong></div><div class="trace-row"><span>Rate snapshot</span><strong>${formatMoney(s.rateCents || 0)}/hr</strong></div><div class="trace-row"><span>Invoice state</span><strong>Uninvoiced</strong></div></div>
       <div class="detail-section"><p class="eyebrow">SESSION NOTE</p><p>${escapeHtml(s.notes || 'No session note.')}</p></div>
       <div class="trace-banner"><span>↳</span><div><strong>Traceability anchor</strong><small>Invoices, mileage, and direct job expenses will attach to this session in later phases.</small></div></div>`;
     openModal($('#detailPanel'));
     $('[data-edit-session]')?.addEventListener('click', () => openSessionForm(id));
+    $('[data-delete-session]')?.addEventListener('click', () => showDeleteConfirmation('session', id));
+  }
+
+  function showDeleteConfirmation(type, id) {
+    const host = $('#detailDeleteConfirm');
+    if (!host) return;
+    $('.record-more[open]', $('#detailBody'))?.removeAttribute('open');
+    if (type === 'session') {
+      const session = data.sessions.find(item => item.id === id);
+      if (!session) return;
+      const client = clientById(session.clientId);
+      host.innerHTML = `<div class="delete-confirm-card"><div><strong>Delete this session?</strong><p>${escapeHtml(formatDate(session.date,{month:'short',day:'numeric',year:'numeric'}))} · ${escapeHtml(sessionTimeRangeLabel(session))}${client ? ` · ${escapeHtml(client.displayName)}` : ''} will be permanently removed. This cannot be undone.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-delete>Delete session</button></div></div>`;
+    } else {
+      const client = data.clients.find(item => item.id === id);
+      if (!client) return;
+      const linkedSessions = data.sessions.filter(session => session.clientId === id);
+      const sessionWarning = linkedSessions.length ? ` This will also permanently delete ${linkedSessions.length} linked work ${linkedSessions.length === 1 ? 'session' : 'sessions'}.` : '';
+      host.innerHTML = `<div class="delete-confirm-card"><div><strong>Delete ${escapeHtml(client.displayName)}?</strong><p>The client will be permanently removed.${sessionWarning} This cannot be undone.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-delete>Delete client</button></div></div>`;
+    }
+    host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    $('[data-cancel-delete]', host)?.addEventListener('click', () => { host.innerHTML = ''; });
+    $('[data-confirm-delete]', host)?.addEventListener('click', () => deleteRecord(type, id));
+  }
+
+  function deleteRecord(type, id) {
+    if (type === 'session') {
+      const exists = data.sessions.some(session => session.id === id);
+      if (!exists) return;
+      data.sessions = data.sessions.filter(session => session.id !== id);
+      data.auditEvents = data.auditEvents.filter(event => event.entityId !== id);
+      data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'WorkSession', entityId: id, details: {}, occurredAt: nowIso() });
+      repository.save(data);
+      closeModal();
+      renderAll();
+      showToast('Work session deleted');
+      return;
+    }
+
+    const client = data.clients.find(item => item.id === id);
+    if (!client) return;
+    const linkedSessionIds = data.sessions.filter(session => session.clientId === id).map(session => session.id);
+    const deletedIds = new Set([id, ...linkedSessionIds]);
+    data.clients = data.clients.filter(item => item.id !== id);
+    data.sessions = data.sessions.filter(session => session.clientId !== id);
+    data.auditEvents = data.auditEvents.filter(event => !deletedIds.has(event.entityId));
+    data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Client', entityId: id, details: { cascadedSessionCount: linkedSessionIds.length }, occurredAt: nowIso() });
+    repository.save(data);
+    closeModal();
+    renderAll();
+    showToast(linkedSessionIds.length ? `Client and ${linkedSessionIds.length} linked ${linkedSessionIds.length === 1 ? 'session' : 'sessions'} deleted` : 'Client deleted');
   }
 
   function exportBackup() {

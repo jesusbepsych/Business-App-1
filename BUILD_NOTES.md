@@ -38,3 +38,10 @@ Those remain phased so foundational work records can be validated first.
 - Added Start/End correction controls and clickable time chips so either value can be revisited quickly.
 - Added live duration preview.
 - Reflowed the work-session form into a wider clock + metadata layout on desktop and a stacked layout on smaller screens.
+
+## Phase 1 Alpha — usability refinement 2
+- User-facing work-session times now display in 12-hour AM/PM format while retaining 24-hour values internally for sorting/calculation.
+- Added low-clutter overflow menus (`•••`) to client and work-session detail views.
+- Added permanent session deletion with inline confirmation.
+- Added permanent client deletion with explicit confirmation; linked Phase 1 work sessions are also removed to avoid orphaned records.
+- Deletion removes prior audit payloads for the deleted records and retains only a minimal non-content deletion event.

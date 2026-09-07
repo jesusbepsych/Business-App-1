@@ -52,3 +52,6 @@ The cloud/auth boundary is reserved specifically so secure cross-device synchron
 
 ### Current UI refinement
 Work-session entry now uses a radial time wheel instead of native time inputs. Drag/click once for Start, then again for End; values snap to five-minute increments. Use the arrows or Start/End chips to correct either time.
+
+### Latest usability refinement
+Session times are presented in 12-hour AM/PM format throughout the visible UI. Clients and sessions can now be deleted from their detail view through the compact `•••` menu. Deletion requires an explicit confirmation; deleting a client also deletes its linked work sessions in this Phase 1 prototype.
