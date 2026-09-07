@@ -49,3 +49,6 @@ The cloud/auth boundary is reserved specifically so secure cross-device synchron
 ## Working name
 
 “Business Ledger” remains a placeholder name.
+
+### Current UI refinement
+Work-session entry now uses a radial time wheel instead of native time inputs. Drag/click once for Start, then again for End; values snap to five-minute increments. Use the arrows or Start/End chips to correct either time.

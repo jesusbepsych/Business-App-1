@@ -99,6 +99,35 @@
     return new Intl.DateTimeFormat('en-US', options).format(date);
   }
 
+  function clockTimeLabel(value) {
+    if (!value) return '—';
+    const [hour, minute] = value.split(':').map(Number);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${String(minute).padStart(2,'0')} ${period}`;
+  }
+
+  function timeToMinutes(value) {
+    if (!value) return null;
+    const [hour, minute] = value.split(':').map(Number);
+    return hour * 60 + minute;
+  }
+
+  function minutesToTime(totalMinutes) {
+    const normalized = ((Math.round(totalMinutes / 5) * 5) % 1440 + 1440) % 1440;
+    return `${String(Math.floor(normalized / 60)).padStart(2,'0')}:${String(normalized % 60).padStart(2,'0')}`;
+  }
+
+  function currentRoundedTime() {
+    const now = new Date();
+    return minutesToTime(now.getHours() * 60 + now.getMinutes());
+  }
+
+  function addMinutesToTime(value, amount) {
+    const base = timeToMinutes(value);
+    return minutesToTime((base ?? 0) + amount);
+  }
+
   function minutesBetween(start, end) {
     if (!start || !end) return 0;
     const [sh, sm] = start.split(':').map(Number);
@@ -264,6 +293,7 @@
   }
 
   function openClientForm(existingId = null) {
+    $('#formSheet').classList.remove('session-form-sheet');
     const existing = existingId ? data.clients.find(c => c.id === existingId) : null;
     ui.formMode = 'client'; ui.formRecordId = existingId;
     $('#formEyebrow').textContent = existing ? 'EDIT CLIENT' : 'ADD CLIENT';
@@ -289,18 +319,207 @@
     $('#formTitle').textContent = existing ? 'Edit work session' : 'New work session';
     $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Log session';
     const today = new Date().toISOString().slice(0,10);
+    $('#formSheet').classList.add('session-form-sheet');
     $('#formFields').innerHTML = `
       <label class="field"><span>Client</span><select name="clientId" id="sessionClient" required><option value="">Choose client</option>${clients.map(c => `<option value="${c.id}" data-rate="${c.defaultRateCents || 0}" ${c.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select></label>
-      <div class="field-row three"><label class="field"><span>Date</span><input name="date" type="date" required value="${existing?.date || today}" /></label><label class="field"><span>Start</span><input name="startTime" type="time" required value="${existing?.startTime || ''}" /></label><label class="field"><span>End</span><input name="endTime" type="time" required value="${existing?.endTime || ''}" /></label></div>
-      <label class="field"><span>Hourly rate for this session</span><div class="money-input"><span>$</span><input name="rate" id="sessionRate" required inputmode="decimal" min="0" step="0.01" type="number" value="${existing ? (existing.rateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div><small>The rate is copied into this session so future client rate changes do not rewrite old work.</small></label>
-      <label class="field"><span>Session note <em>optional</em></span><textarea name="notes" rows="3" maxlength="500" placeholder="Brief work note or billing context…">${escapeHtml(existing?.notes || '')}</textarea></label>`;
+      <div class="session-entry-grid">
+        <div class="clock-picker" id="sessionClockPicker">
+          <div class="clock-picker-head">
+            <div><span class="clock-kicker">TIME</span><strong id="clockInstruction">Choose start time</strong></div>
+            <div class="time-summary" aria-label="Selected times">
+              <button type="button" class="time-chip active" data-clock-target="start"><small>Start</small><strong id="clockStartLabel">${clockTimeLabel(existing?.startTime)}</strong></button>
+              <span class="time-summary-arrow">→</span>
+              <button type="button" class="time-chip" data-clock-target="end"><small>End</small><strong id="clockEndLabel">${clockTimeLabel(existing?.endTime)}</strong></button>
+            </div>
+          </div>
+          <input type="hidden" name="startTime" id="clockStartInput" value="${existing?.startTime || ''}" />
+          <input type="hidden" name="endTime" id="clockEndInput" value="${existing?.endTime || ''}" />
+          <div class="clock-dial-wrap">
+            <div class="clock-dial" id="clockDial" role="slider" tabindex="0" aria-label="Choose start time" aria-valuetext="${clockTimeLabel(existing?.startTime)}">
+              <div class="clock-ticks" id="clockTicks" aria-hidden="true"></div>
+              <div class="clock-numbers" id="clockNumbers" aria-hidden="true"></div>
+              <div class="clock-hand" id="clockHand"><span></span></div>
+              <div class="clock-center">
+                <small id="clockTargetLabel">START</small>
+                <strong id="clockReadout">${clockTimeLabel(existing?.startTime) !== '—' ? clockTimeLabel(existing?.startTime) : clockTimeLabel(currentRoundedTime())}</strong>
+              </div>
+            </div>
+          </div>
+          <div class="clock-controls">
+            <div class="period-toggle" aria-label="AM or PM">
+              <button type="button" data-period="AM">AM</button><button type="button" data-period="PM">PM</button>
+            </div>
+            <div class="clock-stage-nav">
+              <button type="button" class="clock-arrow" id="clockPrev" aria-label="Edit start time">←</button>
+              <span id="clockStageText">Start time</span>
+              <button type="button" class="clock-arrow" id="clockNext" aria-label="Edit end time">→</button>
+            </div>
+            <span class="clock-snap-note">Snaps to 5 min</span>
+          </div>
+          <div class="clock-duration" id="clockDuration">Select a start and end time</div>
+        </div>
+        <div class="session-meta-stack">
+          <label class="field"><span>Date</span><input name="date" type="date" required value="${existing?.date || today}" /></label>
+          <label class="field"><span>Hourly rate for this session</span><div class="money-input"><span>$</span><input name="rate" id="sessionRate" required inputmode="decimal" min="0" step="0.01" type="number" value="${existing ? (existing.rateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div><small>The saved session keeps this rate even if the client rate changes later.</small></label>
+          <label class="field session-note-field"><span>Session note <em>optional</em></span><textarea name="notes" rows="6" maxlength="500" placeholder="Brief work note or billing context…">${escapeHtml(existing?.notes || '')}</textarea></label>
+        </div>
+      </div>`;
     openModal($('#formSheet'));
     const select = $('#sessionClient');
     if (!existing && clients.length === 1) { select.value = clients[0].id; $('#sessionRate').value = (clients[0].defaultRateCents/100).toFixed(2); }
     select.addEventListener('change', () => { const option = select.selectedOptions[0]; if (option?.dataset.rate) $('#sessionRate').value = (Number(option.dataset.rate)/100).toFixed(2); });
+    initClockTimePicker(existing?.startTime || '', existing?.endTime || '');
+  }
+
+  function initClockTimePicker(initialStart = '', initialEnd = '') {
+    const dial = $('#clockDial'); if (!dial) return;
+    const startInput = $('#clockStartInput'), endInput = $('#clockEndInput');
+    const startLabel = $('#clockStartLabel'), endLabel = $('#clockEndLabel');
+    const readout = $('#clockReadout'), targetLabel = $('#clockTargetLabel'), instruction = $('#clockInstruction');
+    const hand = $('#clockHand'), duration = $('#clockDuration'), stageText = $('#clockStageText');
+    const ticks = $('#clockTicks'), numbers = $('#clockNumbers');
+    let target = initialStart && !initialEnd ? 'end' : 'start';
+    let previewTime = target === 'start' ? (initialStart || currentRoundedTime()) : (initialEnd || initialStart || currentRoundedTime());
+    let periodExplicit = { start: Boolean(initialStart), end: Boolean(initialEnd) };
+    let dragging = false;
+
+    ticks.innerHTML = Array.from({length:144}, (_, i) => {
+      const angleDeg = i * 2.5;
+      const angle = angleDeg * Math.PI / 180;
+      const x = 50 + 45.5 * Math.sin(angle), y = 50 - 45.5 * Math.cos(angle);
+      return `<span class="clock-tick ${i % 12 === 0 ? 'hour' : i % 3 === 0 ? 'quarter' : ''}" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${angleDeg}deg)"></span>`;
+    }).join('');
+    numbers.innerHTML = Array.from({length:12}, (_, i) => {
+      const hour = i === 0 ? 12 : i;
+      const angle = i * 30 * Math.PI / 180;
+      const x = 50 + 39 * Math.sin(angle), y = 50 - 39 * Math.cos(angle);
+      return `<span style="left:${x}%;top:${y}%">${hour}</span>`;
+    }).join('');
+
+    const activeInput = () => target === 'start' ? startInput : endInput;
+    const selectedValue = () => activeInput().value || previewTime || currentRoundedTime();
+    const periodFor = (value) => (timeToMinutes(value) ?? 0) >= 720 ? 'PM' : 'AM';
+
+    function setTarget(next) {
+      target = next;
+      const value = activeInput().value;
+      previewTime = value || (target === 'end' ? (startInput.value ? addMinutesToTime(startInput.value, 60) : currentRoundedTime()) : currentRoundedTime());
+      $$('.time-chip', $('#sessionClockPicker')).forEach(btn => btn.classList.toggle('active', btn.dataset.clockTarget === target));
+      targetLabel.textContent = target.toUpperCase();
+      instruction.textContent = target === 'start' ? 'Choose start time' : 'Choose end time';
+      stageText.textContent = target === 'start' ? 'Start time' : 'End time';
+      dial.setAttribute('aria-label', instruction.textContent);
+      renderDial();
+    }
+
+    function inferEndPeriod(minutes12) {
+      const start = timeToMinutes(startInput.value);
+      if (start == null) return periodFor(previewTime);
+      const candidates = [minutes12, minutes12 + 720];
+      let best = null;
+      for (const candidate of candidates) {
+        let delta = candidate - start;
+        if (delta <= 0) delta += 1440;
+        if (best === null || delta < best.delta) best = { value: candidate % 1440, delta };
+      }
+      return best.value >= 720 ? 'PM' : 'AM';
+    }
+
+    function composeTime(minutes12, period, isEnd = false) {
+      let normalized12 = ((minutes12 % 720) + 720) % 720;
+      let chosenPeriod = period;
+      if (isEnd && !periodExplicit.end) chosenPeriod = inferEndPeriod(normalized12);
+      return minutesToTime(normalized12 + (chosenPeriod === 'PM' ? 720 : 0));
+    }
+
+    function renderDial() {
+      const value = selectedValue();
+      const total = timeToMinutes(value) ?? 0;
+      const within12 = total % 720;
+      const angle = (within12 / 720) * 360;
+      hand.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+      readout.textContent = clockTimeLabel(value);
+      dial.setAttribute('aria-valuetext', clockTimeLabel(value));
+      $$('[data-period]', $('#sessionClockPicker')).forEach(btn => btn.classList.toggle('active', btn.dataset.period === periodFor(value)));
+      startLabel.textContent = clockTimeLabel(startInput.value);
+      endLabel.textContent = clockTimeLabel(endInput.value);
+      if (startInput.value && endInput.value) {
+        const mins = minutesBetween(startInput.value, endInput.value);
+        duration.textContent = mins ? `${hoursLabel(mins)} session · ${clockTimeLabel(startInput.value)} → ${clockTimeLabel(endInput.value)}` : 'Start and end cannot be identical';
+        duration.classList.toggle('ready', Boolean(mins));
+      } else {
+        duration.textContent = target === 'start' ? 'Select a start time, then choose the end.' : 'Now select the end time.';
+        duration.classList.remove('ready');
+      }
+    }
+
+    function timeFromPointer(event) {
+      const rect = dial.getBoundingClientRect();
+      const x = event.clientX - (rect.left + rect.width / 2);
+      const y = event.clientY - (rect.top + rect.height / 2);
+      let angle = Math.atan2(x, -y) * 180 / Math.PI;
+      if (angle < 0) angle += 360;
+      const minutes12 = Math.round(((angle / 360) * 720) / 5) * 5 % 720;
+      const currentPeriod = periodFor(selectedValue());
+      return composeTime(minutes12, currentPeriod, target === 'end');
+    }
+
+    function previewFromPointer(event) {
+      previewTime = timeFromPointer(event);
+      renderDial();
+    }
+
+    function commitSelection() {
+      activeInput().value = previewTime;
+      if (target === 'start') {
+        periodExplicit.start = true;
+        renderDial();
+        setTimeout(() => setTarget('end'), 90);
+      } else {
+        renderDial();
+      }
+    }
+
+    dial.addEventListener('pointerdown', event => {
+      dragging = true;
+      dial.setPointerCapture?.(event.pointerId);
+      previewFromPointer(event);
+    });
+    dial.addEventListener('pointermove', event => { if (dragging) previewFromPointer(event); });
+    dial.addEventListener('pointerup', event => {
+      if (!dragging) return;
+      dragging = false;
+      previewFromPointer(event);
+      commitSelection();
+    });
+    dial.addEventListener('pointercancel', () => { dragging = false; });
+    dial.addEventListener('keydown', event => {
+      if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key)) return;
+      event.preventDefault();
+      if (event.key === 'Enter' || event.key === ' ') { activeInput().value = previewTime; if (target === 'start') setTarget('end'); renderDial(); return; }
+      const delta = event.key === 'ArrowLeft' ? -5 : event.key === 'ArrowRight' ? 5 : event.key === 'ArrowUp' ? 60 : -60;
+      previewTime = addMinutesToTime(selectedValue(), delta);
+      renderDial();
+    });
+
+    $$('[data-clock-target]', $('#sessionClockPicker')).forEach(btn => btn.addEventListener('click', () => setTarget(btn.dataset.clockTarget)));
+    $('#clockPrev').addEventListener('click', () => setTarget('start'));
+    $('#clockNext').addEventListener('click', () => setTarget('end'));
+    $$('[data-period]', $('#sessionClockPicker')).forEach(btn => btn.addEventListener('click', () => {
+      periodExplicit[target] = true;
+      const current = selectedValue();
+      const minutes = timeToMinutes(current) ?? 0;
+      const within12 = minutes % 720;
+      previewTime = minutesToTime(within12 + (btn.dataset.period === 'PM' ? 720 : 0));
+      if (activeInput().value) activeInput().value = previewTime;
+      renderDial();
+    }));
+
+    setTarget(target);
   }
 
   function openBusinessForm() {
+    $('#formSheet').classList.remove('session-form-sheet');
     ui.formMode = 'business'; ui.formRecordId = null;
     $('#formEyebrow').textContent = 'NEW WORKSPACE'; $('#formTitle').textContent = 'Add business or gig'; $('#formSubmitBtn').textContent = 'Create workspace';
     $('#formFields').innerHTML = `
@@ -327,7 +546,8 @@
     if (ui.formMode === 'session') {
       const startTime = form.get('startTime'), endTime = form.get('endTime');
       const durationMinutes = minutesBetween(startTime, endTime);
-      if (!durationMinutes) { showToast('End time must be after the start time.'); return; }
+      if (!startTime || !endTime) { showToast('Choose both a start and end time on the clock.'); return; }
+      if (!durationMinutes) { showToast('Start and end time cannot be identical.'); return; }
       const payload = { clientId: form.get('clientId'), date: form.get('date'), startTime, endTime, durationMinutes, rateCents: Math.round(Number(form.get('rate')) * 100), notes: form.get('notes').trim(), invoiceStatus: 'uninvoiced' };
       if (ui.formRecordId) {
         const session = data.sessions.find(s => s.id === ui.formRecordId); const before = deepClone(session);

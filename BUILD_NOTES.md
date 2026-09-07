@@ -28,3 +28,13 @@
 - AI classification
 
 Those remain phased so foundational work records can be validated first.
+
+## Phase 1 Alpha · UI refinement 1
+
+- Reworked primary/secondary action button colors for reliable contrast in light and dark mode.
+- Replaced native Start/End time fields with a custom radial time wheel.
+- One pointer interaction selects Start; the picker automatically advances to End for the second interaction.
+- Time wheel snaps to five-minute increments and supports drag/scrub, click, keyboard arrows, and explicit AM/PM.
+- Added Start/End correction controls and clickable time chips so either value can be revisited quickly.
+- Added live duration preview.
+- Reflowed the work-session form into a wider clock + metadata layout on desktop and a stacked layout on smaller screens.
