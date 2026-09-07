@@ -95,3 +95,6 @@ Secure authentication, cloud synchronization, encrypted document storage, and ac
 ## Working name
 
 “Business Ledger” remains a placeholder name.
+
+### Refinement checkpoint
+This build adds seven-session pagination (buttons + touch swipe), reorders key Work/Payments columns for faster scanning, gives Sent and Void invoices distinct status colors, and adds a Home invoice-earnings metric based on recorded invoice payments.

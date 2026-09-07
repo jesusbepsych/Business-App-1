@@ -38,3 +38,12 @@ This prevents a common double-counting mistake where both the invoice and the co
 - secure production cloud database and authentication
 
 These remain later roadmap phases so Phase 3 can be tested independently.
+
+## Phase 3 usability refinement 1
+- Work Sessions now paginate at 7 records per page with compact previous/next controls.
+- Touch devices can swipe horizontally across the session list to move between pages.
+- Session search/filter changes reset pagination to page 1; newly logged work also returns to page 1.
+- Sessions table now prioritizes Client before Date.
+- Payments ledger now prioritizes Source before Received date.
+- Sent and Void invoices have distinct status colors for faster visual scanning.
+- Home now includes Invoice earnings based only on actual invoice-linked payments received.

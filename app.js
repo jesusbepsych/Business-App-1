@@ -88,7 +88,7 @@
   // load/save contract plus authenticated sync without changing domain/UI code.
   const repository = new LocalRepository();
   const data = repository.load();
-  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', invoiceFilter: 'all', paymentFilter: 'all', invoiceFormId: null };
+  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', paymentFilter: 'all', invoiceFormId: null };
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -342,10 +342,14 @@
     const totalMinutes = monthly.reduce((sum, s) => sum + sessionMinutes(s), 0);
     const uninvoiced = sessions.filter(s => s.invoiceStatus === 'uninvoiced');
     const uninvoicedCents = uninvoiced.reduce((sum, s) => sum + sessionAmountCents(s), 0);
+    const invoiceEarningsCents = businessPayments()
+      .filter(payment => payment.kind === 'invoice')
+      .reduce((sum, payment) => sum + Number(payment.amountCents || 0), 0);
 
     $('#metricClients').textContent = clients.length;
     $('#metricHours').textContent = (totalMinutes / 60).toFixed(totalMinutes % 60 ? 1 : 0);
     $('#metricUninvoiced').textContent = formatMoney(uninvoicedCents, activeBusiness().currency);
+    $('#metricInvoiceEarnings').textContent = formatMoney(invoiceEarningsCents, activeBusiness().currency);
     $('#clientTabCount').textContent = businessClients().length;
     $('#sessionTabCount').textContent = sessions.length;
 
@@ -384,14 +388,54 @@
       return matchesTerm && matchesFilter;
     });
 
-    $('#sessionsContainer').innerHTML = sessions.length ? `
-      <div class="table-head session-grid"><span>Date</span><span>Client</span><span>Time</span><span>Value</span><span>Status</span></div>
-      ${sessions.map(s => {
-        const client = clientById(s.clientId);
-        return `<button class="table-row session-grid" data-session-detail="${s.id}"><span><strong>${formatDate(s.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(s.date,{weekday:'short'})}</small></span><span><strong>${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(s.notes || 'No session note')}</small></span><span><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong><small>${hoursLabel(sessionMinutes(s))}</small></span><span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong><small>@ ${formatMoney(s.rateCents || 0)}/hr</small></span><span><span class="status-pill ${sessionInvoiceStatusClass(s)}">${sessionInvoiceStatusLabel(s)}</span></span></button>`;
-      }).join('')}` : emptyState('No work sessions yet', 'Log completed work here. Later, this same record will flow into invoices and mileage.', 'Add work session', 'add-session');
+    const pageSize = ui.sessionPageSize || 7;
+    const totalPages = Math.max(1, Math.ceil(sessions.length / pageSize));
+    ui.sessionPage = Math.min(Math.max(1, ui.sessionPage || 1), totalPages);
+    const pageStart = (ui.sessionPage - 1) * pageSize;
+    const pageSessions = sessions.slice(pageStart, pageStart + pageSize);
+    const pagination = sessions.length > pageSize ? `
+      <div class="session-pagination" aria-label="Session pages">
+        <button type="button" class="pagination-arrow" data-session-page-prev aria-label="Previous session page" ${ui.sessionPage === 1 ? 'disabled' : ''}>←</button>
+        <span class="pagination-copy"><strong>Page ${ui.sessionPage}</strong><small>of ${totalPages} · ${sessions.length} sessions</small></span>
+        <button type="button" class="pagination-arrow" data-session-page-next aria-label="Next session page" ${ui.sessionPage === totalPages ? 'disabled' : ''}>→</button>
+      </div>` : '';
 
-    $$('[data-session-detail]').forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
+    $('#sessionsContainer').innerHTML = sessions.length ? `
+      <div class="table-head session-grid"><span>Client</span><span>Date</span><span>Time</span><span>Value</span><span>Status</span></div>
+      ${pageSessions.map(s => {
+        const client = clientById(s.clientId);
+        return `<button class="table-row session-grid" data-session-detail="${s.id}"><span><strong>${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(s.notes || 'No session note')}</small></span><span><strong>${formatDate(s.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(s.date,{weekday:'short'})}</small></span><span><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong><small>${hoursLabel(sessionMinutes(s))}</small></span><span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong><small>@ ${formatMoney(s.rateCents || 0)}/hr</small></span><span><span class="status-pill ${sessionInvoiceStatusClass(s)}">${sessionInvoiceStatusLabel(s)}</span></span></button>`;
+      }).join('')}${pagination}` : emptyState('No work sessions yet', 'Log completed work here. Later, this same record will flow into invoices and mileage.', 'Add work session', 'add-session');
+
+    $$('[data-session-detail]', $('#sessionsContainer')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
+    $('[data-session-page-prev]', $('#sessionsContainer'))?.addEventListener('click', () => {
+      if (ui.sessionPage > 1) { ui.sessionPage -= 1; renderSessions(); }
+    });
+    $('[data-session-page-next]', $('#sessionsContainer'))?.addEventListener('click', () => {
+      if (ui.sessionPage < totalPages) { ui.sessionPage += 1; renderSessions(); }
+    });
+
+    if (sessions.length > pageSize) {
+      const host = $('#sessionsContainer');
+      let touchStartX = null;
+      let touchStartY = null;
+      host.addEventListener('touchstart', event => {
+        const touch = event.changedTouches?.[0];
+        if (!touch) return;
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      }, { passive:true });
+      host.addEventListener('touchend', event => {
+        const touch = event.changedTouches?.[0];
+        if (!touch || touchStartX === null || touchStartY === null) return;
+        const dx = touch.clientX - touchStartX;
+        const dy = touch.clientY - touchStartY;
+        touchStartX = touchStartY = null;
+        if (Math.abs(dx) < 60 || Math.abs(dx) <= Math.abs(dy) * 1.15) return;
+        if (dx < 0 && ui.sessionPage < totalPages) { ui.sessionPage += 1; renderSessions(); }
+        if (dx > 0 && ui.sessionPage > 1) { ui.sessionPage -= 1; renderSessions(); }
+      }, { passive:true });
+    }
     bindEmptyActions();
   }
 
@@ -423,6 +467,8 @@
     if (status === 'partially paid') return 'accent';
     if (status === 'overdue') return 'danger';
     if (status === 'draft') return 'accent';
+    if (status === 'sent') return 'sent';
+    if (status === 'void') return 'void';
     return '';
   }
 
@@ -466,12 +512,12 @@
       : emptyState(invoices.length ? 'No invoices match this filter' : 'No invoices yet', invoices.length ? 'Choose another invoice status to see the rest.' : 'Turn completed work into a clean invoice without entering the hours twice.', invoices.length ? 'Show all invoices' : 'Create first invoice', invoices.length ? 'all-invoices' : 'add-invoice');
 
     $('#paymentsContainer').innerHTML = visiblePayments.length ? `
-      <div class="table-head payment-grid"><span>Received</span><span>Source</span><span>Type</span><span>Method</span><span>Amount</span></div>
+      <div class="table-head payment-grid"><span>Source</span><span>Received</span><span>Type</span><span>Method</span><span>Amount</span></div>
       ${visiblePayments.map(payment => {
         const invoice = payment.invoiceId ? invoiceById(payment.invoiceId) : null;
         const sourcePrimary = payment.kind === 'invoice' ? (payment.invoiceNumberSnapshot || invoice?.number || 'Invoice') : (payment.sourceName || payment.clientNameSnapshot || 'Other income');
         const sourceSecondary = payment.kind === 'invoice' ? (payment.clientNameSnapshot || invoice?.recipientSnapshot?.displayName || 'Client') : (payment.description || 'Direct income');
-        return `<button class="table-row payment-grid" data-payment-detail="${payment.id}"><span><strong>${formatDate(payment.receivedDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(payment.receivedDate,{year:'numeric'})}</small></span><span><strong>${escapeHtml(sourcePrimary)}</strong><small>${escapeHtml(sourceSecondary)}</small></span><span><span class="status-pill ${payment.kind === 'invoice' ? 'accent' : 'success'}">${escapeHtml(paymentKindLabel(payment))}</span></span><span><strong>${escapeHtml(paymentMethodLabel(payment.method))}</strong><small>${escapeHtml(payment.reference || 'No reference')}</small></span><span><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong><small>Received</small></span></button>`;
+        return `<button class="table-row payment-grid" data-payment-detail="${payment.id}"><span><strong>${escapeHtml(sourcePrimary)}</strong><small>${escapeHtml(sourceSecondary)}</small></span><span><strong>${formatDate(payment.receivedDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(payment.receivedDate,{year:'numeric'})}</small></span><span><span class="status-pill ${payment.kind === 'invoice' ? 'accent' : 'success'}">${escapeHtml(paymentKindLabel(payment))}</span></span><span><strong>${escapeHtml(paymentMethodLabel(payment.method))}</strong><small>${escapeHtml(payment.reference || 'No reference')}</small></span><span><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong><small>Received</small></span></button>`;
       }).join('')}`
       : emptyState(payments.length ? 'No payments match this filter' : 'No payments recorded yet', payments.length ? 'Choose another payment type to see the rest.' : 'Record actual money received. Link it to an invoice or capture income that did not require one.', payments.length ? 'Show all payments' : 'Record first payment', payments.length ? 'all-payments' : 'add-payment');
 
@@ -1289,7 +1335,7 @@
         persist('updated', 'WorkSession', session.id, { before, after: deepClone(session) }); showToast('Work session updated');
       } else {
         const session = { id: uid('session'), businessId: data.activeBusinessId, ...payload, invoiceStatus: 'uninvoiced', invoiceId: null, createdAt: nowIso(), updatedAt: nowIso() };
-        data.sessions.push(session); persist('created', 'WorkSession', session.id); showToast('Work session logged');
+        data.sessions.push(session); ui.sessionPage = 1; persist('created', 'WorkSession', session.id); showToast('Work session logged');
       }
     }
     if (ui.formMode === 'invoice-settings') {
@@ -1461,11 +1507,12 @@
     $$('[data-work-tab]').forEach(b => b.classList.toggle('active', b === btn));
     $$('[data-work-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.workPanel === ui.workTab));
   }));
-  $('#sessionSearch').addEventListener('input', renderSessions);
+  $('#sessionSearch').addEventListener('input', () => { ui.sessionPage = 1; renderSessions(); });
   $('#clientSearch').addEventListener('input', renderClients);
   $('#sessionFilterBtn').addEventListener('click', () => {
     const order = ['all','uninvoiced','linked'];
     ui.sessionFilter = order[(order.indexOf(ui.sessionFilter) + 1) % order.length];
+    ui.sessionPage = 1;
     $('#sessionFilterBtn').textContent = ui.sessionFilter === 'all' ? 'All sessions' : ui.sessionFilter === 'uninvoiced' ? 'Uninvoiced' : 'In invoice';
     renderSessions();
   });
