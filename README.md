@@ -1,10 +1,10 @@
-# Business Ledger — Foundation + Phase 1 Alpha
+# Business Ledger — Phase 2 Invoice Alpha
 
 A dependency-free interactive prototype for a business finance and traceability app.
 
 ## Run locally
 
-For best behavior, serve the folder rather than double-clicking the HTML file:
+Serve the folder rather than double-clicking the HTML file:
 
 ```bash
 cd business-finance-app-phase0
@@ -13,45 +13,67 @@ python3 -m http.server 8000
 
 Then open `http://localhost:8000`.
 
-## Implemented now
+## Implemented
 
-### Phase 0 foundation
+### Foundation
 - responsive desktop / tablet / mobile shell
 - Home, Work, Money, Records navigation
-- business workspace switcher
-- global command/search palette (`/` shortcut)
-- Quick Add sheet
+- business workspace switching
+- global search (`/` shortcut)
+- Quick Add
 - system light/dark appearance
-- reduced-motion accessibility
-- explicit local-vs-cloud sync state
+- reduced-motion support
+- explicit local-only sync state
 - provider-neutral repository boundary
-- structured JSON backup export
+- JSON backup export
 
-### Phase 1 alpha
+### Work records
 - multiple business/gig workspaces
-- client creation and editing
-- client default hourly rates
-- work-session creation and editing
-- rate snapshot stored on each session
-- session duration and estimated work value
-- client/session search
-- client and session detail views
-- home metrics fed by real work records
-- local persistence across browser refreshes
-- audit events for create/update/workspace actions
+- client creation/editing/deletion
+- optional client billing email/address
+- hourly-rate defaults
+- radial 5-minute work-time picker
+- 12-hour AM/PM display
+- session creation/editing/deletion
+- session-specific historical rate snapshots
+- client/session search and details
+- work metrics
+
+### Phase 2 invoices
+- Money dashboard with issued, draft, and overdue indicators
+- sequential invoice numbers per business
+- configurable prefix and default due period
+- sender/contact/payment-instruction defaults
+- create invoices from one or many uninvoiced work sessions
+- custom flat-rate / quantity line items
+- live invoice total while composing
+- Draft → Sent workflow
+- derived Overdue state
+- Void workflow for issued invoices
+- delete drafts and release their sessions
+- invoice sender/client/rate/line-item snapshots
+- linked session protections for issued invoices
+- printable invoice view / browser Save as PDF
+- invoice search through global command palette
+- invoice filtering
 
 ## Important security note
 
-This build stores prototype data in browser local storage. It is **not** yet appropriate for sensitive production financial information or identifying client information. Use aliases/test data during this stage.
+This build stores prototype data in browser local storage. It is **not yet appropriate for sensitive production financial information or identifying client information**. Continue using aliases/test data during this stage.
 
-The cloud/auth boundary is reserved specifically so secure cross-device synchronization can replace local persistence without rewriting feature logic.
+Secure authentication, cloud synchronization, encrypted document storage, and account recovery are intentionally reserved behind the existing persistence boundary.
+
+## Invoice workflow to test
+
+1. Create a client and a few work sessions.
+2. Open **Money → + Invoice**.
+3. Choose the client and select one or more uninvoiced sessions.
+4. Optionally add a custom line item.
+5. Save the invoice as Draft.
+6. Open it and test Edit, Print / Save PDF, and Mark Sent.
+7. Confirm linked work sessions show `In draft` or `Invoiced` appropriately.
+8. Move a sent invoice back to Draft or void it and verify the session state follows correctly.
 
 ## Working name
 
 “Business Ledger” remains a placeholder name.
-
-### Current UI refinement
-Work-session entry now uses a radial time wheel instead of native time inputs. Drag/click once for Start, then again for End; values snap to five-minute increments. Use the arrows or Start/End chips to correct either time.
-
-### Latest usability refinement
-Session times are presented in 12-hour AM/PM format throughout the visible UI. Clients and sessions can now be deleted from their detail view through the compact `•••` menu. Deletion requires an explicit confirmation; deleting a client also deletes its linked work sessions in this Phase 1 prototype.

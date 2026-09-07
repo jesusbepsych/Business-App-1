@@ -1,47 +1,34 @@
-# Build Notes — Foundation + Phase 1 Alpha
+# Build Notes — Phase 2 Invoice Alpha
 
-## What changed in this pass
+## Main additions
 
-- Device direction updated to browser-first now, iPhone/iPad-ready later.
-- Sync state is explicit: current build is local-only and never claims to be cloud-synced.
-- A provider-neutral persistence boundary was introduced so cloud auth/sync can replace local storage later.
-- Multiple business/gig workspaces can now be created and switched.
-- Clients can be created and edited with a default hourly rate and status.
-- Work sessions can be created and edited with date, start/end time, rate snapshot, and notes.
-- Work value and monthly hours are calculated from stored sessions.
-- Work and client records are searchable locally.
-- Home metrics now reflect real prototype records.
-- Detail views show traceability anchors for future invoice/mileage/expense relationships.
-- Local JSON backup export is available.
-- Create/update/workspace actions generate prototype audit events.
+- Upgraded local schema from version 2 to version 3 with automatic migration of existing Phase 1 data.
+- Existing clients/sessions stored under the same local-storage key are preserved.
+- Added Invoice records and per-business invoice-number/default settings.
+- Added optional client billing email/address fields behind progressive disclosure.
+- Replaced the Money placeholder with an invoice dashboard and history.
+- Added invoice creation from existing work sessions without re-entering hours/rates.
+- Added selectable multi-session billing and optional custom line items.
+- Added Draft, Sent, Overdue (derived), and Void behavior.
+- Added printable invoice rendering for browser print / Save as PDF.
+- Added sender and recipient snapshots so old invoice content does not silently change when business/client defaults change.
+- Linked sessions now show `Uninvoiced`, `In draft`, or `Invoiced`.
+- Sent invoice sessions are protected from direct edit/delete until the invoice is moved back to Draft or voided.
+- Draft invoice deletion and sent invoice voiding release linked work sessions for reuse.
+- Client deletion is blocked while active invoices still reference that client.
+- Added invoice search and simple status filters.
+- Added invoice settings for prefix, due days, sender contact information, address, and payment instructions.
 
-## Intentionally not implemented yet
+## Intentionally deferred
 
-- real authentication
-- cloud database synchronization
-- file/receipt uploads
-- invoices or payments
-- expenses or mileage
+- actual payment records / partial payments
+- direct income without invoices
+- expenses / receipts
+- mileage
 - tax calculations
-- bank integrations
-- background GPS
+- cloud auth / sync
+- file uploads
+- banking integrations
 - AI classification
 
-Those remain phased so foundational work records can be validated first.
-
-## Phase 1 Alpha · UI refinement 1
-
-- Reworked primary/secondary action button colors for reliable contrast in light and dark mode.
-- Replaced native Start/End time fields with a custom radial time wheel.
-- One pointer interaction selects Start; the picker automatically advances to End for the second interaction.
-- Time wheel snaps to five-minute increments and supports drag/scrub, click, keyboard arrows, and explicit AM/PM.
-- Added Start/End correction controls and clickable time chips so either value can be revisited quickly.
-- Added live duration preview.
-- Reflowed the work-session form into a wider clock + metadata layout on desktop and a stacked layout on smaller screens.
-
-## Phase 1 Alpha — usability refinement 2
-- User-facing work-session times now display in 12-hour AM/PM format while retaining 24-hour values internally for sorting/calculation.
-- Added low-clutter overflow menus (`•••`) to client and work-session detail views.
-- Added permanent session deletion with inline confirmation.
-- Added permanent client deletion with explicit confirmation; linked Phase 1 work sessions are also removed to avoid orphaned records.
-- Deletion removes prior audit payloads for the deleted records and retains only a minimal non-content deletion event.
+These remain separate roadmap phases to keep the financial model testable and avoid treating an issued invoice as money actually received.

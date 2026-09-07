@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, records, and taxes." />
-  <title>Business Ledger — Foundation + Work Alpha</title>
+  <title>Business Ledger — Phase 2 Invoices Alpha</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -14,7 +14,7 @@
     <aside class="sidebar" aria-label="Primary navigation">
       <div class="brand-row">
         <div class="brand-mark" aria-hidden="true">B</div>
-        <div class="brand-copy"><strong>Business Ledger</strong><span>Foundation + Work alpha</span></div>
+        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 2 · Invoices alpha</span></div>
       </div>
 
       <button class="business-switcher" id="businessSwitcher" aria-haspopup="dialog">
@@ -57,12 +57,12 @@
             <button class="primary-btn" id="quickAddBtn"><span>＋</span> Add</button>
           </div>
 
-          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 1 is now active.</strong> Clients and work sessions are usable; data stays on this device until cloud sync is connected.</span></div>
+          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 2 is now active.</strong> Work sessions can flow into invoice drafts and issued invoice records; data is still local-only until secure cloud sync is connected.</span></div>
 
           <div class="metric-grid">
             <article class="metric-card"><div class="metric-head"><span>Active clients</span><span class="muted-chip">Work</span></div><strong class="metric-value" id="metricClients">0</strong><span class="metric-caption">In this workspace</span></article>
             <article class="metric-card"><div class="metric-head"><span>Hours logged</span><span class="muted-chip">This month</span></div><strong class="metric-value" id="metricHours">0.0</strong><span class="metric-caption">From completed sessions</span></article>
-            <article class="metric-card"><div class="metric-head"><span>Uninvoiced work</span><span class="muted-chip">Estimate</span></div><strong class="metric-value" id="metricUninvoiced">$0</strong><span class="metric-caption">Invoice engine arrives next</span></article>
+            <article class="metric-card"><div class="metric-head"><span>Uninvoiced work</span><span class="muted-chip">Estimate</span></div><strong class="metric-value" id="metricUninvoiced">$0</strong><span class="metric-caption">Ready to turn into invoices</span></article>
           </div>
 
           <div class="two-column">
@@ -79,9 +79,9 @@
           </div>
 
           <article class="panel-card roadmap-card">
-            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 1 — Clients, gigs, and work sessions</h2></div><span class="quiet-badge green">Active</span></div>
-            <div class="progress-track"><div class="progress-fill phase-one"></div></div>
-            <div class="roadmap-steps"><span class="done">Foundation</span><span class="current">Work</span><span>Invoices</span><span>Payments</span><span>Expenses</span><span>Mileage</span><span>Taxes</span></div>
+            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 2 — Invoice engine</h2></div><span class="quiet-badge green">Active</span></div>
+            <div class="progress-track"><div class="progress-fill phase-two"></div></div>
+            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="current">Invoices</span><span>Payments</span><span>Expenses</span><span>Mileage</span><span>Taxes</span></div>
           </article>
         </div>
       </section>
@@ -117,8 +117,24 @@
       </section>
 
       <section class="view" data-page="money">
-        <div class="content-wrap narrow">
-          <div class="placeholder-page"><div class="placeholder-icon">$</div><p class="eyebrow">MONEY · PHASE 2 NEXT</p><h1>Invoices will connect directly to your work.</h1><p>Once a work session exists, the next phase can turn it into an invoice draft without making you re-enter the client, date, hours, or rate.</p><button class="secondary-btn" data-open-add="money">Open Quick Add</button></div>
+        <div class="content-wrap">
+          <div class="page-heading money-heading">
+            <div><p class="eyebrow">MONEY</p><h1>Invoices, without re-entry.</h1><p class="subtitle">Select completed work, save a draft, then issue a stable billing snapshot. Payments remain separate for the next phase.</p></div>
+            <div class="heading-actions"><button class="secondary-btn" id="invoiceSettingsBtn">Invoice settings</button><button class="primary-btn" id="addInvoiceBtn">＋ Invoice</button></div>
+          </div>
+
+          <div class="money-metric-grid">
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Issued total</span><span class="muted-chip">Invoices</span></div><strong class="metric-value" id="moneyIssuedTotal">$0</strong><span class="metric-caption">Sent invoice value</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Draft total</span><span class="muted-chip">In progress</span></div><strong class="metric-value" id="moneyDraftTotal">$0</strong><span class="metric-caption">Not yet issued</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Overdue</span><span class="muted-chip">Attention</span></div><strong class="metric-value" id="moneyOverdueCount">0</strong><span class="metric-caption">Based on invoice due dates</span></article>
+          </div>
+
+          <div class="money-list-head">
+            <div><p class="eyebrow">INVOICES</p><h2>Invoice history <span class="section-count" id="invoiceCount">0</span></h2></div>
+            <button class="filter-pill" id="invoiceFilterBtn">All invoices</button>
+          </div>
+          <div class="data-card" id="invoicesContainer"></div>
+          <div class="phase-next-note"><span>→</span><div><strong>Payments stay separate.</strong><small>Phase 3 will match actual money received to these invoices instead of treating “sent” as “paid.”</small></div></div>
         </div>
       </section>
 
@@ -145,7 +161,7 @@
     <div class="quick-grid">
       <button class="quick-card enabled" data-action="add-session"><span class="quick-icon">◫</span><strong>Work session</strong><small>Active</small></button>
       <button class="quick-card enabled" data-action="add-client"><span class="quick-icon">⌁</span><strong>Client</strong><small>Active</small></button>
-      <button class="quick-card"><span class="quick-icon">▧</span><strong>Invoice</strong><small>Phase 2</small></button>
+      <button class="quick-card enabled" data-action="add-invoice"><span class="quick-icon">▧</span><strong>Invoice</strong><small>Active</small></button>
       <button class="quick-card"><span class="quick-icon">$</span><strong>Payment</strong><small>Phase 3</small></button>
       <button class="quick-card"><span class="quick-icon">−</span><strong>Expense</strong><small>Phase 4</small></button>
       <button class="quick-card"><span class="quick-icon">↝</span><strong>Mileage</strong><small>Phase 5</small></button>
@@ -153,7 +169,7 @@
   </section>
 
   <section class="command-palette" id="commandPalette" role="dialog" aria-modal="true" aria-labelledby="commandTitle" hidden>
-    <div class="command-input-row"><span>⌕</span><input id="commandInput" aria-label="Search" placeholder="Search clients, sessions, future invoices, records…" autocomplete="off" /><kbd>Esc</kbd></div>
+    <div class="command-input-row"><span>⌕</span><input id="commandInput" aria-label="Search" placeholder="Search clients, sessions, invoices, records…" autocomplete="off" /><kbd>Esc</kbd></div>
     <div class="command-body" id="commandBody"><p class="command-label" id="commandTitle">Quick navigation</p></div>
   </section>
 
@@ -168,11 +184,33 @@
     <form id="dynamicForm"><div id="formFields"></div><div class="form-actions"><button type="button" class="secondary-btn" data-close>Cancel</button><button type="submit" class="primary-btn" id="formSubmitBtn">Save</button></div></form>
   </section>
 
+  <section class="sheet invoice-sheet" id="invoiceSheet" role="dialog" aria-modal="true" aria-labelledby="invoiceTitle" hidden>
+    <div class="sheet-handle"></div>
+    <div class="sheet-head invoice-sheet-head"><div><p class="eyebrow" id="invoiceEyebrow">NEW INVOICE</p><h2 id="invoiceTitle">Create invoice</h2><small id="invoiceNumberHint">Next number</small></div><button class="close-btn" data-close aria-label="Close">×</button></div>
+    <form id="invoiceForm">
+      <div class="invoice-form-grid">
+        <div class="invoice-form-main">
+          <div class="invoice-basics">
+            <label class="field"><span>Client</span><select id="invoiceClient" required><option value="">Choose client</option></select></label>
+            <label class="field"><span>Issue date</span><input id="invoiceIssueDate" type="date" required /></label>
+            <label class="field"><span>Due date</span><input id="invoiceDueDate" type="date" required /></label>
+          </div>
+          <section class="invoice-builder-section"><div class="builder-title"><div><p class="eyebrow">WORK TO BILL</p><h3>Select sessions</h3></div><small>Only uninvoiced work for this client appears.</small></div><div id="invoiceSessionChoices" class="invoice-session-list"></div></section>
+          <section class="invoice-builder-section"><div class="builder-title"><div><p class="eyebrow">ADDITIONAL</p><h3>Custom line items</h3></div><button type="button" class="text-btn" id="addManualInvoiceLine">＋ Add item</button></div><div id="invoiceManualItems" class="manual-lines"></div></section>
+          <label class="field invoice-note"><span>Invoice note <em>optional</em></span><textarea id="invoiceNote" rows="3" maxlength="700" placeholder="A short note to the payer…"></textarea></label>
+        </div>
+        <aside class="invoice-form-summary"><div><p class="eyebrow">DRAFT TOTAL</p><strong id="invoiceDraftTotal">$0</strong><span id="invoiceDraftItemCount">0 line items</span></div><p>Select work once. The invoice stores a snapshot of the client, rates, and line items so later changes do not silently rewrite it.</p></aside>
+      </div>
+      <div class="form-actions invoice-form-actions"><button type="button" class="secondary-btn" data-close>Cancel</button><button type="submit" class="primary-btn" id="invoiceSubmitBtn">Save draft</button></div>
+    </form>
+  </section>
+
   <section class="sheet settings-sheet" id="settingsSheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
     <div class="sheet-handle"></div><div class="sheet-head"><div><p class="eyebrow">SETTINGS</p><h2 id="settingsTitle">Account, sync, and data</h2></div><button class="close-btn" data-close aria-label="Close">×</button></div>
     <div class="settings-stack">
       <article class="setting-card"><div class="setting-icon">☁</div><div><strong>Cloud synchronization</strong><p>This prototype is intentionally local-only. The data layer is separated so secure authentication, database sync, and encrypted file storage can be connected without rewriting the app.</p><span class="status-label"><span class="sync-dot local"></span> Local-only preview</span></div></article>
       <article class="setting-card"><div class="setting-icon">⇩</div><div class="setting-card-flex"><div><strong>Portable backup</strong><p>Export the complete local workspace as structured JSON. Later, server backups and account recovery will supplement this.</p></div><button class="secondary-btn" id="exportBackupBtn">Export</button></div></article>
+      <article class="setting-card"><div class="setting-icon">▧</div><div class="setting-card-flex"><div><strong>Invoice identity & defaults</strong><p>Set the sender name, contact details, invoice prefix, default due period, and payment instructions used when new invoices are created.</p></div><button class="secondary-btn" id="invoiceSettingsFromSettings">Edit</button></div></article>
       <article class="setting-card"><div class="setting-icon">⌘</div><div><strong>Device strategy</strong><p>Responsive web/PWA first, with interaction patterns and data services designed to carry forward into an iPhone/iPad shell later.</p></div></article>
     </div>
   </section>

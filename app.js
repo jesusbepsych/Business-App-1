@@ -6,7 +6,7 @@
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
 
   const initialData = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     activeBusinessId: 'biz_play_it_forward',
     businesses: [{
       id: 'biz_play_it_forward',
@@ -16,23 +16,49 @@
       currency: 'USD',
       timezone: 'America/Los_Angeles',
       status: 'active',
+      invoiceSettings: { prefix: 'INV', nextNumber: 1, defaultDueDays: 7, senderEmail: '', senderPhone: '', senderAddress: '', paymentInstructions: '' },
       createdAt: nowIso(),
       updatedAt: nowIso(),
     }],
     clients: [],
     sessions: [],
+    invoices: [],
     auditEvents: [],
   };
 
   const deepClone = (value) => JSON.parse(JSON.stringify(value));
+
+  function invoiceDefaults() {
+    return { prefix: 'INV', nextNumber: 1, defaultDueDays: 7, senderEmail: '', senderPhone: '', senderAddress: '', paymentInstructions: '' };
+  }
+
+  function migrateData(parsed) {
+    if (!parsed || typeof parsed !== 'object') return deepClone(initialData);
+    if (parsed.schemaVersion === 2) {
+      parsed.schemaVersion = 3;
+      parsed.invoices = [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      const clientNames = new Map((parsed.clients || []).map(c => [c.id, c.displayName]));
+      parsed.clients = (parsed.clients || []).map(c => ({ billingEmail: '', billingAddress: '', ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: clientNames.get(s.clientId) || '', ...s }));
+      return parsed;
+    }
+    if (parsed.schemaVersion === 3) {
+      parsed.invoices ||= [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      parsed.clients = (parsed.clients || []).map(c => ({ billingEmail: '', billingAddress: '', ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
+      return parsed;
+    }
+    return deepClone(initialData);
+  }
 
   class LocalRepository {
     load() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return deepClone(initialData);
-        const parsed = JSON.parse(raw);
-        return parsed?.schemaVersion === 2 ? parsed : deepClone(initialData);
+        return migrateData(JSON.parse(raw));
       } catch (error) {
         console.warn('Could not load local workspace.', error);
         return deepClone(initialData);
@@ -50,14 +76,14 @@
   // load/save contract plus authenticated sync without changing domain/UI code.
   const repository = new LocalRepository();
   const data = repository.load();
-  const ui = { activeView: 'home', modal: null, workTab: 'sessions', formMode: null, formRecordId: null };
+  const ui = { activeView: 'home', modal: null, workTab: 'sessions', formMode: null, formRecordId: null, sessionFilter: 'all', invoiceFilter: 'all', invoiceFormId: null };
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const views = $$('[data-page]');
   const navButtons = $$('[data-view]');
   const overlay = $('#overlay');
-  const modals = [$('#quickAddSheet'), $('#commandPalette'), $('#businessSheet'), $('#formSheet'), $('#settingsSheet'), $('#detailPanel')];
+  const modals = [$('#quickAddSheet'), $('#commandPalette'), $('#businessSheet'), $('#formSheet'), $('#invoiceSheet'), $('#settingsSheet'), $('#detailPanel')];
   const toast = $('#toast');
 
   function persist(eventType, entityType, entityId, details = {}) {
@@ -79,7 +105,44 @@
     return data.sessions.filter(s => s.businessId === businessId);
   }
 
+  function businessInvoices(businessId = data.activeBusinessId) {
+    return data.invoices.filter(invoice => invoice.businessId === businessId);
+  }
+
   function clientById(id) { return data.clients.find(c => c.id === id); }
+  function invoiceById(id) { return data.invoices.find(invoice => invoice.id === id); }
+
+  function invoiceTotalCents(invoice) {
+    return (invoice?.lineItems || []).reduce((sum, item) => sum + Number(item.amountCents || 0), 0);
+  }
+
+  function invoiceDisplayStatus(invoice) {
+    if (!invoice) return 'Draft';
+    if (invoice.status === 'void') return 'Void';
+    if (invoice.status === 'draft') return 'Draft';
+    const today = new Date().toISOString().slice(0,10);
+    if (invoice.status === 'sent' && invoice.dueDate && invoice.dueDate < today) return 'Overdue';
+    return invoice.status === 'sent' ? 'Sent' : invoice.status;
+  }
+
+  function invoiceNumberPreview(business = activeBusiness()) {
+    const settings = { ...invoiceDefaults(), ...(business?.invoiceSettings || {}) };
+    return `${settings.prefix || 'INV'}-${String(settings.nextNumber || 1).padStart(4,'0')}`;
+  }
+
+  function nextInvoiceNumber(business = activeBusiness()) {
+    const settings = business.invoiceSettings ||= invoiceDefaults();
+    const number = `${settings.prefix || 'INV'}-${String(settings.nextNumber || 1).padStart(4,'0')}`;
+    settings.nextNumber = Number(settings.nextNumber || 1) + 1;
+    business.updatedAt = nowIso();
+    return number;
+  }
+
+  function addDays(dateString, days) {
+    const date = new Date(`${dateString}T12:00:00`);
+    date.setDate(date.getDate() + Number(days || 0));
+    return date.toISOString().slice(0,10);
+  }
 
   function initials(name) {
     return String(name || '?').trim().split(/\s+/).slice(0,2).map(p => p[0]).join('').toUpperCase();
@@ -146,6 +209,18 @@
   function sessionAmountCents(session) { return Math.round(sessionMinutes(session) / 60 * (session.rateCents || 0)); }
   function hoursLabel(minutes) { return `${(minutes / 60).toFixed(minutes % 60 ? 1 : 0)}h`; }
 
+  function sessionInvoiceStatusLabel(session) {
+    if (session.invoiceStatus === 'draft') return 'In draft';
+    if (session.invoiceStatus === 'invoiced') return 'Invoiced';
+    return 'Uninvoiced';
+  }
+
+  function sessionInvoiceStatusClass(session) {
+    if (session.invoiceStatus === 'invoiced') return 'success';
+    if (session.invoiceStatus === 'draft') return 'accent';
+    return '';
+  }
+
   function setView(viewName) {
     ui.activeView = viewName;
     views.forEach(view => view.classList.toggle('active', view.dataset.page === viewName));
@@ -162,6 +237,7 @@
     document.body.style.overflow = 'hidden';
     if (modal === $('#commandPalette')) setTimeout(() => $('#commandInput').focus(), 40);
     if (modal === $('#formSheet')) setTimeout(() => $('#dynamicForm input, #dynamicForm select, #dynamicForm textarea')?.focus(), 60);
+    if (modal === $('#invoiceSheet')) setTimeout(() => $('#invoiceClient')?.focus(), 60);
   }
 
   function closeModal(hideOverlay = true) {
@@ -211,7 +287,8 @@
     const monthKey = new Date().toISOString().slice(0,7);
     const monthly = sessions.filter(s => s.date?.slice(0,7) === monthKey);
     const totalMinutes = monthly.reduce((sum, s) => sum + sessionMinutes(s), 0);
-    const uninvoicedCents = sessions.filter(s => s.invoiceStatus !== 'invoiced').reduce((sum, s) => sum + sessionAmountCents(s), 0);
+    const uninvoiced = sessions.filter(s => s.invoiceStatus === 'uninvoiced');
+    const uninvoicedCents = uninvoiced.reduce((sum, s) => sum + sessionAmountCents(s), 0);
 
     $('#metricClients').textContent = clients.length;
     $('#metricHours').textContent = (totalMinutes / 60).toFixed(totalMinutes % 60 ? 1 : 0);
@@ -220,36 +297,45 @@
     $('#sessionTabCount').textContent = sessions.length;
 
     const incomplete = sessions.filter(s => !s.clientId || !s.date || !s.startTime || !s.endTime);
-    $('#attentionCount').textContent = `${incomplete.length} ${incomplete.length === 1 ? 'item' : 'items'}`;
-    $('#attentionTitle').textContent = incomplete.length ? 'A few records need review.' : 'Nothing needs your attention.';
-    $('#attentionBody').innerHTML = incomplete.length
-      ? `<div class="attention-list">${incomplete.slice(0,3).map(s => `<button data-session-detail="${s.id}"><strong>Incomplete work session</strong><small>${escapeHtml(clientById(s.clientId)?.displayName || 'No client')} · ${formatDate(s.date)}</small></button>`).join('')}</div>`
-      : `<p class="panel-copy">As data grows, this becomes the single queue for missing session details, overdue invoices, receipts, mileage review, and tax reminders.</p>`;
+    const overdue = businessInvoices().filter(invoice => invoiceDisplayStatus(invoice) === 'Overdue');
+    const attentionItems = [
+      ...overdue.map(invoice => ({ type: 'invoice', id: invoice.id, title: `${invoice.number} is overdue`, sub: `${invoice.recipientSnapshot?.displayName || 'Client'} · ${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}` })),
+      ...incomplete.map(session => ({ type: 'session', id: session.id, title: 'Incomplete work session', sub: `${clientById(session.clientId)?.displayName || session.clientNameSnapshot || 'No client'} · ${formatDate(session.date)}` }))
+    ];
+    $('#attentionCount').textContent = `${attentionItems.length} ${attentionItems.length === 1 ? 'item' : 'items'}`;
+    $('#attentionTitle').textContent = attentionItems.length ? 'A few records need review.' : 'Nothing needs your attention.';
+    $('#attentionBody').innerHTML = attentionItems.length
+      ? `<div class="attention-list">${attentionItems.slice(0,3).map(item => `<button ${item.type === 'invoice' ? `data-invoice-detail="${item.id}"` : `data-session-detail="${item.id}"`}><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sub)}</small></button>`).join('')}</div>`
+      : `<p class="panel-copy">Overdue invoices, incomplete records, missing receipts, mileage review, and tax reminders will collect here.</p>`;
 
     $('#recentSessions').innerHTML = sessions.length ? sessions
       .slice().sort((a,b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`)).slice(0,4)
       .map(sessionRowCompact).join('') : `<div class="inline-empty"><strong>No sessions yet</strong><small>Add your first work session and it will appear here.</small></div>`;
 
-    $$('[data-session-detail]').forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
+    $$('[data-session-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
+    $$('[data-invoice-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
+    $$('[data-session-detail]', $('#recentSessions')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
   }
 
   function sessionRowCompact(s) {
     const client = clientById(s.clientId);
-    return `<button class="recent-row" data-session-detail="${s.id}"><span class="recent-date"><strong>${formatDate(s.date,{month:'short'})}</strong><small>${formatDate(s.date,{day:'numeric'})}</small></span><span class="recent-main"><strong>${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(sessionTimeRangeLabel(s))} · ${hoursLabel(sessionMinutes(s))}</small></span><span class="recent-amount">${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</span></button>`;
+    return `<button class="recent-row" data-session-detail="${s.id}"><span class="recent-date"><strong>${formatDate(s.date,{month:'short'})}</strong><small>${formatDate(s.date,{day:'numeric'})}</small></span><span class="recent-main"><strong>${escapeHtml(client?.displayName || s.clientNameSnapshot || 'Unassigned')}</strong><small>${escapeHtml(sessionTimeRangeLabel(s))} · ${hoursLabel(sessionMinutes(s))}</small></span><span class="recent-amount">${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</span></button>`;
   }
 
   function renderSessions() {
     const term = ($('#sessionSearch')?.value || '').toLowerCase().trim();
     const sessions = businessSessions().slice().sort((a,b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`)).filter(s => {
       const client = clientById(s.clientId);
-      return !term || `${client?.displayName || ''} ${s.date || ''} ${s.notes || ''}`.toLowerCase().includes(term);
+      const matchesTerm = !term || `${client?.displayName || s.clientNameSnapshot || ''} ${s.date || ''} ${s.notes || ''}`.toLowerCase().includes(term);
+      const matchesFilter = ui.sessionFilter === 'all' || (ui.sessionFilter === 'uninvoiced' ? s.invoiceStatus === 'uninvoiced' : s.invoiceStatus !== 'uninvoiced');
+      return matchesTerm && matchesFilter;
     });
 
     $('#sessionsContainer').innerHTML = sessions.length ? `
       <div class="table-head session-grid"><span>Date</span><span>Client</span><span>Time</span><span>Value</span><span>Status</span></div>
       ${sessions.map(s => {
         const client = clientById(s.clientId);
-        return `<button class="table-row session-grid" data-session-detail="${s.id}"><span><strong>${formatDate(s.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(s.date,{weekday:'short'})}</small></span><span><strong>${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(s.notes || 'No session note')}</small></span><span><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong><small>${hoursLabel(sessionMinutes(s))}</small></span><span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong><small>@ ${formatMoney(s.rateCents || 0)}/hr</small></span><span><span class="status-pill ${s.invoiceStatus === 'invoiced' ? 'success' : ''}">${s.invoiceStatus === 'invoiced' ? 'Invoiced' : 'Uninvoiced'}</span></span></button>`;
+        return `<button class="table-row session-grid" data-session-detail="${s.id}"><span><strong>${formatDate(s.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(s.date,{weekday:'short'})}</small></span><span><strong>${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(s.notes || 'No session note')}</small></span><span><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong><small>${hoursLabel(sessionMinutes(s))}</small></span><span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong><small>@ ${formatMoney(s.rateCents || 0)}/hr</small></span><span><span class="status-pill ${sessionInvoiceStatusClass(s)}">${sessionInvoiceStatusLabel(s)}</span></span></button>`;
       }).join('')}` : emptyState('No work sessions yet', 'Log completed work here. Later, this same record will flow into invoices and mileage.', 'Add work session', 'add-session');
 
     $$('[data-session-detail]').forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
@@ -278,6 +364,281 @@
 
   function renderWork() { renderSessions(); renderClients(); }
 
+  function invoiceStatusClass(invoice) {
+    const status = invoiceDisplayStatus(invoice).toLowerCase();
+    if (status === 'sent') return 'success';
+    if (status === 'overdue') return 'danger';
+    if (status === 'draft') return 'accent';
+    return '';
+  }
+
+  function renderMoney() {
+    const invoices = businessInvoices().slice().sort((a,b) => `${b.issueDate || ''}${b.createdAt || ''}`.localeCompare(`${a.issueDate || ''}${a.createdAt || ''}`));
+    const visible = invoices.filter(invoice => ui.invoiceFilter === 'all' || invoiceDisplayStatus(invoice).toLowerCase() === ui.invoiceFilter);
+    const draft = invoices.filter(invoice => invoice.status === 'draft');
+    const issued = invoices.filter(invoice => invoice.status === 'sent');
+    const issuedTotal = issued.reduce((sum, invoice) => sum + invoiceTotalCents(invoice), 0);
+    const draftTotal = draft.reduce((sum, invoice) => sum + invoiceTotalCents(invoice), 0);
+    const overdueCount = invoices.filter(invoice => invoiceDisplayStatus(invoice) === 'Overdue').length;
+
+    $('#moneyIssuedTotal').textContent = formatMoney(issuedTotal, activeBusiness().currency);
+    $('#moneyDraftTotal').textContent = formatMoney(draftTotal, activeBusiness().currency);
+    $('#moneyOverdueCount').textContent = overdueCount;
+    $('#invoiceCount').textContent = invoices.length;
+    $('#invoiceFilterBtn').textContent = ui.invoiceFilter === 'all' ? 'All invoices' : ui.invoiceFilter[0].toUpperCase() + ui.invoiceFilter.slice(1);
+
+    $('#invoicesContainer').innerHTML = visible.length ? `
+      <div class="table-head invoice-grid"><span>Invoice</span><span>Client</span><span>Issued</span><span>Due</span><span>Total</span><span>Status</span></div>
+      ${visible.map(invoice => `<button class="table-row invoice-grid" data-invoice-detail="${invoice.id}"><span><strong>${escapeHtml(invoice.number)}</strong><small>${(invoice.lineItems || []).length} ${(invoice.lineItems || []).length === 1 ? 'item' : 'items'}</small></span><span><strong>${escapeHtml(invoice.recipientSnapshot?.displayName || clientById(invoice.clientId)?.displayName || 'Client')}</strong><small>${escapeHtml(invoice.recipientSnapshot?.billingEmail || 'No billing email')}</small></span><span><strong>${formatDate(invoice.issueDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(invoice.issueDate,{year:'numeric'})}</small></span><span><strong>${formatDate(invoice.dueDate,{month:'short',day:'numeric'})}</strong><small>${invoice.dueDate ? formatDate(invoice.dueDate,{weekday:'short'}) : '—'}</small></span><span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong><small>${invoice.status === 'void' ? 'Voided' : 'Snapshot total'}</small></span><span><span class="status-pill ${invoiceStatusClass(invoice)}">${escapeHtml(invoiceDisplayStatus(invoice))}</span></span></button>`).join('')}`
+      : emptyState(invoices.length ? 'No invoices match this filter' : 'No invoices yet', invoices.length ? 'Choose another invoice status to see the rest.' : 'Turn completed work into a clean invoice without entering the hours twice.', invoices.length ? 'Show all invoices' : 'Create first invoice', invoices.length ? 'all-invoices' : 'add-invoice');
+
+    $$('[data-invoice-detail]', $('#invoicesContainer')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
+    bindMoneyEmptyActions();
+  }
+
+  function bindMoneyEmptyActions() {
+    $$('[data-empty-action="add-invoice"]').forEach(btn => btn.addEventListener('click', () => openInvoiceForm()));
+    $$('[data-empty-action="all-invoices"]').forEach(btn => btn.addEventListener('click', () => { ui.invoiceFilter = 'all'; renderMoney(); }));
+  }
+
+  function invoiceSessionDescription(session) {
+    return `Work session · ${formatDate(session.date,{month:'short',day:'numeric',year:'numeric'})} · ${sessionTimeRangeLabel(session)}`;
+  }
+
+  function invoiceSessionLine(session, existingLineId = null) {
+    return {
+      id: existingLineId || uid('line'),
+      type: 'session',
+      sessionId: session.id,
+      description: invoiceSessionDescription(session),
+      quantityMinutes: sessionMinutes(session),
+      rateCents: session.rateCents || 0,
+      amountCents: sessionAmountCents(session)
+    };
+  }
+
+  function openInvoiceForm({ existingId = null, clientId = null, sessionId = null } = {}) {
+    const clients = businessClients().filter(client => client.status === 'active' || client.id === clientId || client.id === invoiceById(existingId)?.clientId);
+    if (!clients.length) {
+      showToast('Add a client before creating an invoice.');
+      openClientForm();
+      return;
+    }
+    const existing = existingId ? invoiceById(existingId) : null;
+    if (existing?.status === 'void') { showToast('Voided invoices are preserved as read-only records.'); return; }
+    ui.invoiceFormId = existingId;
+    const selectedClientId = existing?.clientId || clientId || (sessionId ? data.sessions.find(s => s.id === sessionId)?.clientId : '') || (clients.length === 1 ? clients[0].id : '');
+    const today = new Date().toISOString().slice(0,10);
+    const issueDate = existing?.issueDate || today;
+    const dueDate = existing?.dueDate || addDays(issueDate, activeBusiness().invoiceSettings?.defaultDueDays ?? 7);
+    const selectedSessionIds = new Set((existing?.lineItems || []).filter(item => item.type === 'session').map(item => item.sessionId));
+    if (sessionId) selectedSessionIds.add(sessionId);
+
+    $('#invoiceEyebrow').textContent = existing ? 'EDIT INVOICE' : 'NEW INVOICE';
+    $('#invoiceTitle').textContent = existing ? existing.number : 'Create invoice';
+    $('#invoiceNumberHint').textContent = existing ? existing.number : `Next number · ${invoiceNumberPreview()}`;
+    $('#invoiceSubmitBtn').textContent = existing ? 'Save changes' : 'Save draft';
+    $('#invoiceClient').innerHTML = `<option value="">Choose client</option>${clients.map(client => `<option value="${client.id}" ${client.id === selectedClientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}`;
+    $('#invoiceIssueDate').value = issueDate;
+    $('#invoiceDueDate').value = dueDate;
+    $('#invoiceNote').value = existing?.note || '';
+    $('#invoiceManualItems').innerHTML = '';
+    (existing?.lineItems || []).filter(item => item.type === 'manual').forEach(item => addManualInvoiceRow(item));
+    $('#invoiceSheet').dataset.selectedSessions = JSON.stringify([...selectedSessionIds]);
+    renderInvoiceSessionChoices(selectedClientId, selectedSessionIds);
+    updateInvoiceDraftTotal();
+    openModal($('#invoiceSheet'));
+  }
+
+  function renderInvoiceSessionChoices(clientId, selected = new Set()) {
+    const existing = ui.invoiceFormId ? invoiceById(ui.invoiceFormId) : null;
+    const sessions = businessSessions().filter(session => session.clientId === clientId && (session.invoiceStatus === 'uninvoiced' || session.invoiceId === existing?.id)).sort((a,b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`));
+    const host = $('#invoiceSessionChoices');
+    if (!clientId) {
+      host.innerHTML = `<div class="inline-empty invoice-empty"><small>Choose a client to see uninvoiced work.</small></div>`;
+      return;
+    }
+    if (!sessions.length) {
+      host.innerHTML = `<div class="inline-empty invoice-empty"><strong>No uninvoiced sessions</strong><small>You can still add a custom line item below.</small></div>`;
+      return;
+    }
+    host.innerHTML = sessions.map(session => `<label class="invoice-session-option"><input type="checkbox" name="invoiceSession" value="${session.id}" ${selected.has(session.id) ? 'checked' : ''}/><span class="invoice-check">✓</span><span class="invoice-session-date"><strong>${formatDate(session.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(session.date,{weekday:'short'})}</small></span><span class="invoice-session-main"><strong>${escapeHtml(sessionTimeRangeLabel(session))}</strong><small>${hoursLabel(sessionMinutes(session))} · ${session.notes ? escapeHtml(session.notes) : 'Work session'}</small></span><strong class="invoice-session-amount">${formatMoney(sessionAmountCents(session), activeBusiness().currency)}</strong></label>`).join('');
+    $$('input[name="invoiceSession"]', host).forEach(input => input.addEventListener('change', updateInvoiceDraftTotal));
+  }
+
+  function addManualInvoiceRow(item = {}) {
+    const row = document.createElement('div');
+    row.className = 'manual-line-row';
+    row.dataset.lineId = item.id || uid('line');
+    const quantity = item.quantity ?? 1;
+    row.innerHTML = `<label><span>Description</span><input class="manual-description" maxlength="180" placeholder="Service, reimbursement, or flat-rate item" value="${escapeHtml(item.description || '')}" /></label><label class="manual-qty"><span>Qty</span><input class="manual-quantity" type="number" min="0.01" step="0.25" inputmode="decimal" value="${escapeHtml(quantity)}" /></label><label class="manual-rate"><span>Rate</span><div class="money-input compact"><span>$</span><input class="manual-rate-input" type="number" min="0" step="0.01" inputmode="decimal" value="${item.rateCents != null ? (item.rateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div></label><button type="button" class="line-remove" aria-label="Remove line item">×</button>`;
+    $('#invoiceManualItems').appendChild(row);
+    $$('input', row).forEach(input => input.addEventListener('input', updateInvoiceDraftTotal));
+    $('.line-remove', row).addEventListener('click', () => { row.remove(); updateInvoiceDraftTotal(); });
+    updateInvoiceDraftTotal();
+  }
+
+  function collectInvoiceLineItems() {
+    const lines = [];
+    $$('input[name="invoiceSession"]:checked', $('#invoiceSessionChoices')).forEach(input => {
+      const session = data.sessions.find(s => s.id === input.value);
+      if (!session) return;
+      const existingLine = ui.invoiceFormId ? invoiceById(ui.invoiceFormId)?.lineItems?.find(item => item.type === 'session' && item.sessionId === session.id) : null;
+      lines.push(invoiceSessionLine(session, existingLine?.id));
+    });
+    $$('.manual-line-row', $('#invoiceManualItems')).forEach(row => {
+      const description = $('.manual-description', row).value.trim();
+      const quantity = Number($('.manual-quantity', row).value || 0);
+      const rateCents = Math.round(Number($('.manual-rate-input', row).value || 0) * 100);
+      if (!description && !rateCents) return;
+      lines.push({ id: row.dataset.lineId || uid('line'), type: 'manual', description: description || 'Custom item', quantity, rateCents, amountCents: Math.round(quantity * rateCents) });
+    });
+    return lines;
+  }
+
+  function updateInvoiceDraftTotal() {
+    const total = collectInvoiceLineItems().reduce((sum, item) => sum + item.amountCents, 0);
+    const count = collectInvoiceLineItems().length;
+    $('#invoiceDraftTotal').textContent = formatMoney(total, activeBusiness().currency);
+    $('#invoiceDraftItemCount').textContent = `${count} ${count === 1 ? 'line item' : 'line items'}`;
+  }
+
+  function releaseInvoiceSessions(invoice) {
+    (invoice?.lineItems || []).filter(item => item.type === 'session').forEach(item => {
+      const session = data.sessions.find(s => s.id === item.sessionId);
+      if (session?.invoiceId === invoice.id) Object.assign(session, { invoiceId: null, invoiceStatus: 'uninvoiced', updatedAt: nowIso() });
+    });
+  }
+
+  function assignInvoiceSessions(invoice) {
+    (invoice?.lineItems || []).filter(item => item.type === 'session').forEach(item => {
+      const session = data.sessions.find(s => s.id === item.sessionId);
+      if (session) Object.assign(session, { invoiceId: invoice.id, invoiceStatus: invoice.status === 'sent' ? 'invoiced' : 'draft', updatedAt: nowIso() });
+    });
+  }
+
+  function saveInvoice(event) {
+    event.preventDefault();
+    const clientId = $('#invoiceClient').value;
+    const client = clientById(clientId);
+    const lineItems = collectInvoiceLineItems();
+    if (!client) { showToast('Choose a client for this invoice.'); return; }
+    if (!lineItems.length) { showToast('Add at least one work session or custom line item.'); return; }
+    const issueDate = $('#invoiceIssueDate').value;
+    const dueDate = $('#invoiceDueDate').value;
+    if (!issueDate || !dueDate) { showToast('Choose both an issue date and due date.'); return; }
+    if (dueDate < issueDate) { showToast('Due date cannot be before the issue date.'); return; }
+    const recipientSnapshot = { displayName: client.displayName, billingEmail: client.billingEmail || '', billingAddress: client.billingAddress || '' };
+    const sender = activeBusiness();
+    const senderSnapshot = { displayName: sender.legalName || sender.displayName, senderEmail: sender.invoiceSettings?.senderEmail || '', senderPhone: sender.invoiceSettings?.senderPhone || '', senderAddress: sender.invoiceSettings?.senderAddress || '', paymentInstructions: sender.invoiceSettings?.paymentInstructions || '' };
+
+    let invoice;
+    if (ui.invoiceFormId) {
+      invoice = invoiceById(ui.invoiceFormId);
+      if (!invoice) return;
+      const before = deepClone(invoice);
+      releaseInvoiceSessions(invoice);
+      Object.assign(invoice, { clientId, recipientSnapshot, senderSnapshot, issueDate, dueDate, note: $('#invoiceNote').value.trim(), lineItems, updatedAt: nowIso() });
+      assignInvoiceSessions(invoice);
+      persist('updated', 'Invoice', invoice.id, { before, after: deepClone(invoice) });
+      showToast(`${invoice.number} updated`);
+    } else {
+      invoice = { id: uid('invoice'), businessId: data.activeBusinessId, number: nextInvoiceNumber(), clientId, recipientSnapshot, senderSnapshot, issueDate, dueDate, note: $('#invoiceNote').value.trim(), status: 'draft', lineItems, createdAt: nowIso(), updatedAt: nowIso(), sentAt: null, voidedAt: null };
+      data.invoices.push(invoice);
+      assignInvoiceSessions(invoice);
+      persist('created', 'Invoice', invoice.id, { number: invoice.number });
+      showToast(`${invoice.number} saved as draft`);
+    }
+    ui.invoiceFormId = null;
+    closeModal();
+    renderAll();
+    setView('money');
+    setTimeout(() => openInvoiceDetail(invoice.id), 40);
+  }
+
+  function openInvoiceDetail(id) {
+    const invoice = invoiceById(id); if (!invoice) return;
+    const displayStatus = invoiceDisplayStatus(invoice);
+    const canEdit = invoice.status !== 'void';
+    $('#detailEyebrow').textContent = 'INVOICE';
+    $('#detailTitle').textContent = invoice.number;
+    const lineRows = (invoice.lineItems || []).map(item => {
+      const qty = item.type === 'session' ? `${hoursLabel(item.quantityMinutes || 0)}` : `${Number(item.quantity || 0).toLocaleString('en-US',{maximumFractionDigits:2})}`;
+      return `<div class="invoice-preview-line"><span><strong>${escapeHtml(item.description)}</strong><small>${item.type === 'session' ? 'Linked work session' : 'Custom line item'}</small></span><span>${escapeHtml(qty)}</span><span>${formatMoney(item.rateCents || 0, activeBusiness().currency)}</span><strong>${formatMoney(item.amountCents || 0, activeBusiness().currency)}</strong></div>`;
+    }).join('');
+    const primaryAction = invoice.status === 'draft' ? `<button class="primary-btn" data-mark-invoice-sent="${invoice.id}">Mark sent</button>` : invoice.status === 'sent' ? `<button class="primary-btn disabled-action" title="Payment tracking arrives in Phase 3">Record payment · Phase 3</button>` : '';
+    const destructive = invoice.status === 'draft' ? `<button type="button" class="danger-menu-item" data-delete-invoice="${invoice.id}">Delete draft</button>` : invoice.status === 'sent' ? `<button type="button" data-invoice-draft="${invoice.id}">Move back to draft</button><button type="button" class="danger-menu-item" data-void-invoice="${invoice.id}">Void invoice</button>` : '';
+    $('#detailBody').innerHTML = `<div class="detail-actions invoice-detail-actions"><button class="secondary-btn" data-print-invoice="${invoice.id}">Print / Save PDF</button>${canEdit ? `<button class="secondary-btn" data-edit-invoice="${invoice.id}">Edit</button>` : ''}${primaryAction}${destructive ? `<details class="record-more"><summary aria-label="More invoice actions" title="More actions">•••</summary><div class="record-more-popover">${destructive}</div></details>` : ''}</div><div id="detailDeleteConfirm"></div>
+      <div class="invoice-preview-card">
+        <div class="invoice-preview-top"><div><span class="invoice-wordmark">${escapeHtml(invoice.senderSnapshot?.displayName || activeBusiness().displayName)}</span><small>${escapeHtml(invoice.senderSnapshot?.senderEmail || '')}${invoice.senderSnapshot?.senderEmail && invoice.senderSnapshot?.senderPhone ? ' · ' : ''}${escapeHtml(invoice.senderSnapshot?.senderPhone || '')}</small></div><div class="invoice-preview-number"><span class="status-pill ${invoiceStatusClass(invoice)}">${escapeHtml(displayStatus)}</span><strong>${escapeHtml(invoice.number)}</strong></div></div>
+        <div class="invoice-preview-parties"><div><small>BILL TO</small><strong>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')}</strong><p>${escapeHtml(invoice.recipientSnapshot?.billingEmail || '')}${invoice.recipientSnapshot?.billingEmail && invoice.recipientSnapshot?.billingAddress ? '<br>' : ''}${escapeHtml(invoice.recipientSnapshot?.billingAddress || '')}</p></div><div class="invoice-date-pair"><span><small>Issued</small><strong>${formatDate(invoice.issueDate)}</strong></span><span><small>Due</small><strong>${formatDate(invoice.dueDate)}</strong></span></div></div>
+        <div class="invoice-preview-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span></div>${lineRows}
+        <div class="invoice-preview-total"><span>Total</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div>
+        ${invoice.note ? `<div class="invoice-preview-note"><small>NOTE</small><p>${escapeHtml(invoice.note)}</p></div>` : ''}
+        ${invoice.senderSnapshot?.paymentInstructions ? `<div class="invoice-preview-note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}
+      </div>
+      <div class="trace-banner"><span>↳</span><div><strong>${(invoice.lineItems || []).filter(item => item.type === 'session').length} linked work ${(invoice.lineItems || []).filter(item => item.type === 'session').length === 1 ? 'session' : 'sessions'}</strong><small>The invoice stores its own client, sender, rate, and line-item snapshots so later edits do not silently rewrite this record.</small></div></div>`;
+    openModal($('#detailPanel'));
+    $('[data-edit-invoice]')?.addEventListener('click', () => openInvoiceForm({ existingId: id }));
+    $('[data-print-invoice]')?.addEventListener('click', () => printInvoice(id));
+    $('[data-mark-invoice-sent]')?.addEventListener('click', () => markInvoiceSent(id));
+    $('[data-invoice-draft]')?.addEventListener('click', () => moveInvoiceToDraft(id));
+    $('[data-delete-invoice]')?.addEventListener('click', () => showInvoiceActionConfirmation('delete', id));
+    $('[data-void-invoice]')?.addEventListener('click', () => showInvoiceActionConfirmation('void', id));
+  }
+
+  function markInvoiceSent(id) {
+    const invoice = invoiceById(id); if (!invoice || invoice.status !== 'draft') return;
+    const before = deepClone(invoice);
+    invoice.status = 'sent'; invoice.sentAt = nowIso(); invoice.updatedAt = nowIso();
+    assignInvoiceSessions(invoice);
+    persist('status_changed', 'Invoice', invoice.id, { from: before.status, to: 'sent' });
+    renderAll(); openInvoiceDetail(id); showToast(`${invoice.number} marked sent`);
+  }
+
+  function moveInvoiceToDraft(id) {
+    const invoice = invoiceById(id); if (!invoice || invoice.status !== 'sent') return;
+    invoice.status = 'draft'; invoice.sentAt = null; invoice.updatedAt = nowIso();
+    assignInvoiceSessions(invoice);
+    persist('status_changed', 'Invoice', invoice.id, { to: 'draft' });
+    renderAll(); openInvoiceDetail(id); showToast(`${invoice.number} moved to draft`);
+  }
+
+  function showInvoiceActionConfirmation(action, id) {
+    const invoice = invoiceById(id); const host = $('#detailDeleteConfirm'); if (!invoice || !host) return;
+    $('.record-more[open]', $('#detailBody'))?.removeAttribute('open');
+    const isVoid = action === 'void';
+    host.innerHTML = `<div class="delete-confirm-card"><div><strong>${isVoid ? `Void ${escapeHtml(invoice.number)}?` : `Delete ${escapeHtml(invoice.number)}?`}</strong><p>${isVoid ? 'The invoice will stay in your records as Void, and its linked work sessions will become available to invoice again.' : 'This draft will be permanently removed and its linked work sessions will become uninvoiced again.'}</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-invoice-action>${isVoid ? 'Void invoice' : 'Delete draft'}</button></div></div>`;
+    $('[data-cancel-delete]', host).addEventListener('click', () => { host.innerHTML = ''; });
+    $('[data-confirm-invoice-action]', host).addEventListener('click', () => isVoid ? voidInvoice(id) : deleteDraftInvoice(id));
+  }
+
+  function deleteDraftInvoice(id) {
+    const invoice = invoiceById(id); if (!invoice || invoice.status !== 'draft') return;
+    releaseInvoiceSessions(invoice);
+    data.invoices = data.invoices.filter(item => item.id !== id);
+    data.auditEvents = data.auditEvents.filter(event => event.entityId !== id);
+    data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Invoice', entityId: id, details: { number: invoice.number }, occurredAt: nowIso() });
+    repository.save(data); closeModal(); renderAll(); setView('money'); showToast(`${invoice.number} deleted`);
+  }
+
+  function voidInvoice(id) {
+    const invoice = invoiceById(id); if (!invoice || invoice.status !== 'sent') return;
+    invoice.status = 'void'; invoice.voidedAt = nowIso(); invoice.updatedAt = nowIso();
+    releaseInvoiceSessions(invoice);
+    persist('status_changed', 'Invoice', invoice.id, { to: 'void' });
+    renderAll(); openInvoiceDetail(id); showToast(`${invoice.number} voided`);
+  }
+
+  function printInvoice(id) {
+    const invoice = invoiceById(id); if (!invoice) return;
+    const lineRows = (invoice.lineItems || []).map(item => `<tr><td><strong>${escapeHtml(item.description)}</strong></td><td>${item.type === 'session' ? hoursLabel(item.quantityMinutes || 0) : Number(item.quantity || 0).toLocaleString('en-US',{maximumFractionDigits:2})}</td><td>${formatMoney(item.rateCents || 0, activeBusiness().currency)}</td><td><strong>${formatMoney(item.amountCents || 0, activeBusiness().currency)}</strong></td></tr>`).join('');
+    const popup = window.open('', '_blank');
+    if (!popup) { showToast('Allow pop-ups to print or save the invoice as PDF.'); return; }
+    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(invoice.number)}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#15171b;margin:0;padding:48px}*{box-sizing:border-box}.top{display:flex;justify-content:space-between;gap:30px;margin-bottom:50px}.brand{font-size:24px;font-weight:800}.num{text-align:right}.num strong{display:block;font-size:28px;margin-top:8px}.meta{display:grid;grid-template-columns:1fr auto;gap:40px;margin-bottom:38px}.meta small,.note small{color:#7b8088;font-weight:700;letter-spacing:.08em}.dates{display:flex;gap:34px}.dates span{display:flex;flex-direction:column;gap:5px}table{width:100%;border-collapse:collapse}th{font-size:11px;color:#7b8088;text-align:left;border-bottom:1px solid #ddd;padding:10px 8px}td{padding:14px 8px;border-bottom:1px solid #eee;font-size:13px}th:last-child,td:last-child{text-align:right}.total{display:flex;justify-content:flex-end;gap:50px;padding:22px 8px;font-size:18px}.note{margin-top:30px;max-width:650px;white-space:pre-wrap}.muted{color:#777}@media print{body{padding:20px}}</style></head><body><div class="top"><div><div class="brand">${escapeHtml(invoice.senderSnapshot?.displayName || activeBusiness().displayName)}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderEmail || '')}${invoice.senderSnapshot?.senderPhone ? ` · ${escapeHtml(invoice.senderSnapshot.senderPhone)}` : ''}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderAddress || '')}</div></div><div class="num"><span>INVOICE</span><strong>${escapeHtml(invoice.number)}</strong></div></div><div class="meta"><div><small>BILL TO</small><h3>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')}</h3><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingEmail || '')}</div><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingAddress || '')}</div></div><div class="dates"><span><small>ISSUED</small><strong>${formatDate(invoice.issueDate)}</strong></span><span><small>DUE</small><strong>${formatDate(invoice.dueDate)}</strong></span></div></div><table><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${lineRows}</tbody></table><div class="total"><span>Total</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div>${invoice.note ? `<div class="note"><small>NOTE</small><p>${escapeHtml(invoice.note)}</p></div>` : ''}${invoice.senderSnapshot?.paymentInstructions ? `<div class="note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}<script>window.onload=()=>setTimeout(()=>window.print(),150);<\/script></body></html>`);
+    popup.document.close();
+  }
+
   function renderCommandPalette() {
     const term = ($('#commandInput').value || '').toLowerCase().trim();
     const navigation = [
@@ -285,16 +646,19 @@
     ].filter(item => !term || item.slice(2).join(' ').toLowerCase().includes(term));
     const clients = businessClients().filter(c => term && c.displayName.toLowerCase().includes(term)).slice(0,5);
     const sessions = businessSessions().filter(s => {
-      const c = clientById(s.clientId); return term && `${c?.displayName || ''} ${s.date} ${s.notes || ''}`.toLowerCase().includes(term);
+      const c = clientById(s.clientId); return term && `${c?.displayName || s.clientNameSnapshot || ''} ${s.date} ${s.notes || ''}`.toLowerCase().includes(term);
     }).slice(0,5);
+    const invoices = businessInvoices().filter(invoice => term && `${invoice.number} ${invoice.recipientSnapshot?.displayName || ''} ${invoiceDisplayStatus(invoice)}`.toLowerCase().includes(term)).slice(0,5);
 
     $('#commandBody').innerHTML = `${navigation.length ? `<p class="command-label">Navigation</p>${navigation.map(n => `<button class="command-result" data-command-view="${n[0]}"><span>${n[1]}</span><div><strong>${n[2]}</strong><small>${n[3]}</small></div></button>`).join('')}` : ''}
       ${clients.length ? `<p class="command-label">Clients</p>${clients.map(c => `<button class="command-result" data-command-client="${c.id}"><span>${escapeHtml(initials(c.displayName))}</span><div><strong>${escapeHtml(c.displayName)}</strong><small>Client · ${formatMoney(c.defaultRateCents || 0)}/hr</small></div></button>`).join('')}` : ''}
-      ${sessions.length ? `<p class="command-label">Sessions</p>${sessions.map(s => `<button class="command-result" data-command-session="${s.id}"><span>◫</span><div><strong>${escapeHtml(clientById(s.clientId)?.displayName || 'Unassigned')}</strong><small>${formatDate(s.date)} · ${hoursLabel(sessionMinutes(s))}</small></div></button>`).join('')}` : ''}
-      ${term && !navigation.length && !clients.length && !sessions.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
+      ${sessions.length ? `<p class="command-label">Sessions</p>${sessions.map(s => `<button class="command-result" data-command-session="${s.id}"><span>◫</span><div><strong>${escapeHtml(clientById(s.clientId)?.displayName || s.clientNameSnapshot || 'Unassigned')}</strong><small>${formatDate(s.date)} · ${hoursLabel(sessionMinutes(s))}</small></div></button>`).join('')}` : ''}
+      ${invoices.length ? `<p class="command-label">Invoices</p>${invoices.map(invoice => `<button class="command-result" data-command-invoice="${invoice.id}"><span>▧</span><div><strong>${escapeHtml(invoice.number)}</strong><small>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)} · ${escapeHtml(invoiceDisplayStatus(invoice))}</small></div></button>`).join('')}` : ''}
+      ${term && !navigation.length && !clients.length && !sessions.length && !invoices.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
     $$('[data-command-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.commandView)));
     $$('[data-command-client]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openClientDetail(btn.dataset.commandClient); }));
     $$('[data-command-session]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openSessionDetail(btn.dataset.commandSession); }));
+    $$('[data-command-invoice]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); openInvoiceDetail(btn.dataset.commandInvoice); }));
   }
 
   function openClientForm(existingId = null) {
@@ -307,12 +671,17 @@
     $('#formFields').innerHTML = `
       <label class="field"><span>Client / payer name</span><input name="displayName" required maxlength="100" placeholder="e.g. Client A" value="${escapeHtml(existing?.displayName || '')}" /><small>You can use an alias if you do not want identifying client information in the prototype.</small></label>
       <div class="field-row"><label class="field"><span>Default hourly rate</span><div class="money-input"><span>$</span><input name="rate" required inputmode="decimal" min="0" step="0.01" type="number" placeholder="0.00" value="${existing ? (existing.defaultRateCents/100).toFixed(2) : ''}" /></div></label><label class="field"><span>Status</span><select name="status"><option value="active" ${existing?.status !== 'inactive' ? 'selected' : ''}>Active</option><option value="inactive" ${existing?.status === 'inactive' ? 'selected' : ''}>Inactive</option></select></label></div>
+      <details class="optional-fields" ${existing?.billingEmail || existing?.billingAddress ? 'open' : ''}><summary>Billing details <span>optional</span></summary><div class="optional-fields-body"><label class="field"><span>Billing email</span><input name="billingEmail" type="email" maxlength="160" placeholder="payer@example.com" value="${escapeHtml(existing?.billingEmail || '')}" /></label><label class="field"><span>Billing address</span><textarea name="billingAddress" rows="2" maxlength="300" placeholder="Optional address shown on invoices">${escapeHtml(existing?.billingAddress || '')}</textarea></label></div></details>
       <label class="field"><span>Notes <em>optional</em></span><textarea name="notes" rows="3" maxlength="500" placeholder="Billing arrangement, general context, or reminder…">${escapeHtml(existing?.notes || '')}</textarea></label>`;
     openModal($('#formSheet'));
   }
 
   function openSessionForm(existingId = null) {
     const existing = existingId ? data.sessions.find(s => s.id === existingId) : null;
+    if (existing?.invoiceId && invoiceById(existing.invoiceId)?.status === 'sent') {
+      showToast('This session is on a sent invoice. Move that invoice back to Draft before editing it.');
+      return;
+    }
     const clients = businessClients().filter(c => c.status === 'active' || c.id === existing?.clientId);
     if (!clients.length && !existing) {
       showToast('Add a client before logging a work session.');
@@ -324,9 +693,10 @@
     $('#formTitle').textContent = existing ? 'Edit work session' : 'New work session';
     $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Log session';
     const today = new Date().toISOString().slice(0,10);
+    const clientLocked = Boolean(existing?.invoiceId);
     $('#formSheet').classList.add('session-form-sheet');
     $('#formFields').innerHTML = `
-      <label class="field"><span>Client</span><select name="clientId" id="sessionClient" required><option value="">Choose client</option>${clients.map(c => `<option value="${c.id}" data-rate="${c.defaultRateCents || 0}" ${c.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select></label>
+      <label class="field"><span>Client</span><select ${clientLocked ? 'disabled' : 'name="clientId"'} id="sessionClient" required><option value="">Choose client</option>${clients.map(c => `<option value="${c.id}" data-rate="${c.defaultRateCents || 0}" ${c.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select>${clientLocked ? `<input type="hidden" name="clientId" value="${escapeHtml(existing.clientId)}" /><small>Client is locked while this session is attached to ${escapeHtml(invoiceById(existing.invoiceId)?.number || 'an invoice')}. Edit the invoice first to move the session.</small>` : ''}</label>
       <div class="session-entry-grid">
         <div class="clock-picker" id="sessionClockPicker">
           <div class="clock-picker-head">
@@ -534,11 +904,27 @@
     openModal($('#formSheet'));
   }
 
+  function openInvoiceSettingsForm() {
+    $('#formSheet').classList.remove('session-form-sheet');
+    ui.formMode = 'invoice-settings'; ui.formRecordId = activeBusiness().id;
+    const business = activeBusiness();
+    const settings = { ...invoiceDefaults(), ...(business.invoiceSettings || {}) };
+    $('#formEyebrow').textContent = 'INVOICE SETTINGS';
+    $('#formTitle').textContent = 'Identity & defaults';
+    $('#formSubmitBtn').textContent = 'Save settings';
+    $('#formFields').innerHTML = `
+      <label class="field"><span>Business / sender name</span><input name="legalName" required maxlength="120" value="${escapeHtml(business.legalName || business.displayName)}" /></label>
+      <div class="field-row"><label class="field"><span>Invoice prefix</span><input name="prefix" maxlength="12" value="${escapeHtml(settings.prefix || 'INV')}" /></label><label class="field"><span>Default due days</span><input name="defaultDueDays" type="number" min="0" max="365" step="1" value="${Number(settings.defaultDueDays ?? 7)}" /></label></div>
+      <details class="optional-fields" ${settings.senderEmail || settings.senderPhone || settings.senderAddress || settings.paymentInstructions ? 'open' : ''}><summary>Invoice contact & payment details <span>optional</span></summary><div class="optional-fields-body"><div class="field-row"><label class="field"><span>Email</span><input name="senderEmail" type="email" maxlength="160" value="${escapeHtml(settings.senderEmail || '')}" placeholder="business@example.com" /></label><label class="field"><span>Phone</span><input name="senderPhone" maxlength="50" value="${escapeHtml(settings.senderPhone || '')}" placeholder="Optional" /></label></div><label class="field"><span>Business address</span><textarea name="senderAddress" rows="2" maxlength="300" placeholder="Optional address shown on invoices">${escapeHtml(settings.senderAddress || '')}</textarea></label><label class="field"><span>Payment instructions</span><textarea name="paymentInstructions" rows="3" maxlength="500" placeholder="e.g. Payment method or brief instructions">${escapeHtml(settings.paymentInstructions || '')}</textarea></label></div></details>
+      <div class="form-info-note">Next invoice number: <strong>${escapeHtml(invoiceNumberPreview(business))}</strong>. Numbers are never reused after an invoice is created.</div>`;
+    openModal($('#formSheet'));
+  }
+
   function handleFormSubmit(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     if (ui.formMode === 'client') {
-      const payload = { displayName: form.get('displayName').trim(), defaultRateCents: Math.round(Number(form.get('rate')) * 100), status: form.get('status'), notes: form.get('notes').trim() };
+      const payload = { displayName: form.get('displayName').trim(), defaultRateCents: Math.round(Number(form.get('rate')) * 100), status: form.get('status'), billingEmail: (form.get('billingEmail') || '').trim(), billingAddress: (form.get('billingAddress') || '').trim(), notes: form.get('notes').trim() };
       if (ui.formRecordId) {
         const client = data.clients.find(c => c.id === ui.formRecordId);
         const before = deepClone(client); Object.assign(client, payload, { updatedAt: nowIso() });
@@ -553,20 +939,40 @@
       const durationMinutes = minutesBetween(startTime, endTime);
       if (!startTime || !endTime) { showToast('Choose both a start and end time on the clock.'); return; }
       if (!durationMinutes) { showToast('Start and end time cannot be identical.'); return; }
-      const payload = { clientId: form.get('clientId'), date: form.get('date'), startTime, endTime, durationMinutes, rateCents: Math.round(Number(form.get('rate')) * 100), notes: form.get('notes').trim(), invoiceStatus: 'uninvoiced' };
+      const selectedClient = clientById(form.get('clientId'));
+      const payload = { clientId: form.get('clientId'), clientNameSnapshot: selectedClient?.displayName || '', date: form.get('date'), startTime, endTime, durationMinutes, rateCents: Math.round(Number(form.get('rate')) * 100), notes: form.get('notes').trim() };
       if (ui.formRecordId) {
         const session = data.sessions.find(s => s.id === ui.formRecordId); const before = deepClone(session);
-        Object.assign(session, payload, { updatedAt: nowIso() }); persist('updated', 'WorkSession', session.id, { before, after: deepClone(session) }); showToast('Work session updated');
+        const linkedInvoice = session?.invoiceId ? invoiceById(session.invoiceId) : null;
+        if (linkedInvoice?.status === 'sent') { showToast('Move the linked invoice back to Draft before changing this session.'); return; }
+        Object.assign(session, payload, { updatedAt: nowIso() });
+        if (linkedInvoice?.status === 'draft') {
+          const lineIndex = linkedInvoice.lineItems.findIndex(item => item.type === 'session' && item.sessionId === session.id);
+          if (lineIndex >= 0) linkedInvoice.lineItems[lineIndex] = invoiceSessionLine(session, linkedInvoice.lineItems[lineIndex].id);
+          linkedInvoice.updatedAt = nowIso();
+          data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'source_session_updated', entityType: 'Invoice', entityId: linkedInvoice.id, details: { sessionId: session.id }, occurredAt: nowIso() });
+        }
+        persist('updated', 'WorkSession', session.id, { before, after: deepClone(session) }); showToast('Work session updated');
       } else {
-        const session = { id: uid('session'), businessId: data.activeBusinessId, ...payload, createdAt: nowIso(), updatedAt: nowIso() };
+        const session = { id: uid('session'), businessId: data.activeBusinessId, ...payload, invoiceStatus: 'uninvoiced', invoiceId: null, createdAt: nowIso(), updatedAt: nowIso() };
         data.sessions.push(session); persist('created', 'WorkSession', session.id); showToast('Work session logged');
       }
     }
+    if (ui.formMode === 'invoice-settings') {
+      const business = activeBusiness();
+      const before = deepClone(business);
+      business.legalName = form.get('legalName').trim();
+      business.invoiceSettings = { ...invoiceDefaults(), ...(business.invoiceSettings || {}), prefix: (form.get('prefix') || 'INV').trim().toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,12) || 'INV', defaultDueDays: Math.max(0, Math.min(365, Number(form.get('defaultDueDays') || 0))), senderEmail: (form.get('senderEmail') || '').trim(), senderPhone: (form.get('senderPhone') || '').trim(), senderAddress: (form.get('senderAddress') || '').trim(), paymentInstructions: (form.get('paymentInstructions') || '').trim() };
+      business.updatedAt = nowIso();
+      persist('updated', 'BusinessInvoiceSettings', business.id, { before, after: deepClone(business) });
+      showToast('Invoice settings saved');
+    }
     if (ui.formMode === 'business') {
-      const business = { id: uid('biz'), displayName: form.get('displayName').trim(), legalName: form.get('displayName').trim(), entityType: form.get('entityType'), currency: 'USD', timezone: form.get('timezone').trim(), status: 'active', createdAt: nowIso(), updatedAt: nowIso() };
+      const business = { id: uid('biz'), displayName: form.get('displayName').trim(), legalName: form.get('displayName').trim(), entityType: form.get('entityType'), currency: 'USD', timezone: form.get('timezone').trim(), status: 'active', invoiceSettings: invoiceDefaults(), createdAt: nowIso(), updatedAt: nowIso() };
       data.businesses.push(business); data.activeBusinessId = business.id; persist('created', 'Business', business.id); showToast('Workspace created');
     }
-    closeModal(); renderAll(); setView(ui.formMode === 'business' ? 'home' : 'work');
+    const completedMode = ui.formMode;
+    closeModal(); renderAll(); setView(completedMode === 'business' ? 'home' : completedMode === 'invoice-settings' ? 'money' : 'work');
   }
 
   function openClientDetail(id) {
@@ -588,14 +994,24 @@
   function openSessionDetail(id) {
     const s = data.sessions.find(session => session.id === id); if (!s) return;
     const client = clientById(s.clientId);
-    $('#detailEyebrow').textContent = 'WORK SESSION'; $('#detailTitle').textContent = client?.displayName || 'Unassigned session';
-    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-session="${s.id}">Edit session</button><button class="primary-btn disabled-action" title="Invoice engine arrives in Phase 2">Create invoice · Phase 2</button><details class="record-more"><summary aria-label="More session actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-session="${s.id}">Delete session</button></div></details></div><div id="detailDeleteConfirm"></div>
+    const linkedInvoice = s.invoiceId ? invoiceById(s.invoiceId) : null;
+    const clientLabel = client?.displayName || s.clientNameSnapshot || 'Unassigned session';
+    const invoiceAction = linkedInvoice
+      ? `<button class="primary-btn" data-view-linked-invoice="${linkedInvoice.id}">View ${escapeHtml(linkedInvoice.number)}</button>`
+      : `<button class="primary-btn" data-create-invoice-session="${s.id}">Create invoice</button>`;
+    const editButton = linkedInvoice?.status === 'sent'
+      ? `<button class="secondary-btn disabled-action" title="Move the linked invoice back to Draft before editing">Edit session</button>`
+      : `<button class="secondary-btn" data-edit-session="${s.id}">Edit session</button>`;
+    $('#detailEyebrow').textContent = 'WORK SESSION'; $('#detailTitle').textContent = clientLabel;
+    $('#detailBody').innerHTML = `<div class="detail-actions">${editButton}${invoiceAction}<details class="record-more"><summary aria-label="More session actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-session="${s.id}">Delete session</button></div></details></div><div id="detailDeleteConfirm"></div>
       <div class="detail-metrics"><div><small>Date</small><strong>${formatDate(s.date,{month:'short',day:'numeric',year:'numeric'})}</strong></div><div><small>Time</small><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong></div><div><small>Duration</small><strong>${hoursLabel(sessionMinutes(s))}</strong></div></div>
-      <div class="detail-section"><div class="trace-row"><span>Session value</span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong></div><div class="trace-row"><span>Rate snapshot</span><strong>${formatMoney(s.rateCents || 0)}/hr</strong></div><div class="trace-row"><span>Invoice state</span><strong>Uninvoiced</strong></div></div>
+      <div class="detail-section"><div class="trace-row"><span>Session value</span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong></div><div class="trace-row"><span>Rate snapshot</span><strong>${formatMoney(s.rateCents || 0)}/hr</strong></div><div class="trace-row"><span>Invoice state</span><strong>${escapeHtml(sessionInvoiceStatusLabel(s))}${linkedInvoice ? ` · ${escapeHtml(linkedInvoice.number)}` : ''}</strong></div></div>
       <div class="detail-section"><p class="eyebrow">SESSION NOTE</p><p>${escapeHtml(s.notes || 'No session note.')}</p></div>
-      <div class="trace-banner"><span>↳</span><div><strong>Traceability anchor</strong><small>Invoices, mileage, and direct job expenses will attach to this session in later phases.</small></div></div>`;
+      <div class="trace-banner"><span>↳</span><div><strong>${linkedInvoice ? 'Linked financial record' : 'Ready for invoicing'}</strong><small>${linkedInvoice ? `This session is linked to ${escapeHtml(linkedInvoice.number)}. Invoice snapshots protect the issued billing record from silent changes.` : 'Create an invoice from this session without re-entering the client, hours, or rate.'}</small></div></div>`;
     openModal($('#detailPanel'));
     $('[data-edit-session]')?.addEventListener('click', () => openSessionForm(id));
+    $('[data-create-invoice-session]')?.addEventListener('click', () => openInvoiceForm({ clientId: s.clientId, sessionId: s.id }));
+    $('[data-view-linked-invoice]')?.addEventListener('click', () => { closeModal(); setView('money'); setTimeout(() => openInvoiceDetail(linkedInvoice.id), 20); });
     $('[data-delete-session]')?.addEventListener('click', () => showDeleteConfirmation('session', id));
   }
 
@@ -607,13 +1023,26 @@
       const session = data.sessions.find(item => item.id === id);
       if (!session) return;
       const client = clientById(session.clientId);
-      host.innerHTML = `<div class="delete-confirm-card"><div><strong>Delete this session?</strong><p>${escapeHtml(formatDate(session.date,{month:'short',day:'numeric',year:'numeric'}))} · ${escapeHtml(sessionTimeRangeLabel(session))}${client ? ` · ${escapeHtml(client.displayName)}` : ''} will be permanently removed. This cannot be undone.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-delete>Delete session</button></div></div>`;
+      const linkedInvoice = session.invoiceId ? invoiceById(session.invoiceId) : null;
+      if (linkedInvoice?.status === 'sent') {
+        host.innerHTML = `<div class="delete-confirm-card blocked"><div><strong>Session is locked by ${escapeHtml(linkedInvoice.number)}</strong><p>This work session is part of a sent invoice. Move the invoice back to Draft or void it before deleting the source session.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Close</button><button type="button" class="primary-btn" data-open-blocking-invoice>View invoice</button></div></div>`;
+        $('[data-open-blocking-invoice]', host)?.addEventListener('click', () => { closeModal(); setView('money'); setTimeout(() => openInvoiceDetail(linkedInvoice.id), 20); });
+      } else {
+        const draftWarning = linkedInvoice?.status === 'draft' ? ` It will also be removed from draft invoice ${linkedInvoice.number}.` : '';
+        host.innerHTML = `<div class="delete-confirm-card"><div><strong>Delete this session?</strong><p>${escapeHtml(formatDate(session.date,{month:'short',day:'numeric',year:'numeric'}))} · ${escapeHtml(sessionTimeRangeLabel(session))}${client ? ` · ${escapeHtml(client.displayName)}` : ''} will be permanently removed.${escapeHtml(draftWarning)} This cannot be undone.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-delete>Delete session</button></div></div>`;
+      }
     } else {
       const client = data.clients.find(item => item.id === id);
       if (!client) return;
-      const linkedSessions = data.sessions.filter(session => session.clientId === id);
-      const sessionWarning = linkedSessions.length ? ` This will also permanently delete ${linkedSessions.length} linked work ${linkedSessions.length === 1 ? 'session' : 'sessions'}.` : '';
-      host.innerHTML = `<div class="delete-confirm-card"><div><strong>Delete ${escapeHtml(client.displayName)}?</strong><p>The client will be permanently removed.${sessionWarning} This cannot be undone.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-delete>Delete client</button></div></div>`;
+      const activeInvoices = businessInvoices().filter(invoice => invoice.clientId === id && invoice.status !== 'void');
+      if (activeInvoices.length) {
+        host.innerHTML = `<div class="delete-confirm-card blocked"><div><strong>Client has active invoice records</strong><p>${escapeHtml(client.displayName)} is referenced by ${activeInvoices.length} ${activeInvoices.length === 1 ? 'invoice' : 'invoices'}. Delete drafts or void issued invoices first, or keep the client as Inactive.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Close</button><button type="button" class="primary-btn" data-go-client-invoices>View invoices</button></div></div>`;
+        $('[data-go-client-invoices]', host)?.addEventListener('click', () => { closeModal(); setView('money'); });
+      } else {
+        const linkedSessions = data.sessions.filter(session => session.clientId === id);
+        const sessionWarning = linkedSessions.length ? ` This will also permanently delete ${linkedSessions.length} linked work ${linkedSessions.length === 1 ? 'session' : 'sessions'}.` : '';
+        host.innerHTML = `<div class="delete-confirm-card"><div><strong>Delete ${escapeHtml(client.displayName)}?</strong><p>The client will be permanently removed.${sessionWarning} Voided invoice snapshots, if any, remain preserved. This cannot be undone.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-delete>Delete client</button></div></div>`;
+      }
     }
     host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     $('[data-cancel-delete]', host)?.addEventListener('click', () => { host.innerHTML = ''; });
@@ -622,20 +1051,26 @@
 
   function deleteRecord(type, id) {
     if (type === 'session') {
-      const exists = data.sessions.some(session => session.id === id);
-      if (!exists) return;
-      data.sessions = data.sessions.filter(session => session.id !== id);
+      const session = data.sessions.find(item => item.id === id);
+      if (!session) return;
+      const linkedInvoice = session.invoiceId ? invoiceById(session.invoiceId) : null;
+      if (linkedInvoice?.status === 'sent') { showToast('Sent invoice records must be unlocked before deleting this session.'); return; }
+      if (linkedInvoice?.status === 'draft') {
+        linkedInvoice.lineItems = linkedInvoice.lineItems.filter(item => !(item.type === 'session' && item.sessionId === id));
+        linkedInvoice.updatedAt = nowIso();
+        data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'source_session_deleted', entityType: 'Invoice', entityId: linkedInvoice.id, details: { sessionId: id }, occurredAt: nowIso() });
+      }
+      data.sessions = data.sessions.filter(item => item.id !== id);
       data.auditEvents = data.auditEvents.filter(event => event.entityId !== id);
-      data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'WorkSession', entityId: id, details: {}, occurredAt: nowIso() });
+      data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'WorkSession', entityId: id, details: { removedFromDraftInvoice: linkedInvoice?.number || null }, occurredAt: nowIso() });
       repository.save(data);
-      closeModal();
-      renderAll();
-      showToast('Work session deleted');
+      closeModal(); renderAll(); showToast(linkedInvoice ? `Session deleted and removed from ${linkedInvoice.number}` : 'Work session deleted');
       return;
     }
 
     const client = data.clients.find(item => item.id === id);
     if (!client) return;
+    if (businessInvoices().some(invoice => invoice.clientId === id && invoice.status !== 'void')) { showToast('Resolve this client’s active invoices before deleting the client.'); return; }
     const linkedSessionIds = data.sessions.filter(session => session.clientId === id).map(session => session.id);
     const deletedIds = new Set([id, ...linkedSessionIds]);
     data.clients = data.clients.filter(item => item.id !== id);
@@ -643,8 +1078,7 @@
     data.auditEvents = data.auditEvents.filter(event => !deletedIds.has(event.entityId));
     data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Client', entityId: id, details: { cascadedSessionCount: linkedSessionIds.length }, occurredAt: nowIso() });
     repository.save(data);
-    closeModal();
-    renderAll();
+    closeModal(); renderAll();
     showToast(linkedSessionIds.length ? `Client and ${linkedSessionIds.length} linked ${linkedSessionIds.length === 1 ? 'session' : 'sessions'} deleted` : 'Client deleted');
   }
 
@@ -656,7 +1090,7 @@
   }
 
   function renderAll() {
-    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderCommandPalette();
+    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); renderCommandPalette();
   }
 
   navButtons.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
@@ -683,6 +1117,7 @@
   $$('.quick-card').forEach(btn => btn.addEventListener('click', () => {
     if (btn.dataset.action === 'add-client') { closeModal(); openClientForm(); return; }
     if (btn.dataset.action === 'add-session') { closeModal(); openSessionForm(); return; }
+    if (btn.dataset.action === 'add-invoice') { closeModal(); openInvoiceForm(); return; }
     showToast(`${$('strong', btn).textContent} activates in its roadmap phase.`);
   }));
 
@@ -693,8 +1128,27 @@
   }));
   $('#sessionSearch').addEventListener('input', renderSessions);
   $('#clientSearch').addEventListener('input', renderClients);
-  $('#sessionFilterBtn').addEventListener('click', () => showToast('Session filters arrive with invoice states in Phase 2.'));
+  $('#sessionFilterBtn').addEventListener('click', () => {
+    const order = ['all','uninvoiced','linked'];
+    ui.sessionFilter = order[(order.indexOf(ui.sessionFilter) + 1) % order.length];
+    $('#sessionFilterBtn').textContent = ui.sessionFilter === 'all' ? 'All sessions' : ui.sessionFilter === 'uninvoiced' ? 'Uninvoiced' : 'In invoice';
+    renderSessions();
+  });
   $('#clientFilterBtn').addEventListener('click', () => showToast('All client states are currently shown.'));
+  $('#addInvoiceBtn').addEventListener('click', () => openInvoiceForm());
+  $('#invoiceSettingsBtn').addEventListener('click', () => openInvoiceSettingsForm());
+  $('#invoiceSettingsFromSettings').addEventListener('click', () => { closeModal(); openInvoiceSettingsForm(); });
+  $('#invoiceFilterBtn').addEventListener('click', () => {
+    const order = ['all','draft','sent','overdue','void'];
+    ui.invoiceFilter = order[(order.indexOf(ui.invoiceFilter) + 1) % order.length];
+    renderMoney();
+  });
+  $('#invoiceForm').addEventListener('submit', saveInvoice);
+  $('#invoiceClient').addEventListener('change', event => { renderInvoiceSessionChoices(event.target.value, new Set()); updateInvoiceDraftTotal(); });
+  $('#invoiceIssueDate').addEventListener('change', event => {
+    if (!ui.invoiceFormId) $('#invoiceDueDate').value = addDays(event.target.value, activeBusiness().invoiceSettings?.defaultDueDays ?? 7);
+  });
+  $('#addManualInvoiceLine').addEventListener('click', () => addManualInvoiceRow());
   $('#commandInput').addEventListener('input', renderCommandPalette);
 
   document.addEventListener('keydown', event => {
