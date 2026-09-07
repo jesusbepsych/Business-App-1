@@ -47,3 +47,9 @@ These remain later roadmap phases so Phase 3 can be tested independently.
 - Payments ledger now prioritizes Source before Received date.
 - Sent and Void invoices have distinct status colors for faster visual scanning.
 - Home now includes Invoice earnings based only on actual invoice-linked payments received.
+
+## Phase 3 usability refinement 2
+- Home `Uninvoiced work` label now uses the app's warm pending/unpaid semantic color.
+- Home `Invoice earnings` label now uses the existing paid/received success green.
+- Home hours metric appends `h` for immediate unit recognition.
+- Quick Add is vertically centered on tablet/desktop viewports; narrow mobile retains the thumb-friendly bottom-sheet pattern.

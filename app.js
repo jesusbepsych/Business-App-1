@@ -347,7 +347,7 @@
       .reduce((sum, payment) => sum + Number(payment.amountCents || 0), 0);
 
     $('#metricClients').textContent = clients.length;
-    $('#metricHours').textContent = (totalMinutes / 60).toFixed(totalMinutes % 60 ? 1 : 0);
+    $('#metricHours').textContent = `${(totalMinutes / 60).toFixed(totalMinutes % 60 ? 1 : 0)}h`;
     $('#metricUninvoiced').textContent = formatMoney(uninvoicedCents, activeBusiness().currency);
     $('#metricInvoiceEarnings').textContent = formatMoney(invoiceEarningsCents, activeBusiness().currency);
     $('#clientTabCount').textContent = businessClients().length;

@@ -98,3 +98,6 @@ Secure authentication, cloud synchronization, encrypted document storage, and ac
 
 ### Refinement checkpoint
 This build adds seven-session pagination (buttons + touch swipe), reorders key Work/Payments columns for faster scanning, gives Sent and Void invoices distinct status colors, and adds a Home invoice-earnings metric based on recorded invoice payments.
+
+### Refinement 2
+Home financial labels now use semantic colors, logged-hours display includes its unit, and Quick Add is centered on tablet/desktop while retaining the mobile bottom-sheet interaction.
