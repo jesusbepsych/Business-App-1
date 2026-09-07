@@ -32,3 +32,10 @@
 - AI classification
 
 These remain separate roadmap phases to keep the financial model testable and avoid treating an issued invoice as money actually received.
+
+
+## Phase 2 refinement — viewport + invoice totals
+- Invoice builder now respects the dynamic visible viewport (`dvh`) with safe top/bottom breathing room, preventing the title/header from being clipped on iPad/Safari-sized browser windows.
+- Invoice previews and printable/PDF invoices now show both **Total hours** and **Amount due** at a glance.
+- Total hours include work-session line items only; custom charges do not inflate labor time.
+- Draft invoice summary also shows selected work duration next to line-item count.

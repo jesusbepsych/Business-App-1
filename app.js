@@ -116,6 +116,19 @@
     return (invoice?.lineItems || []).reduce((sum, item) => sum + Number(item.amountCents || 0), 0);
   }
 
+  function invoiceTotalMinutes(invoice) {
+    return (invoice?.lineItems || []).reduce((sum, item) => item.type === 'session' ? sum + Number(item.quantityMinutes || 0) : sum, 0);
+  }
+
+  function durationExactLabel(minutes = 0) {
+    const total = Math.max(0, Math.round(Number(minutes) || 0));
+    const hours = Math.floor(total / 60);
+    const mins = total % 60;
+    if (!hours) return `${mins}m`;
+    if (!mins) return `${hours}h`;
+    return `${hours}h ${mins}m`;
+  }
+
   function invoiceDisplayStatus(invoice) {
     if (!invoice) return 'Draft';
     if (invoice.status === 'void') return 'Void';
@@ -497,10 +510,12 @@
   }
 
   function updateInvoiceDraftTotal() {
-    const total = collectInvoiceLineItems().reduce((sum, item) => sum + item.amountCents, 0);
-    const count = collectInvoiceLineItems().length;
+    const lines = collectInvoiceLineItems();
+    const total = lines.reduce((sum, item) => sum + item.amountCents, 0);
+    const totalMinutes = lines.reduce((sum, item) => item.type === 'session' ? sum + Number(item.quantityMinutes || 0) : sum, 0);
+    const count = lines.length;
     $('#invoiceDraftTotal').textContent = formatMoney(total, activeBusiness().currency);
-    $('#invoiceDraftItemCount').textContent = `${count} ${count === 1 ? 'line item' : 'line items'}`;
+    $('#invoiceDraftItemCount').textContent = `${durationExactLabel(totalMinutes)} · ${count} ${count === 1 ? 'line item' : 'line items'}`;
   }
 
   function releaseInvoiceSessions(invoice) {
@@ -573,7 +588,7 @@
         <div class="invoice-preview-top"><div><span class="invoice-wordmark">${escapeHtml(invoice.senderSnapshot?.displayName || activeBusiness().displayName)}</span><small>${escapeHtml(invoice.senderSnapshot?.senderEmail || '')}${invoice.senderSnapshot?.senderEmail && invoice.senderSnapshot?.senderPhone ? ' · ' : ''}${escapeHtml(invoice.senderSnapshot?.senderPhone || '')}</small></div><div class="invoice-preview-number"><span class="status-pill ${invoiceStatusClass(invoice)}">${escapeHtml(displayStatus)}</span><strong>${escapeHtml(invoice.number)}</strong></div></div>
         <div class="invoice-preview-parties"><div><small>BILL TO</small><strong>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')}</strong><p>${escapeHtml(invoice.recipientSnapshot?.billingEmail || '')}${invoice.recipientSnapshot?.billingEmail && invoice.recipientSnapshot?.billingAddress ? '<br>' : ''}${escapeHtml(invoice.recipientSnapshot?.billingAddress || '')}</p></div><div class="invoice-date-pair"><span><small>Issued</small><strong>${formatDate(invoice.issueDate)}</strong></span><span><small>Due</small><strong>${formatDate(invoice.dueDate)}</strong></span></div></div>
         <div class="invoice-preview-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span></div>${lineRows}
-        <div class="invoice-preview-total"><span>Total</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div>
+        <div class="invoice-preview-summary"><div><span>Total hours</span><strong>${durationExactLabel(invoiceTotalMinutes(invoice))}</strong></div><div class="invoice-preview-amount"><span>Amount due</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div></div>
         ${invoice.note ? `<div class="invoice-preview-note"><small>NOTE</small><p>${escapeHtml(invoice.note)}</p></div>` : ''}
         ${invoice.senderSnapshot?.paymentInstructions ? `<div class="invoice-preview-note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}
       </div>
@@ -635,7 +650,7 @@
     const lineRows = (invoice.lineItems || []).map(item => `<tr><td><strong>${escapeHtml(item.description)}</strong></td><td>${item.type === 'session' ? hoursLabel(item.quantityMinutes || 0) : Number(item.quantity || 0).toLocaleString('en-US',{maximumFractionDigits:2})}</td><td>${formatMoney(item.rateCents || 0, activeBusiness().currency)}</td><td><strong>${formatMoney(item.amountCents || 0, activeBusiness().currency)}</strong></td></tr>`).join('');
     const popup = window.open('', '_blank');
     if (!popup) { showToast('Allow pop-ups to print or save the invoice as PDF.'); return; }
-    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(invoice.number)}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#15171b;margin:0;padding:48px}*{box-sizing:border-box}.top{display:flex;justify-content:space-between;gap:30px;margin-bottom:50px}.brand{font-size:24px;font-weight:800}.num{text-align:right}.num strong{display:block;font-size:28px;margin-top:8px}.meta{display:grid;grid-template-columns:1fr auto;gap:40px;margin-bottom:38px}.meta small,.note small{color:#7b8088;font-weight:700;letter-spacing:.08em}.dates{display:flex;gap:34px}.dates span{display:flex;flex-direction:column;gap:5px}table{width:100%;border-collapse:collapse}th{font-size:11px;color:#7b8088;text-align:left;border-bottom:1px solid #ddd;padding:10px 8px}td{padding:14px 8px;border-bottom:1px solid #eee;font-size:13px}th:last-child,td:last-child{text-align:right}.total{display:flex;justify-content:flex-end;gap:50px;padding:22px 8px;font-size:18px}.note{margin-top:30px;max-width:650px;white-space:pre-wrap}.muted{color:#777}@media print{body{padding:20px}}</style></head><body><div class="top"><div><div class="brand">${escapeHtml(invoice.senderSnapshot?.displayName || activeBusiness().displayName)}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderEmail || '')}${invoice.senderSnapshot?.senderPhone ? ` · ${escapeHtml(invoice.senderSnapshot.senderPhone)}` : ''}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderAddress || '')}</div></div><div class="num"><span>INVOICE</span><strong>${escapeHtml(invoice.number)}</strong></div></div><div class="meta"><div><small>BILL TO</small><h3>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')}</h3><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingEmail || '')}</div><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingAddress || '')}</div></div><div class="dates"><span><small>ISSUED</small><strong>${formatDate(invoice.issueDate)}</strong></span><span><small>DUE</small><strong>${formatDate(invoice.dueDate)}</strong></span></div></div><table><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${lineRows}</tbody></table><div class="total"><span>Total</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div>${invoice.note ? `<div class="note"><small>NOTE</small><p>${escapeHtml(invoice.note)}</p></div>` : ''}${invoice.senderSnapshot?.paymentInstructions ? `<div class="note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}<script>window.onload=()=>setTimeout(()=>window.print(),150);<\/script></body></html>`);
+    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(invoice.number)}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#15171b;margin:0;padding:48px}*{box-sizing:border-box}.top{display:flex;justify-content:space-between;gap:30px;margin-bottom:50px}.brand{font-size:24px;font-weight:800}.num{text-align:right}.num strong{display:block;font-size:28px;margin-top:8px}.meta{display:grid;grid-template-columns:1fr auto;gap:40px;margin-bottom:38px}.meta small,.note small{color:#7b8088;font-weight:700;letter-spacing:.08em}.dates{display:flex;gap:34px}.dates span{display:flex;flex-direction:column;gap:5px}table{width:100%;border-collapse:collapse}th{font-size:11px;color:#7b8088;text-align:left;border-bottom:1px solid #ddd;padding:10px 8px}td{padding:14px 8px;border-bottom:1px solid #eee;font-size:13px}th:last-child,td:last-child{text-align:right}.invoice-summary{display:flex;justify-content:flex-end;gap:48px;padding:22px 8px 4px}.invoice-summary>div{display:flex;flex-direction:column;gap:5px;min-width:120px}.invoice-summary span{font-size:11px;color:#7b8088;font-weight:700;letter-spacing:.04em}.invoice-summary strong{font-size:18px}.invoice-summary .amount{text-align:right}.invoice-summary .amount strong{font-size:22px}.note{margin-top:30px;max-width:650px;white-space:pre-wrap}.muted{color:#777}@media print{body{padding:20px}}</style></head><body><div class="top"><div><div class="brand">${escapeHtml(invoice.senderSnapshot?.displayName || activeBusiness().displayName)}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderEmail || '')}${invoice.senderSnapshot?.senderPhone ? ` · ${escapeHtml(invoice.senderSnapshot.senderPhone)}` : ''}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderAddress || '')}</div></div><div class="num"><span>INVOICE</span><strong>${escapeHtml(invoice.number)}</strong></div></div><div class="meta"><div><small>BILL TO</small><h3>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')}</h3><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingEmail || '')}</div><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingAddress || '')}</div></div><div class="dates"><span><small>ISSUED</small><strong>${formatDate(invoice.issueDate)}</strong></span><span><small>DUE</small><strong>${formatDate(invoice.dueDate)}</strong></span></div></div><table><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${lineRows}</tbody></table><div class="invoice-summary"><div><span>TOTAL HOURS</span><strong>${durationExactLabel(invoiceTotalMinutes(invoice))}</strong></div><div class="amount"><span>AMOUNT DUE</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div></div>${invoice.note ? `<div class="note"><small>NOTE</small><p>${escapeHtml(invoice.note)}</p></div>` : ''}${invoice.senderSnapshot?.paymentInstructions ? `<div class="note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}<script>window.onload=()=>setTimeout(()=>window.print(),150);<\/script></body></html>`);
     popup.document.close();
   }
 

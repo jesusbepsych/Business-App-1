@@ -77,3 +77,7 @@ Secure authentication, cloud synchronization, encrypted document storage, and ac
 ## Working name
 
 “Business Ledger” remains a placeholder name.
+
+
+### Latest refinement
+The Phase 2 invoice builder now stays fully within the visible dynamic browser viewport on tablet-sized Safari windows. Invoice previews and printed/PDF invoices include a dedicated total-hours tally alongside amount due.
