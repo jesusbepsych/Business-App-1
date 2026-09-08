@@ -1,4 +1,4 @@
-# Business Ledger — Phase 3 Payments Alpha
+# Business Ledger — Phase 3 Usability Refinement 7
 
 A dependency-free interactive prototype for a business finance and traceability app.
 
@@ -7,7 +7,7 @@ A dependency-free interactive prototype for a business finance and traceability 
 Serve the folder rather than double-clicking the HTML file:
 
 ```bash
-cd business-finance-app-phase3-usability-refinement-3
+cd business-finance-app-phase3-usability-refinement-7
 python3 -m http.server 8000
 ```
 
@@ -120,3 +120,12 @@ The invoice builder now keeps long client work histories inside their own scroll
 ## Refinement 6 — true recent-work dissolve
 
 The Home Recent Work rotation now uses two temporary overlapping layers. The outgoing rows progressively soften, blur, and fade while the next randomized set begins appearing underneath them. This replaces the prior fade-then-swap behavior that could still look like a flash in Safari. The transition is intentionally more visible and slower, while still pausing during hover/focus and honoring reduced-motion settings.
+
+
+## Refinement 7 — current-stage efficiency polish
+
+- Replaced cycling Session, Client, Invoice, and Payment filters with compact direct-select popover menus.
+- Client status filtering now genuinely filters Active / Inactive / All clients instead of showing a non-functional status pill.
+- Invoice History and Money Received now paginate at 7 records per page using the same compact previous/next treatment established for Sessions.
+- Added `Select all · Clear` shortcuts to the invoice work-session selector so large invoices can be assembled in one action while preserving individual deselection.
+- Home Invoice earnings now carries an `All time` indicator to make its cumulative time basis explicit.

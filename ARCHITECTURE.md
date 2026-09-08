@@ -181,3 +181,11 @@ Mileage remains Phase 5 so vehicle deduction logic can be built as its own focus
 ## Phase 3 refinement 4 UI behavior
 
 The invoice work-session selector is a bounded nested scroll region; this is presentation-only and does not change invoice/session relationships. Home recent-session rotation is also presentation-only: it samples from the twelve most recent session records and never mutates or reorders stored data.
+
+
+## Phase 3 refinement 7 interaction rules
+
+- Status filters use direct-select popovers rather than cycle-on-click behavior; the underlying filter state remains UI-only and does not modify stored records.
+- Sessions, Invoices, and Payments use bounded list pagination to keep long ledgers scannable without increasing permanent screen density.
+- Invoice `Select all / Clear` operates only on currently eligible session checkboxes and still feeds the same immutable invoice snapshot workflow.
+- Home Invoice earnings is cumulative across recorded invoice-linked Payments; the `All time` label clarifies that display basis without changing calculation logic.

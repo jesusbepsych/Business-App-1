@@ -91,7 +91,7 @@
   // load/save contract plus authenticated sync without changing domain/UI code.
   const repository = new LocalRepository();
   const data = repository.load();
-  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', paymentFilter: 'all', invoiceFormId: null };
+  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, invoiceFormId: null };
   let homeRecentRotationTimer = null;
   let homeRecentSignature = '';
   let homeRecentSwapTimer = null;
@@ -103,6 +103,48 @@
   const overlay = $('#overlay');
   const modals = [$('#quickAddSheet'), $('#commandPalette'), $('#businessSheet'), $('#formSheet'), $('#invoiceSheet'), $('#settingsSheet'), $('#detailPanel')];
   const toast = $('#toast');
+  let activeFilterMenu = null;
+
+  function closeFilterMenu() {
+    if (!activeFilterMenu) return;
+    activeFilterMenu.anchor?.setAttribute('aria-expanded', 'false');
+    activeFilterMenu.menu?.remove();
+    activeFilterMenu = null;
+  }
+
+  function openFilterMenu(anchor, items, currentValue, onSelect) {
+    if (activeFilterMenu?.anchor === anchor) { closeFilterMenu(); return; }
+    closeFilterMenu();
+    const menu = document.createElement('div');
+    menu.className = 'filter-popover';
+    menu.setAttribute('role', 'menu');
+    menu.innerHTML = items.map(item => `<button type="button" role="menuitemradio" aria-checked="${item.value === currentValue}" class="filter-menu-item ${item.value === currentValue ? 'selected' : ''}" data-filter-value="${escapeHtml(item.value)}"><span>${escapeHtml(item.label)}</span><span class="filter-menu-check" aria-hidden="true">${item.value === currentValue ? '✓' : ''}</span></button>`).join('');
+    document.body.appendChild(menu);
+    anchor.setAttribute('aria-expanded', 'true');
+    activeFilterMenu = { anchor, menu };
+
+    const rect = anchor.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    let left = rect.right - menuRect.width;
+    let top = rect.bottom + 7;
+    left = Math.max(10, Math.min(left, window.innerWidth - menuRect.width - 10));
+    if (top + menuRect.height > window.innerHeight - 10) top = Math.max(10, rect.top - menuRect.height - 7);
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+
+    $$('[data-filter-value]', menu).forEach(item => item.addEventListener('click', event => {
+      event.stopPropagation();
+      const value = item.dataset.filterValue;
+      closeFilterMenu();
+      onSelect(value);
+    }));
+  }
+
+  document.addEventListener('pointerdown', event => {
+    if (!activeFilterMenu) return;
+    if (activeFilterMenu.menu.contains(event.target) || activeFilterMenu.anchor.contains(event.target)) return;
+    closeFilterMenu();
+  });
 
   function persist(eventType, entityType, entityId, details = {}) {
     if (eventType) {
@@ -474,6 +516,8 @@
 
   function renderSessions() {
     const term = ($('#sessionSearch')?.value || '').toLowerCase().trim();
+    const sessionFilterLabels = { all:'All sessions', uninvoiced:'Uninvoiced', linked:'In invoice' };
+    $('#sessionFilterBtn').textContent = sessionFilterLabels[ui.sessionFilter] || 'All sessions';
     const sessions = businessSessions().slice().sort((a,b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`)).filter(s => {
       const client = clientById(s.clientId);
       const matchesTerm = !term || `${client?.displayName || s.clientNameSnapshot || ''} ${s.date || ''} ${s.notes || ''}`.toLowerCase().includes(term);
@@ -534,12 +578,18 @@
 
   function renderClients() {
     const term = ($('#clientSearch')?.value || '').toLowerCase().trim();
-    const clients = businessClients().filter(c => !term || `${c.displayName} ${c.notes || ''}`.toLowerCase().includes(term));
+    const clientFilterLabels = { all:'All clients', active:'Active', inactive:'Inactive' };
+    $('#clientFilterBtn').textContent = clientFilterLabels[ui.clientFilter] || 'Active';
+    const clients = businessClients().filter(c => {
+      const matchesTerm = !term || `${c.displayName} ${c.notes || ''}`.toLowerCase().includes(term);
+      const matchesFilter = ui.clientFilter === 'all' || c.status === ui.clientFilter;
+      return matchesTerm && matchesFilter;
+    });
     $('#clientsContainer').innerHTML = clients.length ? clients.map(c => {
       const sessions = businessSessions().filter(s => s.clientId === c.id);
       const minutes = sessions.reduce((sum,s) => sum + sessionMinutes(s), 0);
       return `<button class="client-card" data-client-detail="${c.id}"><div class="client-top"><span class="client-avatar client-avatar-color client-bg-${clientColorKey(c)}">${escapeHtml(initials(c.displayName))}</span><span class="status-pill ${c.status === 'active' ? 'success' : ''}">${escapeHtml(c.status)}</span></div><strong>${escapeHtml(c.displayName)}</strong><small>${escapeHtml(c.notes || 'No notes yet')}</small><div class="client-meta"><span><b>${formatMoney(c.defaultRateCents || 0)}</b><small>/hr default</small></span><span><b>${sessions.length}</b><small>sessions</small></span><span><b>${hoursLabel(minutes)}</b><small>logged</small></span></div></button>`;
-    }).join('') : emptyState('No clients yet', 'Add the people or organizations you do work for. Names can be aliases if you prefer.', 'Add first client', 'add-client');
+    }).join('') : emptyState(businessClients().length ? 'No clients match this filter' : 'No clients yet', businessClients().length ? 'Choose another client status to see the rest.' : 'Add the people or organizations you do work for. Names can be aliases if you prefer.', businessClients().length ? 'Show all clients' : 'Add first client', businessClients().length ? 'all-clients' : 'add-client');
     $$('[data-client-detail]').forEach(btn => btn.addEventListener('click', () => openClientDetail(btn.dataset.clientDetail)));
     bindEmptyActions();
   }
@@ -549,7 +599,11 @@
   }
 
   function bindEmptyActions() {
-    $$('[data-empty-action]').forEach(btn => btn.addEventListener('click', () => btn.dataset.emptyAction === 'add-client' ? openClientForm() : openSessionForm()));
+    $$('[data-empty-action]').forEach(btn => btn.addEventListener('click', () => {
+      if (btn.dataset.emptyAction === 'add-client') { openClientForm(); return; }
+      if (btn.dataset.emptyAction === 'add-session') { openSessionForm(); return; }
+      if (btn.dataset.emptyAction === 'all-clients') { ui.clientFilter = 'all'; renderClients(); }
+    }));
   }
 
   function renderWork() { renderSessions(); renderClients(); }
@@ -593,37 +647,73 @@
     const paymentFilterLabels = { all:'All payments', invoice:'Invoice payments', direct:'Other income' };
     $('#paymentFilterBtn').textContent = paymentFilterLabels[ui.paymentFilter] || 'All payments';
 
+    const invoicePageSize = ui.invoicePageSize || 7;
+    const invoiceTotalPages = Math.max(1, Math.ceil(visibleInvoices.length / invoicePageSize));
+    ui.invoicePage = Math.min(Math.max(1, ui.invoicePage || 1), invoiceTotalPages);
+    const invoiceStart = (ui.invoicePage - 1) * invoicePageSize;
+    const invoicePageRecords = visibleInvoices.slice(invoiceStart, invoiceStart + invoicePageSize);
+    const invoicePagination = visibleInvoices.length > invoicePageSize ? `
+      <div class="session-pagination" aria-label="Invoice pages">
+        <button type="button" class="pagination-arrow" data-invoice-page-prev aria-label="Previous invoice page" ${ui.invoicePage === 1 ? 'disabled' : ''}>←</button>
+        <span class="pagination-copy"><strong>Page ${ui.invoicePage}</strong><small>of ${invoiceTotalPages} · ${visibleInvoices.length} invoices</small></span>
+        <button type="button" class="pagination-arrow" data-invoice-page-next aria-label="Next invoice page" ${ui.invoicePage === invoiceTotalPages ? 'disabled' : ''}>→</button>
+      </div>` : '';
+
+    const paymentPageSize = ui.paymentPageSize || 7;
+    const paymentTotalPages = Math.max(1, Math.ceil(visiblePayments.length / paymentPageSize));
+    ui.paymentPage = Math.min(Math.max(1, ui.paymentPage || 1), paymentTotalPages);
+    const paymentStart = (ui.paymentPage - 1) * paymentPageSize;
+    const paymentPageRecords = visiblePayments.slice(paymentStart, paymentStart + paymentPageSize);
+    const paymentPagination = visiblePayments.length > paymentPageSize ? `
+      <div class="session-pagination" aria-label="Payment pages">
+        <button type="button" class="pagination-arrow" data-payment-page-prev aria-label="Previous payment page" ${ui.paymentPage === 1 ? 'disabled' : ''}>←</button>
+        <span class="pagination-copy"><strong>Page ${ui.paymentPage}</strong><small>of ${paymentTotalPages} · ${visiblePayments.length} payments</small></span>
+        <button type="button" class="pagination-arrow" data-payment-page-next aria-label="Next payment page" ${ui.paymentPage === paymentTotalPages ? 'disabled' : ''}>→</button>
+      </div>` : '';
+
     $('#invoicesContainer').innerHTML = visibleInvoices.length ? `
       <div class="table-head invoice-grid"><span>Invoice</span><span>Client</span><span>Issued</span><span>Due</span><span>Balance</span><span>Status</span></div>
-      ${visibleInvoices.map(invoice => {
+      ${invoicePageRecords.map(invoice => {
         const paid = invoicePaidCents(invoice);
         const balance = invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice);
         const total = invoiceTotalCents(invoice);
         const paymentNote = invoice.status === 'void' ? 'Voided' : paid ? `${formatMoney(paid, activeBusiness().currency)} paid of ${formatMoney(total, activeBusiness().currency)}` : `${formatMoney(total, activeBusiness().currency)} total`;
         return `<button class="table-row invoice-grid" data-invoice-detail="${invoice.id}"><span><strong>${escapeHtml(invoice.number)}</strong><small>${(invoice.lineItems || []).length} ${(invoice.lineItems || []).length === 1 ? 'item' : 'items'}</small></span><span><strong>${escapeHtml(invoice.recipientSnapshot?.displayName || clientById(invoice.clientId)?.displayName || 'Client')}</strong><small>${escapeHtml(invoice.recipientSnapshot?.billingEmail || 'No billing email')}</small></span><span><strong>${formatDate(invoice.issueDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(invoice.issueDate,{year:'numeric'})}</small></span><span><strong>${formatDate(invoice.dueDate,{month:'short',day:'numeric'})}</strong><small>${invoice.dueDate ? formatDate(invoice.dueDate,{weekday:'short'}) : '—'}</small></span><span><strong>${formatMoney(balance, activeBusiness().currency)}</strong><small>${escapeHtml(paymentNote)}</small></span><span><span class="status-pill ${invoiceStatusClass(invoice)}">${escapeHtml(invoiceDisplayStatus(invoice))}</span></span></button>`;
-      }).join('')}`
+      }).join('')}${invoicePagination}`
       : emptyState(invoices.length ? 'No invoices match this filter' : 'No invoices yet', invoices.length ? 'Choose another invoice status to see the rest.' : 'Turn completed work into a clean invoice without entering the hours twice.', invoices.length ? 'Show all invoices' : 'Create first invoice', invoices.length ? 'all-invoices' : 'add-invoice');
 
     $('#paymentsContainer').innerHTML = visiblePayments.length ? `
       <div class="table-head payment-grid"><span>Source</span><span>Received</span><span>Type</span><span>Method</span><span>Amount</span></div>
-      ${visiblePayments.map(payment => {
+      ${paymentPageRecords.map(payment => {
         const invoice = payment.invoiceId ? invoiceById(payment.invoiceId) : null;
         const sourcePrimary = payment.kind === 'invoice' ? (payment.invoiceNumberSnapshot || invoice?.number || 'Invoice') : (payment.sourceName || payment.clientNameSnapshot || 'Other income');
         const sourceSecondary = payment.kind === 'invoice' ? (payment.clientNameSnapshot || invoice?.recipientSnapshot?.displayName || 'Client') : (payment.description || 'Direct income');
         return `<button class="table-row payment-grid" data-payment-detail="${payment.id}"><span><strong>${escapeHtml(sourcePrimary)}</strong><small>${escapeHtml(sourceSecondary)}</small></span><span><strong>${formatDate(payment.receivedDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(payment.receivedDate,{year:'numeric'})}</small></span><span><span class="status-pill ${payment.kind === 'invoice' ? 'accent' : 'success'}">${escapeHtml(paymentKindLabel(payment))}</span></span><span><strong>${escapeHtml(paymentMethodLabel(payment.method))}</strong><small>${escapeHtml(payment.reference || 'No reference')}</small></span><span><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong><small>Received</small></span></button>`;
-      }).join('')}`
+      }).join('')}${paymentPagination}`
       : emptyState(payments.length ? 'No payments match this filter' : 'No payments recorded yet', payments.length ? 'Choose another payment type to see the rest.' : 'Record actual money received. Link it to an invoice or capture income that did not require one.', payments.length ? 'Show all payments' : 'Record first payment', payments.length ? 'all-payments' : 'add-payment');
 
     $$('[data-invoice-detail]', $('#invoicesContainer')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
     $$('[data-payment-detail]', $('#paymentsContainer')).forEach(btn => btn.addEventListener('click', () => openPaymentDetail(btn.dataset.paymentDetail)));
+    $('[data-invoice-page-prev]', $('#invoicesContainer'))?.addEventListener('click', () => {
+      if (ui.invoicePage > 1) { ui.invoicePage -= 1; renderMoney(); }
+    });
+    $('[data-invoice-page-next]', $('#invoicesContainer'))?.addEventListener('click', () => {
+      if (ui.invoicePage < invoiceTotalPages) { ui.invoicePage += 1; renderMoney(); }
+    });
+    $('[data-payment-page-prev]', $('#paymentsContainer'))?.addEventListener('click', () => {
+      if (ui.paymentPage > 1) { ui.paymentPage -= 1; renderMoney(); }
+    });
+    $('[data-payment-page-next]', $('#paymentsContainer'))?.addEventListener('click', () => {
+      if (ui.paymentPage < paymentTotalPages) { ui.paymentPage += 1; renderMoney(); }
+    });
     bindMoneyEmptyActions();
   }
 
   function bindMoneyEmptyActions() {
     $$('[data-empty-action="add-invoice"]').forEach(btn => btn.addEventListener('click', () => openInvoiceForm()));
-    $$('[data-empty-action="all-invoices"]').forEach(btn => btn.addEventListener('click', () => { ui.invoiceFilter = 'all'; renderMoney(); }));
+    $$('[data-empty-action="all-invoices"]').forEach(btn => btn.addEventListener('click', () => { ui.invoiceFilter = 'all'; ui.invoicePage = 1; renderMoney(); }));
     $$('[data-empty-action="add-payment"]').forEach(btn => btn.addEventListener('click', () => openPaymentForm()));
-    $$('[data-empty-action="all-payments"]').forEach(btn => btn.addEventListener('click', () => { ui.paymentFilter = 'all'; renderMoney(); }));
+    $$('[data-empty-action="all-payments"]').forEach(btn => btn.addEventListener('click', () => { ui.paymentFilter = 'all'; ui.paymentPage = 1; renderMoney(); }));
   }
 
   function syncMoneyTabs() {
@@ -681,20 +771,32 @@
     openModal($('#invoiceSheet'));
   }
 
+  function updateInvoiceSelectionActions() {
+    const inputs = $$('input[name="invoiceSession"]', $('#invoiceSessionChoices'));
+    const selectedCount = inputs.filter(input => input.checked).length;
+    const selectAllBtn = $('#selectAllInvoiceSessions');
+    const clearBtn = $('#clearInvoiceSessions');
+    if (selectAllBtn) selectAllBtn.disabled = !inputs.length || selectedCount === inputs.length;
+    if (clearBtn) clearBtn.disabled = selectedCount === 0;
+  }
+
   function renderInvoiceSessionChoices(clientId, selected = new Set()) {
     const existing = ui.invoiceFormId ? invoiceById(ui.invoiceFormId) : null;
     const sessions = businessSessions().filter(session => session.clientId === clientId && (session.invoiceStatus === 'uninvoiced' || session.invoiceId === existing?.id)).sort((a,b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`));
     const host = $('#invoiceSessionChoices');
     if (!clientId) {
       host.innerHTML = `<div class="inline-empty invoice-empty"><small>Choose a client to see uninvoiced work.</small></div>`;
+      updateInvoiceSelectionActions();
       return;
     }
     if (!sessions.length) {
       host.innerHTML = `<div class="inline-empty invoice-empty"><strong>No uninvoiced sessions</strong><small>You can still add a custom line item below.</small></div>`;
+      updateInvoiceSelectionActions();
       return;
     }
     host.innerHTML = sessions.map(session => `<label class="invoice-session-option"><input type="checkbox" name="invoiceSession" value="${session.id}" ${selected.has(session.id) ? 'checked' : ''}/><span class="invoice-check">✓</span><span class="invoice-session-date"><strong>${formatDate(session.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(session.date,{weekday:'short'})}</small></span><span class="invoice-session-main"><strong>${escapeHtml(sessionTimeRangeLabel(session))}</strong><small>${hoursLabel(sessionMinutes(session))} · ${session.notes ? escapeHtml(session.notes) : 'Work session'}</small></span><strong class="invoice-session-amount">${formatMoney(sessionAmountCents(session), activeBusiness().currency)}</strong></label>`).join('');
-    $$('input[name="invoiceSession"]', host).forEach(input => input.addEventListener('change', updateInvoiceDraftTotal));
+    $$('input[name="invoiceSession"]', host).forEach(input => input.addEventListener('change', () => { updateInvoiceDraftTotal(); updateInvoiceSelectionActions(); }));
+    updateInvoiceSelectionActions();
   }
 
   function addManualInvoiceRow(item = {}) {
@@ -1604,39 +1706,56 @@
   }));
   $('#sessionSearch').addEventListener('input', () => { ui.sessionPage = 1; renderSessions(); });
   $('#clientSearch').addEventListener('input', renderClients);
-  $('#sessionFilterBtn').addEventListener('click', () => {
-    const order = ['all','uninvoiced','linked'];
-    ui.sessionFilter = order[(order.indexOf(ui.sessionFilter) + 1) % order.length];
-    ui.sessionPage = 1;
-    $('#sessionFilterBtn').textContent = ui.sessionFilter === 'all' ? 'All sessions' : ui.sessionFilter === 'uninvoiced' ? 'Uninvoiced' : 'In invoice';
-    renderSessions();
-  });
-  $('#clientFilterBtn').addEventListener('click', () => showToast('All client states are currently shown.'));
-  $$('[data-money-tab]').forEach(btn => btn.addEventListener('click', () => { ui.moneyTab = btn.dataset.moneyTab; syncMoneyTabs(); }));
+  $('#sessionFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'all', label:'All sessions' },
+    { value:'uninvoiced', label:'Uninvoiced' },
+    { value:'linked', label:'In invoice' }
+  ], ui.sessionFilter, value => { ui.sessionFilter = value; ui.sessionPage = 1; renderSessions(); }));
+  $('#clientFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'active', label:'Active' },
+    { value:'inactive', label:'Inactive' },
+    { value:'all', label:'All clients' }
+  ], ui.clientFilter, value => { ui.clientFilter = value; renderClients(); }));
+  $$('[data-money-tab]').forEach(btn => btn.addEventListener('click', () => { closeFilterMenu(); ui.moneyTab = btn.dataset.moneyTab; syncMoneyTabs(); }));
   $('#addInvoiceBtn').addEventListener('click', () => openInvoiceForm());
   $('#addPaymentBtn').addEventListener('click', () => openPaymentForm());
   $('#invoiceSettingsBtn').addEventListener('click', () => openInvoiceSettingsForm());
   $('#invoiceSettingsFromSettings').addEventListener('click', () => { closeModal(); openInvoiceSettingsForm(); });
-  $('#invoiceFilterBtn').addEventListener('click', () => {
-    const order = ['all','draft','sent','partially_paid','paid','overdue','void'];
-    ui.invoiceFilter = order[(order.indexOf(ui.invoiceFilter) + 1) % order.length];
-    renderMoney();
-  });
-  $('#paymentFilterBtn').addEventListener('click', () => {
-    const order = ['all','invoice','direct'];
-    ui.paymentFilter = order[(order.indexOf(ui.paymentFilter) + 1) % order.length];
-    renderMoney();
-  });
+  $('#invoiceFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'all', label:'All invoices' },
+    { value:'draft', label:'Draft' },
+    { value:'sent', label:'Sent' },
+    { value:'partially_paid', label:'Partially paid' },
+    { value:'paid', label:'Paid' },
+    { value:'overdue', label:'Overdue' },
+    { value:'void', label:'Void' }
+  ], ui.invoiceFilter, value => { ui.invoiceFilter = value; ui.invoicePage = 1; renderMoney(); }));
+  $('#paymentFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'all', label:'All payments' },
+    { value:'invoice', label:'Invoice payments' },
+    { value:'direct', label:'Other income' }
+  ], ui.paymentFilter, value => { ui.paymentFilter = value; ui.paymentPage = 1; renderMoney(); }));
   $('#invoiceForm').addEventListener('submit', saveInvoice);
   $('#invoiceClient').addEventListener('change', event => { renderInvoiceSessionChoices(event.target.value, new Set()); updateInvoiceDraftTotal(); });
   $('#invoiceIssueDate').addEventListener('change', event => {
     if (!ui.invoiceFormId) $('#invoiceDueDate').value = addDays(event.target.value, activeBusiness().invoiceSettings?.defaultDueDays ?? 7);
   });
   $('#addManualInvoiceLine').addEventListener('click', () => addManualInvoiceRow());
+  $('#selectAllInvoiceSessions').addEventListener('click', () => {
+    $$('input[name="invoiceSession"]', $('#invoiceSessionChoices')).forEach(input => { input.checked = true; });
+    updateInvoiceDraftTotal();
+    updateInvoiceSelectionActions();
+  });
+  $('#clearInvoiceSessions').addEventListener('click', () => {
+    $$('input[name="invoiceSession"]', $('#invoiceSessionChoices')).forEach(input => { input.checked = false; });
+    updateInvoiceDraftTotal();
+    updateInvoiceSelectionActions();
+  });
   $('#commandInput').addEventListener('input', renderCommandPalette);
 
   document.addEventListener('keydown', event => {
     if (event.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) { event.preventDefault(); $('#commandInput').value = ''; renderCommandPalette(); openModal($('#commandPalette')); }
+    if (event.key === 'Escape' && activeFilterMenu) { closeFilterMenu(); return; }
     if (event.key === 'Escape' && ui.modal) closeModal();
   });
 

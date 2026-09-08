@@ -1,3 +1,12 @@
+# Phase 3 usability refinement 7
+
+- Replaced click-to-cycle filters with compact anchored filter menus for Sessions, Clients, Invoices, and Payments.
+- Client filtering is now functional (`Active`, `Inactive`, `All clients`) instead of a cosmetic control.
+- Added 7-record pagination to Invoice History and Money Received, including page count and compact previous/next controls.
+- Invoice session selection now offers unobtrusive `Select all · Clear` shortcuts; availability/disabled state follows the current session selection.
+- Home `Invoice earnings` now identifies its metric window as `All time`.
+- Kept all changes presentation/workflow-level; no accounting entities, schema, or stored financial relationships were changed.
+
 # Phase 3 usability refinement 6
 
 - Rebuilt the Home Recent Work transition as a true layered cross-dissolve instead of a single-container opacity swap.
