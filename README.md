@@ -1,4 +1,4 @@
-# Business Ledger — Phase 3 Usability Refinement 7
+# Business Ledger — Phase 3 Usability Refinement 8
 
 A dependency-free interactive prototype for a business finance and traceability app.
 
@@ -7,7 +7,7 @@ A dependency-free interactive prototype for a business finance and traceability 
 Serve the folder rather than double-clicking the HTML file:
 
 ```bash
-cd business-finance-app-phase3-usability-refinement-7
+cd business-finance-app-phase3-usability-refinement-8
 python3 -m http.server 8000
 ```
 
@@ -26,6 +26,13 @@ Then open `http://localhost:8000`.
 - explicit local-only sync state
 - provider-neutral repository boundary
 - JSON backup export
+
+
+### Refinement 8 — timezone + client identity polish
+- date-only business defaults and overdue/month calculations use the active workspace timezone rather than UTC
+- Play It Forward therefore treats `America/Los_Angeles` as the source of truth for “today” even when UTC has already moved to the next calendar day
+- true audit/creation timestamps remain ISO UTC timestamps
+- client detail panels inherit a softened version of the client’s chosen identity color while preserving existing text/button contrast
 
 ### Work records
 - client creation/editing/deletion

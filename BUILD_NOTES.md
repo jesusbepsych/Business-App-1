@@ -1,3 +1,12 @@
+# Phase 3 usability refinement 8
+
+- Reworked date-only business logic to use the active workspace timezone instead of UTC. This covers invoice issue defaults, payment dates, work-session date defaults, overdue status, Home “this month” grouping, and local backup filename dates.
+- Kept true event/audit timestamps in UTC ISO format for stable traceability.
+- Made date-only formatting timezone-neutral so stored calendar dates do not shift when viewed from another device timezone.
+- Updated the radial time picker default to use the active workspace timezone as well.
+- Client detail panels now inherit the client’s selected color as a subtle background tint/edge treatment. The tint is intentionally softened in both light and dark mode so existing text, metrics, and action buttons keep their contrast.
+- No backup restore/import functionality was added in this refinement.
+
 # Phase 3 usability refinement 7
 
 - Replaced click-to-cycle filters with compact anchored filter menus for Sessions, Clients, Invoices, and Payments.

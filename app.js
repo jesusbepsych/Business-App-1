@@ -157,6 +157,37 @@
     return data.businesses.find(b => b.id === data.activeBusinessId) || data.businesses[0];
   }
 
+  function businessTimeZone(business = activeBusiness()) {
+    const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const candidate = business?.timezone || fallback;
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: candidate }).format(new Date());
+      return candidate;
+    } catch (error) {
+      console.warn('Invalid workspace timezone; falling back to device timezone.', candidate, error);
+      return fallback;
+    }
+  }
+
+  function zonedNowParts(business = activeBusiness(), instant = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: businessTimeZone(business),
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(instant);
+    const value = type => parts.find(part => part.type === type)?.value || '';
+    return { year: value('year'), month: value('month'), day: value('day'), hour: Number(value('hour') || 0), minute: Number(value('minute') || 0) };
+  }
+
+  function businessToday(business = activeBusiness()) {
+    const parts = zonedNowParts(business);
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  }
+
+  function businessMonthKey(business = activeBusiness()) {
+    return businessToday(business).slice(0, 7);
+  }
+
   function businessClients(businessId = data.activeBusinessId) {
     return data.clients.filter(c => c.businessId === businessId);
   }
@@ -222,7 +253,7 @@
     const total = invoiceTotalCents(invoice);
     const balance = Math.max(0, total - paid);
     if (total > 0 && balance === 0) return 'Paid';
-    const today = new Date().toISOString().slice(0,10);
+    const today = businessToday();
     if (invoice.status === 'sent' && balance > 0 && invoice.dueDate && invoice.dueDate < today) return 'Overdue';
     if (paid > 0 && balance > 0) return 'Partially paid';
     return invoice.status === 'sent' ? 'Sent' : invoice.status;
@@ -242,8 +273,10 @@
   }
 
   function addDays(dateString, days) {
-    const date = new Date(`${dateString}T12:00:00`);
-    date.setDate(date.getDate() + Number(days || 0));
+    const [year, month, day] = String(dateString || '').split('-').map(Number);
+    if (!year || !month || !day) return dateString;
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCDate(date.getUTCDate() + Number(days || 0));
     return date.toISOString().slice(0,10);
   }
 
@@ -261,8 +294,10 @@
 
   function formatDate(dateString, options = { month: 'short', day: 'numeric', year: 'numeric' }) {
     if (!dateString) return '—';
-    const date = dateString.length === 10 ? new Date(`${dateString}T12:00:00`) : new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', options).format(date);
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(String(dateString));
+    const date = dateOnly ? new Date(`${dateString}T00:00:00Z`) : new Date(dateString);
+    const timeZone = dateOnly ? 'UTC' : businessTimeZone();
+    return new Intl.DateTimeFormat('en-US', { ...options, timeZone }).format(date);
   }
 
   function clockTimeLabel(value) {
@@ -290,8 +325,8 @@
   }
 
   function currentRoundedTime() {
-    const now = new Date();
-    return minutesToTime(now.getHours() * 60 + now.getMinutes());
+    const now = zonedNowParts();
+    return minutesToTime(now.hour * 60 + now.minute);
   }
 
   function addMinutesToTime(value, amount) {
@@ -345,6 +380,7 @@
 
   function closeModal(hideOverlay = true) {
     modals.forEach(item => { if (item) item.hidden = true; });
+    resetDetailPanelTheme();
     ui.modal = null;
     if (hideOverlay) overlay.hidden = true;
     document.body.style.overflow = '';
@@ -387,7 +423,7 @@
   function renderHome() {
     const clients = businessClients().filter(c => c.status === 'active');
     const sessions = businessSessions();
-    const monthKey = new Date().toISOString().slice(0,7);
+    const monthKey = businessMonthKey();
     const monthly = sessions.filter(s => s.date?.slice(0,7) === monthKey);
     const totalMinutes = monthly.reduce((sum, s) => sum + sessionMinutes(s), 0);
     const uninvoiced = sessions.filter(s => s.invoiceStatus === 'uninvoiced');
@@ -749,7 +785,7 @@
     if (existing && invoicePayments(existing).length) { showToast('Correct or delete linked payments before editing this invoice.'); return; }
     ui.invoiceFormId = existingId;
     const selectedClientId = existing?.clientId || clientId || (sessionId ? data.sessions.find(s => s.id === sessionId)?.clientId : '') || (clients.length === 1 ? clients[0].id : '');
-    const today = new Date().toISOString().slice(0,10);
+    const today = businessToday();
     const issueDate = existing?.issueDate || today;
     const dueDate = existing?.dueDate || addDays(issueDate, activeBusiness().invoiceSettings?.defaultDueDays ?? 7);
     const selectedSessionIds = new Set((existing?.lineItems || []).filter(item => item.type === 'session').map(item => item.sessionId));
@@ -1053,7 +1089,7 @@
     $('#formEyebrow').textContent = existing ? 'EDIT PAYMENT' : 'MONEY RECEIVED';
     $('#formTitle').textContent = existing ? 'Edit payment' : 'Record payment';
     $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Record payment';
-    const today = new Date().toISOString().slice(0,10);
+    const today = businessToday();
     const selectedInvoiceId = preselectedInvoice?.id || (defaultKind === 'invoice' && invoices.length === 1 ? invoices[0].id : '');
     const selectedInvoice = selectedInvoiceId ? invoiceById(selectedInvoiceId) : null;
     const startingAmountCents = existing?.amountCents ?? (selectedInvoice ? paymentRemainingBeforeCurrent(selectedInvoice, existing) : 0);
@@ -1261,7 +1297,7 @@
     $('#formEyebrow').textContent = existing ? 'EDIT SESSION' : 'LOG WORK';
     $('#formTitle').textContent = existing ? 'Edit work session' : 'New work session';
     $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Log session';
-    const today = new Date().toISOString().slice(0,10);
+    const today = businessToday();
     const clientLocked = Boolean(existing?.invoiceId);
     $('#formSheet').classList.add('session-form-sheet');
     $('#formFields').innerHTML = `
@@ -1552,6 +1588,20 @@
     closeModal(); renderAll(); setView(completedMode === 'business' ? 'home' : completedMode === 'invoice-settings' ? 'money' : 'work');
   }
 
+  function applyClientDetailTheme(client) {
+    const panel = $('#detailPanel');
+    if (!panel) return;
+    panel.classList.add('client-tinted-detail');
+    panel.dataset.clientColor = clientColorKey(client);
+  }
+
+  function resetDetailPanelTheme() {
+    const panel = $('#detailPanel');
+    if (!panel) return;
+    panel.classList.remove('client-tinted-detail');
+    delete panel.dataset.clientColor;
+  }
+
   function openClientDetail(id) {
     const client = data.clients.find(c => c.id === id); if (!client) return;
     const sessions = data.sessions.filter(s => s.clientId === id).sort((a,b) => b.date.localeCompare(a.date));
@@ -1562,6 +1612,7 @@
       <div class="detail-section"><p class="eyebrow">NOTES</p><p>${escapeHtml(client.notes || 'No client notes yet.')}</p></div>
       <div class="detail-section"><div class="panel-title-row"><p class="eyebrow">RECENT SESSIONS</p></div>${sessions.length ? `<div class="recent-list">${sessions.slice(0,5).map(sessionRowCompact).join('')}</div>` : '<div class="inline-empty"><small>No sessions for this client yet.</small></div>'}</div>`;
     openModal($('#detailPanel'));
+    applyClientDetailTheme(client);
     $('[data-edit-client]')?.addEventListener('click', () => openClientForm(id));
     $('[data-new-session-client]')?.addEventListener('click', () => { closeModal(); openSessionForm(); setTimeout(() => { $('#sessionClient').value = id; $('#sessionRate').value = (client.defaultRateCents/100).toFixed(2); }, 20); });
     $('[data-delete-client]')?.addEventListener('click', () => showDeleteConfirmation('client', id));
@@ -1662,7 +1713,7 @@
   function exportBackup() {
     const blob = new Blob([repository.export(data)], { type: 'application/json' });
     const url = URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = `business-ledger-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
+    a.href = url; a.download = `business-ledger-backup-${businessToday()}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 0); showToast('Local backup exported');
   }
 

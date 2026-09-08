@@ -189,3 +189,10 @@ The invoice work-session selector is a bounded nested scroll region; this is pre
 - Sessions, Invoices, and Payments use bounded list pagination to keep long ledgers scannable without increasing permanent screen density.
 - Invoice `Select all / Clear` operates only on currently eligible session checkboxes and still feeds the same immutable invoice snapshot workflow.
 - Home Invoice earnings is cumulative across recorded invoice-linked Payments; the `All time` label clarifies that display basis without changing calculation logic.
+## Workspace time semantics
+
+- Event/audit timestamps (`createdAt`, `updatedAt`, `occurredAt`) remain UTC ISO instants.
+- Date-only business records (session date, invoice issue/due date, payment received date) are calendar dates interpreted using the active workspace timezone.
+- “Today,” overdue status, current-month metrics, and default form dates use the workspace timezone (`America/Los_Angeles` for Play It Forward), preventing UTC day-boundary shifts.
+- Date-only display formatting is timezone-neutral so a stored `YYYY-MM-DD` does not move backward/forward when viewed on a device in another timezone.
+
