@@ -229,3 +229,6 @@ The invoice work-session selector is a bounded nested scroll region; this is pre
 
 ## Collapsible navigation shell
 The desktop sidebar collapse state is intentionally UI-only and does not touch business data or schema versioning. The app shell transitions its grid from `260px + main` to `0px + main`, allowing the existing responsive content grids to reflow naturally rather than leaving a reserved blank column. The preference is stored separately from financial data under `business-ledger-sidebar-collapsed`. Mobile navigation remains a separate presentation path below 921px.
+
+## UI state refinement — sidebar default and top-bar veil
+The sidebar remains a layout state rather than an overlay. If no preference exists, its desktop/tablet default is collapsed; after the user explicitly toggles it, `business-ledger-sidebar-collapsed` persists that choice. The Home view remains the initial application view. The sticky utility bar uses a masked gradient blur layer so content protection fades into the document rather than creating a hard rectangular occlusion boundary.

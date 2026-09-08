@@ -177,8 +177,12 @@
   let activeFilterMenu = null;
 
   function readSidebarCollapsedPreference() {
-    try { return localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === '1'; }
-    catch (error) { return false; }
+    try {
+      const saved = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
+      return saved === null ? true : saved === '1';
+    } catch (error) {
+      return true;
+    }
   }
 
   function applySidebarCollapsed(collapsed, { persist = true } = {}) {

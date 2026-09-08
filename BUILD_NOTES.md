@@ -142,3 +142,9 @@ These remain later roadmap phases so Phase 3 can be tested independently.
 - The user's collapsed/expanded preference is persisted locally so the layout is restored on the next visit without a visible layout flash.
 - Mobile navigation remains unchanged; the collapse control is hidden at 920px and below.
 - `prefers-reduced-motion` continues to suppress the animation through the app-wide reduced-motion rule.
+
+## Phase 4 usability refinement 2
+- Fresh installs now open on Home with the desktop/tablet sidebar collapsed by default; an explicit saved user preference still wins on later visits.
+- The sidebar collapse/expand control now carries a continuous, low-intensity accent-colored edge glow so new users can discover the hidden navigation without adding explanatory text or permanent clutter.
+- The sticky top bar no longer uses a hard translucent rectangular fill. It now uses a masked gradient/backdrop-blur veil that fades naturally into the page below, preserving search/control legibility while making scroll transitions feel substantially more fluid.
+- Mobile navigation behavior remains unchanged, and reduced-motion settings effectively suppress the rotating glow animation.

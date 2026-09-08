@@ -62,3 +62,6 @@ The current JSON backup contains the structured expense and receipt metadata, bu
 
 ## Phase 4 usability refinement 1
 Desktop/tablet layouts now support an optional collapsible left sidebar. Use the small edge chevron to collapse the navigation; the sidebar fades/slides away and the main workspace expands to use the reclaimed width. Press the same control again to restore the full sidebar. The preference is stored locally. Mobile bottom navigation is unchanged.
+
+### Refinement 2 — default collapsed navigation + fluid top bar
+On a fresh desktop/tablet visit, Business Ledger opens on Home with the sidebar collapsed to maximize usable workspace. The edge chevron remains visible with a subtle traveling accent glow as a discoverability cue. Once the user expands/collapses it, that preference is saved locally for later visits. The sticky top utility area now fades into the page with a gradient blur rather than presenting as a hard translucent rectangle while scrolling.
