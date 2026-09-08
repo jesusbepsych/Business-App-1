@@ -1,3 +1,10 @@
+# Phase 3 usability refinement 9
+
+- Added a restrained diagonal shimmer pass to client-tinted detail panels.
+- Shimmer is CSS-only, pointer-event transparent, and layered below all card content.
+- Animation uses a long 10.5-second cycle with a substantial resting period to avoid visual noise.
+- Reduced-motion preferences disable the effect.
+
 # Phase 3 usability refinement 8
 
 - Reworked date-only business logic to use the active workspace timezone instead of UTC. This covers invoice issue defaults, payment dates, work-session date defaults, overdue status, Home “this month” grouping, and local backup filename dates.

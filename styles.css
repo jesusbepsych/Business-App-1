@@ -791,9 +791,47 @@ h2 { font-size:20px; margin:0; letter-spacing:-.035em; }
    so text and actions keep their existing contrast and hierarchy. */
 .detail-panel.client-tinted-detail {
   --detail-client-color:var(--client-blue);
+  position:fixed;
+  isolation:isolate;
   background:color-mix(in srgb,var(--detail-client-color) 9%,rgba(255,255,255,.985));
   border-color:color-mix(in srgb,var(--detail-client-color) 24%,var(--line));
   box-shadow:inset 3px 0 0 color-mix(in srgb,var(--detail-client-color) 58%,transparent),var(--shadow-pop);
+}
+/* A restrained light sweep gives the client detail card a premium sense of motion
+   without competing with its information or action controls. */
+.detail-panel.client-tinted-detail::before {
+  content:"";
+  position:absolute;
+  z-index:0;
+  top:-58%;
+  left:-78%;
+  width:54%;
+  height:215%;
+  pointer-events:none;
+  border-radius:48%;
+  background:linear-gradient(
+    108deg,
+    transparent 0%,
+    rgba(255,255,255,0) 31%,
+    rgba(255,255,255,.035) 40%,
+    rgba(255,255,255,.12) 49%,
+    rgba(255,255,255,.045) 58%,
+    rgba(255,255,255,0) 69%,
+    transparent 100%
+  );
+  filter:blur(.35px);
+  opacity:0;
+  transform:translate3d(-18%,-12%,0) rotate(10deg);
+  will-change:transform,opacity;
+  animation:clientDetailShimmer 10.5s cubic-bezier(.42,0,.2,1) infinite;
+}
+.detail-panel.client-tinted-detail > * { position:relative; z-index:1; }
+@keyframes clientDetailShimmer {
+  0%,22% { opacity:0; transform:translate3d(-18%,-12%,0) rotate(10deg); }
+  30% { opacity:.18; }
+  44% { opacity:.72; }
+  58% { opacity:.30; }
+  70%,100% { opacity:0; transform:translate3d(340%,72%,0) rotate(10deg); }
 }
 .detail-panel.client-tinted-detail[data-client-color="blue"] { --detail-client-color:var(--client-blue); }
 .detail-panel.client-tinted-detail[data-client-color="teal"] { --detail-client-color:var(--client-teal); }
@@ -828,4 +866,5 @@ h2 { font-size:20px; margin:0; letter-spacing:-.035em; }
 @media (prefers-reduced-motion: reduce) {
   .recent-list, .recent-transition-layer .recent-row { transition:none; animation:none !important; filter:none !important; transform:none !important; opacity:1 !important; }
   .invoice-session-list { scroll-behavior:auto; }
+  .detail-panel.client-tinted-detail::before { display:none; animation:none !important; }
 }

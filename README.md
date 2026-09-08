@@ -1,4 +1,4 @@
-# Business Ledger — Phase 3 Usability Refinement 8
+# Business Ledger — Phase 3 Usability Refinement 9
 
 A dependency-free interactive prototype for a business finance and traceability app.
 
@@ -27,6 +27,13 @@ Then open `http://localhost:8000`.
 - provider-neutral repository boundary
 - JSON backup export
 
+
+
+### Refinement 9 — client detail shimmer
+- Added a slow, low-opacity diagonal light shimmer to color-tinted client detail cards.
+- The shimmer uses layered transparency and a long rest interval so it reads as subtle polish rather than a distracting animation.
+- The effect does not intercept clicks or change text/button contrast.
+- `prefers-reduced-motion` disables the shimmer entirely.
 
 ### Refinement 8 — timezone + client identity polish
 - date-only business defaults and overdue/month calculations use the active workspace timezone rather than UTC
