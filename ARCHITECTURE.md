@@ -232,3 +232,6 @@ The desktop sidebar collapse state is intentionally UI-only and does not touch b
 
 ## UI state refinement — sidebar default and top-bar veil
 The sidebar remains a layout state rather than an overlay. If no preference exists, its desktop/tablet default is collapsed; after the user explicitly toggles it, `business-ledger-sidebar-collapsed` persists that choice. The Home view remains the initial application view. The sticky utility bar uses a masked gradient blur layer so content protection fades into the document rather than creating a hard rectangular occlusion boundary.
+
+### Sticky utility scrim
+The desktop/tablet topbar uses an alpha-faded page-color scrim rather than a full-width `backdrop-filter`. This is deliberate: backdrop blur spreads bright underlying pixels and can create a visible light band over text/cards on dark themes. The controls themselves provide their own surface contrast, while the scrim only manages the transition between document content and the sticky utility region.

@@ -65,3 +65,6 @@ Desktop/tablet layouts now support an optional collapsible left sidebar. Use the
 
 ### Refinement 2 — default collapsed navigation + fluid top bar
 On a fresh desktop/tablet visit, Business Ledger opens on Home with the sidebar collapsed to maximize usable workspace. The edge chevron remains visible with a subtle traveling accent glow as a discoverability cue. Once the user expands/collapses it, that preference is saved locally for later visits. The sticky top utility area now fades into the page with a gradient blur rather than presenting as a hard translucent rectangle while scrolling.
+
+### Top utility blending
+The sticky search/profile region intentionally avoids applying a full-width backdrop blur. A short page-colored fade now protects control readability while allowing bright underlying text and cards to pass beneath without turning into a broad gray haze.
