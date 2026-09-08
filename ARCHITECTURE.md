@@ -2,7 +2,7 @@
 
 ## Current build
 
-Phase 0 foundation, Phase 1 work records, Phase 2 invoices, and Phase 3 payments/income ledger are active.
+Phase 0 foundation, Phase 1 work records, Phase 2 invoices, Phase 3 payments/income ledger, and Phase 4 expenses/receipt evidence are active.
 
 ## Product principle
 
@@ -27,7 +27,7 @@ Account / Identity
         │     └── Work Sessions
         │            └── Invoice Line Item ──> Invoice ──> Payments
         ├── Direct Income ────────────────────────────────> Payments
-        ├── Expenses ──> Receipts / Documents (later)
+        ├── Expenses ──> Receipts (active) / Documents (later)
         ├── Vehicles ──> Trips / Mileage (later)
         ├── Tax Years ──> Estimated Payments (later)
         └── Documents
@@ -36,7 +36,7 @@ Material mutations ──> Audit Events / Traceability
 Structured records ──> Analytics / Automation / AI (later phases)
 ```
 
-## Schema version 5
+## Schema version 6
 
 ### Business
 - id
@@ -156,27 +156,57 @@ Structured records ──> Analytics / Automation / AI (later phases)
 
 Permanent navigation remains **Home · Work · Money · Records**.
 
-Money now uses contextual **Invoices / Payments** tabs instead of adding permanent top-level navigation. `+ Payment` and `+ Invoice` are the main money-entry actions; invoice settings is visually de-emphasized as a utility action.
+Money now uses contextual **Invoices / Payments / Expenses** tabs instead of adding permanent top-level navigation. Expense entry is available from Quick Add and from the Expenses panel; invoice settings remains visually de-emphasized as a utility action.
 
 ## Security direction
 
 Production sync should add authorization on every workspace-scoped query, encryption in transit and at rest, passkeys/MFA, short-lived document access, no client-side secrets, session/device management, rate limiting, backups/recovery, least-privilege integrations, no plaintext bank credentials, and tamper-resistant history for material records.
 
+## Phase 4 expense + receipt model
+
+### Expense
+- id / business_id
+- date
+- merchant / description
+- total_cents (what actually left the user)
+- classification (`business`, `mixed`, `personal`)
+- business_cents (preserves the business-use portion separately)
+- category (bookkeeping category only; not a tax determination)
+- business_purpose
+- optional client_id / client_name_snapshot
+- optional session_id plus session date/time snapshots
+- review_status (`ready`, `needs_review`)
+- receipt_id
+- created_at / updated_at
+
+### Receipt metadata
+- id / business_id / expense_id
+- file_name / mime_type / size
+- created_at
+
+Receipt file bytes are stored separately in browser IndexedDB for the prototype. Structured financial data stays in LocalRepository/localStorage. This mirrors the production direction where financial records and encrypted object storage should remain separate services linked by IDs.
+
+### Expense integrity rules
+1. Original expense total is never replaced by a deductible/business amount.
+2. Business expenses default to 100% business use; personal expenses preserve a $0 business portion; mixed expenses require a business portion greater than $0 and less than the original total.
+3. Expense categories are bookkeeping labels only. Tax treatment is deferred to Phase 6.
+4. A missing business-purpose note automatically places business/mixed expenses into `needs_review`; the user can also manually keep any expense in review.
+5. Receipts are optional. Attaching/replacing/deleting a receipt never changes the expense amount.
+6. Client/session links are optional context. If a linked client or session is deleted later, the expense survives and retains useful snapshots rather than being deleted with work records.
+7. Receipt metadata is included in structured data; receipt file bytes are intentionally not included in the current JSON backup yet.
+
 ## Next engineering slice
 
-Phase 4 should introduce expenses + receipt evidence:
+Phase 5 should introduce mileage + vehicle tracking as its own focused workflow:
 
-- manual expense capture
-- business / personal / mixed classification
+- vehicle records
+- manual business-trip logging
+- start/end locations and mileage
+- client/session association
 - business-purpose notes
-- categories
-- client/job links
-- receipt/document attachment model
-- missing-receipt review queue
-- expense search and totals
-
-Mileage remains Phase 5 so vehicle deduction logic can be built as its own focused workflow instead of being buried inside generic expenses.
-
+- yearly mileage totals
+- tax-year mileage rates later consumed by Phase 6
+- later GPS-assisted trip suggestions only after manual logging feels solid
 
 ## Phase 3 refinement 4 UI behavior
 

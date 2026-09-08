@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, records, and taxes." />
-  <title>Business Ledger — Phase 3 Usability Refinement 9</title>
+  <title>Business Ledger — Phase 4 Expenses Alpha</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -14,7 +14,7 @@
     <aside class="sidebar" aria-label="Primary navigation">
       <div class="brand-row">
         <div class="brand-mark" aria-hidden="true">B</div>
-        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 3 · Payments</span></div>
+        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 4 · Expenses</span></div>
       </div>
 
       <button class="business-switcher" id="businessSwitcher" aria-haspopup="dialog">
@@ -57,7 +57,7 @@
             <button class="primary-btn" id="quickAddBtn"><span>＋</span> Add</button>
           </div>
 
-          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 3 is now active.</strong> Invoices and actual money received are now separate, traceable records; data is still local-only until secure cloud sync is connected.</span></div>
+          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 4 is now active.</strong> Expenses and receipt evidence now connect to the same workspace as work, invoices, and payments; data and receipt files remain local-only until secure cloud sync is connected.</span></div>
 
           <div class="metric-grid">
             <article class="metric-card"><div class="metric-head"><span>Active clients</span><span class="muted-chip">Work</span></div><strong class="metric-value" id="metricClients">0</strong><span class="metric-caption">In this workspace</span></article>
@@ -80,9 +80,9 @@
           </div>
 
           <article class="panel-card roadmap-card">
-            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 3 — Payments + income ledger</h2></div><span class="quiet-badge green">Active</span></div>
-            <div class="progress-track"><div class="progress-fill phase-three"></div></div>
-            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="done">Invoices</span><span class="current">Payments</span><span>Expenses</span><span>Mileage</span><span>Taxes</span></div>
+            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 4 — Expenses + receipt vault</h2></div><span class="quiet-badge green">Active</span></div>
+            <div class="progress-track"><div class="progress-fill phase-four"></div></div>
+            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="done">Invoices</span><span class="done">Payments</span><span class="current">Expenses</span><span>Mileage</span><span>Taxes</span></div>
           </article>
         </div>
       </section>
@@ -120,7 +120,7 @@
       <section class="view" data-page="money">
         <div class="content-wrap">
           <div class="page-heading money-heading">
-            <div><p class="eyebrow">MONEY</p><h1>Earned and received, separately.</h1><p class="subtitle">Invoices show what was billed. Payments show what actually arrived. Linking them keeps balances and cash received accurate without double counting.</p></div>
+            <div><p class="eyebrow">MONEY</p><h1>Billed, received, and spent.</h1><p class="subtitle">Invoices show what was billed. Payments show what arrived. Expenses show what left the business and keep supporting evidence attached.</p></div>
             <div class="heading-actions money-actions"><button class="utility-text-btn" id="invoiceSettingsBtn">Invoice settings</button><button class="secondary-btn" id="addPaymentBtn">＋ Payment</button><button class="primary-btn" id="addInvoiceBtn">＋ Invoice</button></div>
           </div>
 
@@ -133,6 +133,7 @@
           <div class="segment-control money-segments" role="tablist" aria-label="Money sections">
             <button class="segment active" data-money-tab="invoices" role="tab">Invoices <span id="invoiceCount">0</span></button>
             <button class="segment" data-money-tab="payments" role="tab">Payments <span id="paymentCount">0</span></button>
+            <button class="segment" data-money-tab="expenses" role="tab">Expenses <span id="expenseCount">0</span></button>
           </div>
 
           <div class="money-tab active" data-money-panel="invoices">
@@ -150,13 +151,24 @@
             </div>
             <div class="data-card" id="paymentsContainer"></div>
           </div>
-          <div class="phase-next-note"><span>↳</span><div><strong>One cash record, one source.</strong><small>Invoice payments link back to the invoice; other income can be recorded directly. Future bank matching will reconcile deposits to these payment records instead of creating duplicate income.</small></div></div>
+
+          <div class="money-tab" data-money-panel="expenses">
+            <div class="money-list-head expense-list-head">
+              <div><p class="eyebrow">EXPENSE LEDGER</p><h2>Money spent</h2><div class="expense-summary-line"><span id="expenseMonthTotal">$0 this month</span><span id="expenseBusinessTotal">$0 business portion</span></div></div>
+              <div class="expense-head-actions"><button class="filter-pill" id="expenseFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All expenses</button><button class="primary-btn compact-action" id="addExpenseBtn">＋ Expense</button></div>
+            </div>
+            <div class="data-card" id="expensesContainer"></div>
+          </div>
+          <div class="phase-next-note"><span>↳</span><div><strong>One financial event, one source record.</strong><small>Invoices, received payments, and expenses stay separate so later tax and bank-reconciliation layers can use the same records without double counting.</small></div></div>
         </div>
       </section>
 
       <section class="view" data-page="records">
-        <div class="content-wrap narrow">
-          <div class="placeholder-page"><div class="placeholder-icon">▤</div><p class="eyebrow">RECORDS</p><h1>Evidence stays attached to the numbers.</h1><p>Receipts, invoices, W-9s, contracts, mileage logs, tax records, and audit history will become searchable here.</p><button class="secondary-btn" id="exportBackupFromRecords">Export local backup</button></div>
+        <div class="content-wrap">
+          <div class="page-heading records-heading"><div><p class="eyebrow">RECORDS</p><h1>Receipt evidence, without the filing cabinet.</h1><p class="subtitle">Receipts stay linked to the expense that created them. Search the evidence here; open the expense for full context.</p></div><button class="secondary-btn" id="exportBackupFromRecords">Export local backup</button></div>
+          <div class="records-toolbar"><div class="mini-search"><span>⌕</span><input id="receiptSearch" placeholder="Search receipts, merchants, categories" /></div><span class="quiet-badge" id="receiptCount">0 receipts</span></div>
+          <div class="receipt-vault-grid" id="receiptVault"></div>
+          <div class="records-local-note"><span>i</span><p>Receipt files are stored locally in this browser for the prototype. The JSON backup exports structured financial records, but does not yet package the receipt file bytes.</p></div>
         </div>
       </section>
 
@@ -179,13 +191,13 @@
       <button class="quick-card enabled" data-action="add-client"><span class="quick-icon">⌁</span><strong>Client</strong><small>Active</small></button>
       <button class="quick-card enabled" data-action="add-invoice"><span class="quick-icon">▧</span><strong>Invoice</strong><small>Active</small></button>
       <button class="quick-card enabled" data-action="add-payment"><span class="quick-icon">$</span><strong>Payment</strong><small>Active</small></button>
-      <button class="quick-card"><span class="quick-icon">−</span><strong>Expense</strong><small>Phase 4</small></button>
+      <button class="quick-card enabled" data-action="add-expense"><span class="quick-icon">−</span><strong>Expense</strong><small>Active</small></button>
       <button class="quick-card"><span class="quick-icon">↝</span><strong>Mileage</strong><small>Phase 5</small></button>
     </div>
   </section>
 
   <section class="command-palette" id="commandPalette" role="dialog" aria-modal="true" aria-labelledby="commandTitle" hidden>
-    <div class="command-input-row"><span>⌕</span><input id="commandInput" aria-label="Search" placeholder="Search clients, sessions, invoices, payments, records…" autocomplete="off" /><kbd>Esc</kbd></div>
+    <div class="command-input-row"><span>⌕</span><input id="commandInput" aria-label="Search" placeholder="Search clients, sessions, invoices, payments, expenses, records…" autocomplete="off" /><kbd>Esc</kbd></div>
     <div class="command-body" id="commandBody"><p class="command-label" id="commandTitle">Quick navigation</p></div>
   </section>
 
@@ -211,7 +223,7 @@
             <label class="field"><span>Issue date</span><input id="invoiceIssueDate" type="date" required /></label>
             <label class="field"><span>Due date</span><input id="invoiceDueDate" type="date" required /></label>
           </div>
-          <section class="invoice-builder-section"><div class="builder-title"><div><p class="eyebrow">WORK TO BILL</p><h3>Select sessions</h3></div><div class="builder-title-tools"><small>Only uninvoiced work for this client appears.</small><div class="builder-selection-actions" aria-label="Session selection shortcuts"><button type="button" id="selectAllInvoiceSessions">Select all</button><span aria-hidden="true">·</span><button type="button" id="clearInvoiceSessions">Clear</button></div></div></div><div id="invoiceSessionChoices" class="invoice-session-list"></div></section>
+          <section class="invoice-builder-section"><div class="builder-title"><div><p class="eyebrow">WORK TO BILL</p><h3>Select sessions</h3></div><div class="builder-title-tools"><div class="builder-selection-actions" aria-label="Session selection shortcuts"><button type="button" id="selectAllInvoiceSessions">Select all</button><span aria-hidden="true">·</span><button type="button" id="clearInvoiceSessions">Clear</button></div></div></div><div id="invoiceSessionChoices" class="invoice-session-list"></div></section>
           <section class="invoice-builder-section"><div class="builder-title"><div><p class="eyebrow">ADDITIONAL</p><h3>Custom line items</h3></div><button type="button" class="text-btn" id="addManualInvoiceLine">＋ Add item</button></div><div id="invoiceManualItems" class="manual-lines"></div></section>
           <label class="field invoice-note"><span>Invoice note <em>optional</em></span><textarea id="invoiceNote" rows="3" maxlength="700" placeholder="A short note to the payer…"></textarea></label>
         </div>

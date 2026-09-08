@@ -5,10 +5,13 @@
   const nowIso = () => new Date().toISOString();
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   const CLIENT_COLOR_KEYS = ['blue','teal','green','amber','coral','purple','pink','sky'];
+  const EXPENSE_CATEGORIES = [
+    ['supplies','Supplies'],['vehicle_fuel','Vehicle & fuel'],['parking_tolls','Parking & tolls'],['phone_internet','Phone & internet'],['software','Software'],['training','Training & education'],['insurance','Insurance'],['marketing','Marketing'],['meals','Meals'],['fees','Fees'],['equipment','Equipment'],['other','Other']
+  ];
   const defaultClientColorForIndex = (index = 0) => CLIENT_COLOR_KEYS[Math.abs(Number(index) || 0) % CLIENT_COLOR_KEYS.length];
 
   const initialData = {
-    schemaVersion: 5,
+    schemaVersion: 6,
     activeBusinessId: 'biz_play_it_forward',
     businesses: [{
       id: 'biz_play_it_forward',
@@ -26,6 +29,8 @@
     sessions: [],
     invoices: [],
     payments: [],
+    expenses: [],
+    receipts: [],
     auditEvents: [],
   };
 
@@ -38,9 +43,11 @@
   function migrateData(parsed) {
     if (!parsed || typeof parsed !== 'object') return deepClone(initialData);
     if (parsed.schemaVersion === 2) {
-      parsed.schemaVersion = 5;
+      parsed.schemaVersion = 6;
       parsed.invoices = [];
       parsed.payments = [];
+      parsed.expenses = [];
+      parsed.receipts = [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       const clientNames = new Map((parsed.clients || []).map(c => [c.id, c.displayName]));
       parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
@@ -48,18 +55,32 @@
       return parsed;
     }
     if (parsed.schemaVersion === 3) {
-      parsed.schemaVersion = 5;
+      parsed.schemaVersion = 6;
       parsed.invoices ||= [];
       parsed.payments = [];
+      parsed.expenses = [];
+      parsed.receipts = [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
       return parsed;
     }
     if (parsed.schemaVersion === 4 || parsed.schemaVersion === 5) {
-      parsed.schemaVersion = 5;
+      parsed.schemaVersion = 6;
       parsed.invoices ||= [];
       parsed.payments ||= [];
+      parsed.expenses ||= [];
+      parsed.receipts ||= [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
+      return parsed;
+    }
+    if (parsed.schemaVersion === 6) {
+      parsed.invoices ||= [];
+      parsed.payments ||= [];
+      parsed.expenses ||= [];
+      parsed.receipts ||= [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
@@ -87,11 +108,58 @@
     }
   }
 
+
+  class ReceiptBlobStore {
+    constructor() { this.dbName = 'business-ledger-receipts'; this.storeName = 'files'; this.version = 1; }
+    open() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(this.dbName, this.version);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(this.storeName)) db.createObjectStore(this.storeName, { keyPath: 'id' });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+    async put(id, file) {
+      const db = await this.open();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, 'readwrite');
+        tx.objectStore(this.storeName).put({ id, blob: file });
+        tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+      });
+      db.close();
+    }
+    async get(id) {
+      if (!id) return null;
+      const db = await this.open();
+      const result = await new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, 'readonly');
+        const request = tx.objectStore(this.storeName).get(id);
+        request.onsuccess = () => resolve(request.result?.blob || null);
+        request.onerror = () => reject(request.error);
+      });
+      db.close(); return result;
+    }
+    async delete(id) {
+      if (!id) return;
+      const db = await this.open();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, 'readwrite');
+        tx.objectStore(this.storeName).delete(id);
+        tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+      });
+      db.close();
+    }
+  }
+
   // Provider-neutral boundary. A later cloud repository can implement the same
   // load/save contract plus authenticated sync without changing domain/UI code.
   const repository = new LocalRepository();
+  const receiptBlobStore = new ReceiptBlobStore();
   const data = repository.load();
-  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, invoiceFormId: null };
+  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null };
   let homeRecentRotationTimer = null;
   let homeRecentSignature = '';
   let homeRecentSwapTimer = null;
@@ -204,9 +272,19 @@
     return data.payments.filter(payment => payment.businessId === businessId);
   }
 
+  function businessExpenses(businessId = data.activeBusinessId) {
+    return data.expenses.filter(expense => expense.businessId === businessId);
+  }
+
+  function businessReceipts(businessId = data.activeBusinessId) {
+    return data.receipts.filter(receipt => receipt.businessId === businessId);
+  }
+
   function clientById(id) { return data.clients.find(c => c.id === id); }
   function invoiceById(id) { return data.invoices.find(invoice => invoice.id === id); }
   function paymentById(id) { return data.payments.find(payment => payment.id === id); }
+  function expenseById(id) { return data.expenses.find(expense => expense.id === id); }
+  function receiptById(id) { return data.receipts.find(receipt => receipt.id === id); }
   function clientColorKey(client) { return CLIENT_COLOR_KEYS.includes(client?.colorKey) ? client.colorKey : 'blue'; }
   function clientColorClass(client) { return `client-color-${clientColorKey(client)}`; }
 
@@ -441,21 +519,24 @@
 
     const incomplete = sessions.filter(s => !s.clientId || !s.date || !s.startTime || !s.endTime);
     const overdue = businessInvoices().filter(invoice => invoiceDisplayStatus(invoice) === 'Overdue');
+    const expenseReview = businessExpenses().filter(expense => expense.reviewStatus === 'needs_review');
     const attentionItems = [
       ...overdue.map(invoice => ({ type: 'invoice', id: invoice.id, title: `${invoice.number} is overdue`, sub: `${invoice.recipientSnapshot?.displayName || 'Client'} · ${formatMoney(invoiceBalanceCents(invoice), activeBusiness().currency)} still due` })),
+      ...expenseReview.map(expense => ({ type: 'expense', id: expense.id, title: `${expense.merchant || 'Expense'} needs review`, sub: `${formatMoney(expense.totalCents || 0, activeBusiness().currency)} · ${expenseCategoryLabel(expense.category)} · ${formatDate(expense.date,{month:'short',day:'numeric'})}` })),
       ...incomplete.map(session => ({ type: 'session', id: session.id, title: 'Incomplete work session', sub: `${clientById(session.clientId)?.displayName || session.clientNameSnapshot || 'No client'} · ${formatDate(session.date)}` }))
     ];
     $('#attentionCount').textContent = `${attentionItems.length} ${attentionItems.length === 1 ? 'item' : 'items'}`;
     $('#attentionTitle').textContent = attentionItems.length ? 'A few records need review.' : 'Nothing needs your attention.';
     $('#attentionBody').innerHTML = attentionItems.length
-      ? `<div class="attention-list">${attentionItems.slice(0,3).map(item => `<button ${item.type === 'invoice' ? `data-invoice-detail="${item.id}"` : `data-session-detail="${item.id}"`}><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sub)}</small></button>`).join('')}</div>`
-      : `<p class="panel-copy">Overdue invoices, incomplete records, missing receipts, mileage review, and tax reminders will collect here.</p>`;
+      ? `<div class="attention-list">${attentionItems.slice(0,3).map(item => `<button ${item.type === 'invoice' ? `data-invoice-detail="${item.id}"` : item.type === 'expense' ? `data-expense-detail="${item.id}"` : `data-session-detail="${item.id}"`}><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sub)}</small></button>`).join('')}</div>`
+      : `<p class="panel-copy">Overdue invoices, incomplete work sessions, and expenses you mark for review will collect here.</p>`;
 
     renderRandomHomeSessions(sessions, false);
     startHomeRecentRotation();
 
     $$('[data-session-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
     $$('[data-invoice-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
+    $$('[data-expense-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => { setView('money'); ui.moneyTab='expenses'; syncMoneyTabs(); openExpenseDetail(btn.dataset.expenseDetail); }));
   }
 
   function randomSample(items, count) {
@@ -663,11 +744,18 @@
     return ({ cash:'Cash', check:'Check', zelle:'Zelle', venmo:'Venmo', ach:'ACH', direct_deposit:'Direct deposit', card:'Card', other:'Other' })[method] || 'Other';
   }
 
+  function expenseCategoryLabel(category) { return Object.fromEntries(EXPENSE_CATEGORIES)[category] || 'Other'; }
+  function expenseClassLabel(value) { return ({ business:'Business', mixed:'Mixed', personal:'Personal' })[value] || 'Business'; }
+  function expenseClassStatus(value) { return value === 'business' ? 'success' : value === 'mixed' ? 'accent' : 'void'; }
+  function fileSizeLabel(bytes = 0) { if (bytes < 1024) return `${bytes} B`; if (bytes < 1024*1024) return `${(bytes/1024).toFixed(1)} KB`; return `${(bytes/1024/1024).toFixed(1)} MB`; }
+
   function renderMoney() {
     const invoices = businessInvoices().slice().sort((a,b) => `${b.issueDate || ''}${b.createdAt || ''}`.localeCompare(`${a.issueDate || ''}${a.createdAt || ''}`));
     const payments = businessPayments().slice().sort((a,b) => `${b.receivedDate || ''}${b.createdAt || ''}`.localeCompare(`${a.receivedDate || ''}${a.createdAt || ''}`));
+    const expenses = businessExpenses().slice().sort((a,b) => `${b.date || ''}${b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.createdAt || ''}`));
     const visibleInvoices = invoices.filter(invoice => ui.invoiceFilter === 'all' || invoiceDisplayStatus(invoice).toLowerCase().replace(/ /g,'_') === ui.invoiceFilter);
     const visiblePayments = payments.filter(payment => ui.paymentFilter === 'all' || payment.kind === ui.paymentFilter);
+    const visibleExpenses = expenses.filter(expense => ui.expenseFilter === 'all' || (ui.expenseFilter === 'needs_review' ? expense.reviewStatus === 'needs_review' : expense.classification === ui.expenseFilter));
     const sentInvoices = invoices.filter(invoice => invoice.status === 'sent');
     const receivedTotal = payments.reduce((sum, payment) => sum + Number(payment.amountCents || 0), 0);
     const outstandingTotal = sentInvoices.reduce((sum, invoice) => sum + invoiceBalanceCents(invoice), 0);
@@ -678,10 +766,16 @@
     $('#moneyOverdueCount').textContent = overdueCount;
     $('#invoiceCount').textContent = invoices.length;
     $('#paymentCount').textContent = payments.length;
+    $('#expenseCount').textContent = expenses.length;
     const invoiceFilterLabels = { all:'All invoices', draft:'Draft', sent:'Sent', partially_paid:'Partially paid', paid:'Paid', overdue:'Overdue', void:'Void' };
     $('#invoiceFilterBtn').textContent = invoiceFilterLabels[ui.invoiceFilter] || 'All invoices';
     const paymentFilterLabels = { all:'All payments', invoice:'Invoice payments', direct:'Other income' };
     $('#paymentFilterBtn').textContent = paymentFilterLabels[ui.paymentFilter] || 'All payments';
+    const expenseFilterLabels = { all:'All expenses', business:'Business', mixed:'Mixed', personal:'Personal', needs_review:'Needs review' };
+    $('#expenseFilterBtn').textContent = expenseFilterLabels[ui.expenseFilter] || 'All expenses';
+    const monthExpenses = expenses.filter(expense => expense.date?.slice(0,7) === businessMonthKey());
+    $('#expenseMonthTotal').textContent = `${formatMoney(monthExpenses.reduce((sum, expense) => sum + Number(expense.totalCents || 0), 0), activeBusiness().currency)} this month`;
+    $('#expenseBusinessTotal').textContent = `${formatMoney(monthExpenses.reduce((sum, expense) => sum + Number(expense.businessCents || 0), 0), activeBusiness().currency)} business portion`;
 
     const invoicePageSize = ui.invoicePageSize || 7;
     const invoiceTotalPages = Math.max(1, Math.ceil(visibleInvoices.length / invoicePageSize));
@@ -707,6 +801,18 @@
         <button type="button" class="pagination-arrow" data-payment-page-next aria-label="Next payment page" ${ui.paymentPage === paymentTotalPages ? 'disabled' : ''}>→</button>
       </div>` : '';
 
+    const expensePageSize = ui.expensePageSize || 7;
+    const expenseTotalPages = Math.max(1, Math.ceil(visibleExpenses.length / expensePageSize));
+    ui.expensePage = Math.min(Math.max(1, ui.expensePage || 1), expenseTotalPages);
+    const expenseStart = (ui.expensePage - 1) * expensePageSize;
+    const expensePageRecords = visibleExpenses.slice(expenseStart, expenseStart + expensePageSize);
+    const expensePagination = visibleExpenses.length > expensePageSize ? `
+      <div class="session-pagination" aria-label="Expense pages">
+        <button type="button" class="pagination-arrow" data-expense-page-prev aria-label="Previous expense page" ${ui.expensePage === 1 ? 'disabled' : ''}>←</button>
+        <span class="pagination-copy"><strong>Page ${ui.expensePage}</strong><small>of ${expenseTotalPages} · ${visibleExpenses.length} expenses</small></span>
+        <button type="button" class="pagination-arrow" data-expense-page-next aria-label="Next expense page" ${ui.expensePage === expenseTotalPages ? 'disabled' : ''}>→</button>
+      </div>` : '';
+
     $('#invoicesContainer').innerHTML = visibleInvoices.length ? `
       <div class="table-head invoice-grid"><span>Invoice</span><span>Client</span><span>Issued</span><span>Due</span><span>Balance</span><span>Status</span></div>
       ${invoicePageRecords.map(invoice => {
@@ -728,8 +834,20 @@
       }).join('')}${paymentPagination}`
       : emptyState(payments.length ? 'No payments match this filter' : 'No payments recorded yet', payments.length ? 'Choose another payment type to see the rest.' : 'Record actual money received. Link it to an invoice or capture income that did not require one.', payments.length ? 'Show all payments' : 'Record first payment', payments.length ? 'all-payments' : 'add-payment');
 
+
+    $('#expensesContainer').innerHTML = visibleExpenses.length ? `
+      <div class="table-head expense-grid"><span>Merchant / expense</span><span>Date</span><span>Category</span><span>Use</span><span>Receipt</span><span>Amount</span></div>
+      ${expensePageRecords.map(expense => {
+        const receipt = expense.receiptId ? receiptById(expense.receiptId) : null;
+        const client = expense.clientId ? clientById(expense.clientId) : null;
+        const secondary = expense.description || expense.businessPurpose || client?.displayName || 'No description';
+        return `<button class="table-row expense-grid" data-expense-detail="${expense.id}"><span><strong>${escapeHtml(expense.merchant || 'Expense')}</strong><small>${escapeHtml(secondary)}</small></span><span><strong>${formatDate(expense.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(expense.date,{year:'numeric'})}</small></span><span><strong>${escapeHtml(expenseCategoryLabel(expense.category))}</strong><small>${expense.reviewStatus === 'needs_review' ? '<span class="review-inline">Needs review</span>' : 'Recorded'}</small></span><span><span class="status-pill ${expenseClassStatus(expense.classification)}">${escapeHtml(expenseClassLabel(expense.classification))}</span></span><span><span class="receipt-mini ${receipt ? 'has-receipt' : ''}">${receipt ? '▧ Receipt' : '—'}</span></span><span><strong>${formatMoney(expense.totalCents || 0, activeBusiness().currency)}</strong><small>${expense.classification === 'personal' ? 'Personal' : `${formatMoney(expense.businessCents || 0, activeBusiness().currency)} business`}</small></span></button>`;
+      }).join('')}${expensePagination}`
+      : emptyState(expenses.length ? 'No expenses match this filter' : 'No expenses yet', expenses.length ? 'Choose another classification or review state.' : 'Capture money spent once and attach the receipt or business purpose while it is still fresh.', expenses.length ? 'Show all expenses' : 'Add first expense', expenses.length ? 'all-expenses' : 'add-expense');
+
     $$('[data-invoice-detail]', $('#invoicesContainer')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
     $$('[data-payment-detail]', $('#paymentsContainer')).forEach(btn => btn.addEventListener('click', () => openPaymentDetail(btn.dataset.paymentDetail)));
+    $$('[data-expense-detail]', $('#expensesContainer')).forEach(btn => btn.addEventListener('click', () => openExpenseDetail(btn.dataset.expenseDetail)));
     $('[data-invoice-page-prev]', $('#invoicesContainer'))?.addEventListener('click', () => {
       if (ui.invoicePage > 1) { ui.invoicePage -= 1; renderMoney(); }
     });
@@ -742,6 +860,8 @@
     $('[data-payment-page-next]', $('#paymentsContainer'))?.addEventListener('click', () => {
       if (ui.paymentPage < paymentTotalPages) { ui.paymentPage += 1; renderMoney(); }
     });
+    $('[data-expense-page-prev]', $('#expensesContainer'))?.addEventListener('click', () => { if (ui.expensePage > 1) { ui.expensePage -= 1; renderMoney(); } });
+    $('[data-expense-page-next]', $('#expensesContainer'))?.addEventListener('click', () => { if (ui.expensePage < expenseTotalPages) { ui.expensePage += 1; renderMoney(); } });
     bindMoneyEmptyActions();
   }
 
@@ -750,6 +870,8 @@
     $$('[data-empty-action="all-invoices"]').forEach(btn => btn.addEventListener('click', () => { ui.invoiceFilter = 'all'; ui.invoicePage = 1; renderMoney(); }));
     $$('[data-empty-action="add-payment"]').forEach(btn => btn.addEventListener('click', () => openPaymentForm()));
     $$('[data-empty-action="all-payments"]').forEach(btn => btn.addEventListener('click', () => { ui.paymentFilter = 'all'; ui.paymentPage = 1; renderMoney(); }));
+    $$('[data-empty-action="add-expense"]').forEach(btn => btn.addEventListener('click', () => openExpenseForm()));
+    $$('[data-empty-action="all-expenses"]').forEach(btn => btn.addEventListener('click', () => { ui.expenseFilter = 'all'; ui.expensePage = 1; renderMoney(); }));
   }
 
   function syncMoneyTabs() {
@@ -1239,6 +1361,188 @@
     if (invoiceId && invoiceById(invoiceId)) setTimeout(() => openInvoiceDetail(invoiceId), 35);
   }
 
+  function expenseSessionOptions(clientId, selectedId = '') {
+    if (!clientId) return '<option value="">No linked session</option>';
+    const sessions = businessSessions().filter(session => session.clientId === clientId).slice().sort((a,b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`));
+    return `<option value="">No linked session</option>${sessions.map(session => `<option value="${session.id}" ${session.id === selectedId ? 'selected' : ''}>${formatDate(session.date,{month:'short',day:'numeric'})} · ${escapeHtml(sessionTimeRangeLabel(session))}</option>`).join('')}`;
+  }
+
+  function openExpenseForm(existingId = null) {
+    $('#formSheet').classList.remove('session-form-sheet');
+    const existing = existingId ? expenseById(existingId) : null;
+    const clients = businessClients();
+    const recentCategory = businessExpenses().slice().sort((a,b) => `${b.date || ''}${b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.createdAt || ''}`))[0]?.category || 'supplies';
+    const selectedCategory = existing?.category || recentCategory;
+    const classification = existing?.classification || 'business';
+    const existingReceipt = existing?.receiptId ? receiptById(existing.receiptId) : null;
+    ui.formMode = 'expense'; ui.formRecordId = existingId;
+    $('#formEyebrow').textContent = existing ? 'EDIT EXPENSE' : 'MONEY SPENT';
+    $('#formTitle').textContent = existing ? (existing.merchant || 'Expense') : 'New expense';
+    $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Save expense';
+    $('#formFields').innerHTML = `
+      <div class="expense-type-switch" role="group" aria-label="Expense use">
+        <button type="button" class="expense-type-option ${classification === 'business' ? 'active' : ''}" data-expense-class="business"><span>Business</span><small>100% business use</small></button>
+        <button type="button" class="expense-type-option ${classification === 'mixed' ? 'active' : ''}" data-expense-class="mixed"><span>Mixed</span><small>Business + personal</small></button>
+        <button type="button" class="expense-type-option ${classification === 'personal' ? 'active' : ''}" data-expense-class="personal"><span>Personal</span><small>Track, not business</small></button>
+      </div>
+      <input type="hidden" name="classification" id="expenseClassification" value="${classification}" />
+      <div class="field-row three"><label class="field"><span>Date</span><input name="date" type="date" required value="${escapeHtml(existing?.date || businessToday())}" /></label><label class="field"><span>Merchant / source</span><input name="merchant" maxlength="120" required placeholder="e.g. Target" value="${escapeHtml(existing?.merchant || '')}" /></label><label class="field"><span>Amount</span><div class="money-input"><span>$</span><input name="total" id="expenseTotal" required inputmode="decimal" min="0.01" step="0.01" type="number" placeholder="0.00" value="${existing ? (existing.totalCents/100).toFixed(2) : ''}" /></div></label></div>
+      <div class="field-row expense-amount-row ${classification === 'mixed' ? '' : 'single'}" id="expenseAmountRow"><label class="field"><span>Category</span><select name="category">${EXPENSE_CATEGORIES.map(([value,label]) => `<option value="${value}" ${selectedCategory === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select></label><label class="field" id="expenseBusinessAmountField" ${classification === 'mixed' ? '' : 'hidden'}><span>Business portion</span><div class="money-input"><span>$</span><input name="businessAmount" id="expenseBusinessAmount" inputmode="decimal" min="0" step="0.01" type="number" placeholder="0.00" value="${existing?.classification === 'mixed' ? (existing.businessCents/100).toFixed(2) : ''}" /></div></label></div>
+      <label class="field" id="expensePurposeField" ${classification === 'personal' ? 'hidden' : ''}><span>Business purpose <em>recommended</em></span><input name="businessPurpose" maxlength="240" placeholder="Why was this needed for the business?" value="${escapeHtml(existing?.businessPurpose || '')}" /></label>
+      <details class="optional-fields" ${existing?.clientId || existing?.sessionId || existing?.description ? 'open' : ''}><summary>Link & describe <span>optional</span></summary><div class="optional-fields-body"><div class="field-row"><label class="field"><span>Client</span><select name="clientId" id="expenseClient"><option value="">No linked client</option>${clients.map(client => `<option value="${client.id}" ${client.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}</select></label><label class="field"><span>Session</span><select name="sessionId" id="expenseSession">${expenseSessionOptions(existing?.clientId || '', existing?.sessionId || '')}</select></label></div><label class="field"><span>Description</span><input name="description" maxlength="220" placeholder="Optional detail about the purchase" value="${escapeHtml(existing?.description || '')}" /></label></div></details>
+      <div class="receipt-upload-card ${existingReceipt ? 'has-file' : ''}" id="receiptUploadCard"><div class="receipt-upload-icon">▧</div><div class="receipt-upload-copy"><strong>${existingReceipt ? escapeHtml(existingReceipt.fileName) : 'Attach receipt'}</strong><small id="receiptUploadMeta">${existingReceipt ? `${escapeHtml(fileSizeLabel(existingReceipt.size))} · choose a file to replace` : 'Image or PDF · optional · up to 12 MB'}</small></div><label class="receipt-upload-button"><input name="receiptFile" id="expenseReceiptFile" type="file" accept="image/*,application/pdf" /><span>${existingReceipt ? 'Replace' : 'Choose file'}</span></label></div>
+      ${existingReceipt ? `<label class="expense-remove-receipt"><input type="checkbox" name="removeReceipt" value="yes" /> Remove current receipt</label>` : ''}
+      <label class="review-toggle"><input type="checkbox" name="needsReview" value="yes" ${existing?.reviewStatus === 'needs_review' || (!existing && classification === 'mixed') ? 'checked' : ''}/><span><strong>Needs review</strong><small>Keep this expense in the Attention queue until you verify it.</small></span></label>`;
+    openModal($('#formSheet'));
+
+    const classInput = $('#expenseClassification');
+    const mixedField = $('#expenseBusinessAmountField');
+    const purposeField = $('#expensePurposeField');
+    const businessAmount = $('#expenseBusinessAmount');
+    const amountRow = $('#expenseAmountRow');
+    const totalInput = $('#expenseTotal');
+    function setClass(value) {
+      classInput.value = value;
+      $$('[data-expense-class]', $('#formFields')).forEach(btn => btn.classList.toggle('active', btn.dataset.expenseClass === value));
+      mixedField.hidden = value !== 'mixed';
+      amountRow?.classList.toggle('single', value !== 'mixed');
+      purposeField.hidden = value === 'personal';
+      if (value === 'mixed' && !businessAmount.value && totalInput.value) businessAmount.value = totalInput.value;
+    }
+    $$('[data-expense-class]', $('#formFields')).forEach(btn => btn.addEventListener('click', () => setClass(btn.dataset.expenseClass)));
+    $('#expenseClient')?.addEventListener('change', event => { $('#expenseSession').innerHTML = expenseSessionOptions(event.target.value, ''); });
+    $('#expenseReceiptFile')?.addEventListener('change', event => {
+      const file = event.target.files?.[0]; if (!file) return;
+      $('#receiptUploadCard').classList.add('has-file');
+      $('.receipt-upload-copy strong', $('#receiptUploadCard')).textContent = file.name;
+      $('#receiptUploadMeta').textContent = `${fileSizeLabel(file.size)} · ready to attach`;
+    });
+    setClass(classification);
+  }
+
+  async function saveExpense(form) {
+    const totalCents = Math.round(Number(form.get('total')) * 100);
+    const classification = form.get('classification');
+    const date = form.get('date');
+    const merchant = (form.get('merchant') || '').trim();
+    if (!date || !merchant) { showToast('Add the expense date and merchant/source.'); return false; }
+    if (!Number.isFinite(totalCents) || totalCents <= 0) { showToast('Expense amount must be greater than $0.'); return false; }
+    if (!['business','mixed','personal'].includes(classification)) { showToast('Choose how this expense was used.'); return false; }
+    let businessCents = classification === 'business' ? totalCents : classification === 'personal' ? 0 : Math.round(Number(form.get('businessAmount')) * 100);
+    if (classification === 'mixed' && (!Number.isFinite(businessCents) || businessCents <= 0 || businessCents >= totalCents)) { showToast('For a mixed expense, the business portion must be greater than $0 and less than the total.'); return false; }
+    const existing = ui.formRecordId ? expenseById(ui.formRecordId) : null;
+    const client = clientById(form.get('clientId'));
+    const session = data.sessions.find(item => item.id === form.get('sessionId'));
+    if (session && client && session.clientId !== client.id) { showToast('The linked session must belong to the selected client.'); return false; }
+    const purpose = classification === 'personal' ? '' : (form.get('businessPurpose') || '').trim();
+    const manualReview = form.get('needsReview') === 'yes';
+    const reviewStatus = manualReview || (classification !== 'personal' && !purpose) ? 'needs_review' : 'ready';
+    let receiptId = existing?.receiptId || null;
+    const file = form.get('receiptFile');
+    const removeReceipt = form.get('removeReceipt') === 'yes';
+    if (file && file instanceof File && file.size > 0) {
+      if (file.size > 12 * 1024 * 1024) { showToast('Receipt files must be 12 MB or smaller.'); return false; }
+      if (!(file.type.startsWith('image/') || file.type === 'application/pdf')) { showToast('Use an image or PDF for the receipt.'); return false; }
+      const newReceiptId = uid('receipt');
+      try { await receiptBlobStore.put(newReceiptId, file); } catch (error) { console.error(error); showToast('Could not store the receipt file in this browser.'); return false; }
+      if (receiptId) { await receiptBlobStore.delete(receiptId).catch(()=>{}); data.receipts = data.receipts.filter(item => item.id !== receiptId); }
+      receiptId = newReceiptId;
+      data.receipts.push({ id:newReceiptId, businessId:data.activeBusinessId, expenseId:existing?.id || null, fileName:file.name, mimeType:file.type, size:file.size, createdAt:nowIso() });
+    } else if (removeReceipt && receiptId) {
+      await receiptBlobStore.delete(receiptId).catch(()=>{});
+      data.receipts = data.receipts.filter(item => item.id !== receiptId);
+      receiptId = null;
+    }
+    const payload = { date, merchant, description:(form.get('description') || '').trim(), totalCents, classification, businessCents, category:form.get('category') || 'other', businessPurpose:purpose, clientId:client?.id || null, clientNameSnapshot:client?.displayName || existing?.clientNameSnapshot || '', sessionId:session?.id || null, sessionDateSnapshot:session?.date || existing?.sessionDateSnapshot || '', sessionTimeSnapshot:session ? sessionTimeRangeLabel(session) : existing?.sessionTimeSnapshot || '', reviewStatus, receiptId };
+    if (existing) {
+      const before = deepClone(existing); Object.assign(existing, payload, { updatedAt:nowIso() });
+      const receipt = receiptId ? receiptById(receiptId) : null; if (receipt) receipt.expenseId = existing.id;
+      persist('updated','Expense',existing.id,{ before, after:deepClone(existing) });
+      showToast('Expense updated');
+    } else {
+      const expense = { id:uid('expense'), businessId:data.activeBusinessId, ...payload, createdAt:nowIso(), updatedAt:nowIso() };
+      data.expenses.push(expense); const receipt = receiptId ? receiptById(receiptId) : null; if (receipt) receipt.expenseId = expense.id;
+      persist('created','Expense',expense.id,{ totalCents, businessCents, classification, category:expense.category, receiptId });
+      ui.formRecordId = expense.id; showToast(receiptId ? 'Expense and receipt saved' : 'Expense saved');
+    }
+    return true;
+  }
+
+  async function hydrateExpenseReceipt(expense) {
+    const host = $('#expenseReceiptPreview'); if (!host || !expense?.receiptId) return;
+    const receipt = receiptById(expense.receiptId); if (!receipt) return;
+    try {
+      const blob = await receiptBlobStore.get(receipt.id);
+      if (!blob) { host.innerHTML = `<div class="receipt-missing"><span>!</span><div><strong>Receipt metadata found, file unavailable</strong><small>The browser may have cleared local file storage.</small></div></div>`; return; }
+      if (receipt.mimeType?.startsWith('image/')) {
+        const url = URL.createObjectURL(blob);
+        host.innerHTML = `<img class="receipt-preview-image" src="${url}" alt="Receipt preview" /><div class="receipt-preview-footer"><span><strong>${escapeHtml(receipt.fileName)}</strong><small>${escapeHtml(fileSizeLabel(receipt.size))}</small></span><button type="button" class="secondary-btn compact-action" data-download-receipt>Download</button></div>`;
+        $('img',host)?.addEventListener('load',()=>setTimeout(()=>URL.revokeObjectURL(url),2000),{once:true});
+      } else {
+        host.innerHTML = `<div class="receipt-file-tile"><span>PDF</span><div><strong>${escapeHtml(receipt.fileName)}</strong><small>${escapeHtml(fileSizeLabel(receipt.size))}</small></div><button type="button" class="secondary-btn compact-action" data-download-receipt>Download</button></div>`;
+      }
+      $('[data-download-receipt]', host)?.addEventListener('click', async () => downloadReceipt(receipt.id));
+    } catch (error) { console.error(error); }
+  }
+
+  async function downloadReceipt(receiptId) {
+    const receipt = receiptById(receiptId); if (!receipt) return;
+    const blob = await receiptBlobStore.get(receiptId).catch(()=>null); if (!blob) { showToast('Receipt file is not available in local storage.'); return; }
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=receipt.fileName || 'receipt'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+
+  function openExpenseDetail(id) {
+    const expense = expenseById(id); if (!expense) return;
+    const client = expense.clientId ? clientById(expense.clientId) : null;
+    const session = expense.sessionId ? data.sessions.find(item => item.id === expense.sessionId) : null;
+    const clientLabel = client?.displayName || expense.clientNameSnapshot || '';
+    const sessionLabel = session ? `${formatDate(session.date,{month:'short',day:'numeric'})} · ${sessionTimeRangeLabel(session)}` : expense.sessionDateSnapshot ? `${formatDate(expense.sessionDateSnapshot,{month:'short',day:'numeric'})}${expense.sessionTimeSnapshot ? ` · ${expense.sessionTimeSnapshot}` : ''}` : '';
+    const receipt = expense.receiptId ? receiptById(expense.receiptId) : null;
+    $('#detailEyebrow').textContent = 'EXPENSE'; $('#detailTitle').textContent = expense.merchant || 'Expense';
+    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-expense="${expense.id}">Edit</button>${expense.reviewStatus === 'needs_review' ? `<button class="primary-btn" data-review-expense="${expense.id}">Mark reviewed</button>` : ''}<details class="record-more"><summary aria-label="More expense actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-expense="${expense.id}">Delete expense</button></div></details></div><div id="detailDeleteConfirm"></div>
+      <div class="detail-metrics"><div><small>Date</small><strong>${formatDate(expense.date)}</strong></div><div><small>Total</small><strong>${formatMoney(expense.totalCents || 0, activeBusiness().currency)}</strong></div><div><small>Business portion</small><strong>${formatMoney(expense.businessCents || 0, activeBusiness().currency)}</strong></div></div>
+      <div class="expense-hero-card"><div><span class="status-pill ${expenseClassStatus(expense.classification)}">${escapeHtml(expenseClassLabel(expense.classification))}</span>${expense.reviewStatus === 'needs_review' ? '<span class="status-pill review">Needs review</span>' : '<span class="status-pill success">Ready</span>'}</div><strong>${escapeHtml(expenseCategoryLabel(expense.category))}</strong><small>${escapeHtml(expense.description || 'No description')}</small></div>
+      ${expense.businessPurpose ? `<div class="detail-section"><p class="eyebrow">BUSINESS PURPOSE</p><p>${escapeHtml(expense.businessPurpose)}</p></div>` : expense.classification !== 'personal' ? `<div class="detail-section subtle-warning"><p class="eyebrow">BUSINESS PURPOSE</p><p>Not documented yet.</p></div>` : ''}
+      ${clientLabel || sessionLabel ? `<div class="detail-section"><p class="eyebrow">LINKED WORK</p>${clientLabel ? `<div class="trace-row"><span>Client</span><strong>${escapeHtml(clientLabel)}</strong></div>` : ''}${sessionLabel ? `<div class="trace-row"><span>Session</span><strong>${escapeHtml(sessionLabel)}</strong></div>` : ''}</div>` : ''}
+      <div class="detail-section"><div class="section-inline-title"><div><p class="eyebrow">RECEIPT</p><h3>${receipt ? 'Attached evidence' : 'No receipt attached'}</h3></div></div><div id="expenseReceiptPreview">${receipt ? '<div class="receipt-loading">Loading receipt…</div>' : '<div class="receipt-empty-detail"><span>▧</span><small>Edit this expense to attach an image or PDF.</small></div>'}</div></div>
+      <div class="trace-banner"><span>↳</span><div><strong>Expense source record</strong><small>The original total and business-use portion stay separate so later tax rules can use the evidence without rewriting what was actually spent.</small></div></div>`;
+    openModal($('#detailPanel'));
+    $('[data-edit-expense]')?.addEventListener('click',()=>openExpenseForm(id));
+    $('[data-review-expense]')?.addEventListener('click',()=>markExpenseReviewed(id));
+    $('[data-delete-expense]')?.addEventListener('click',()=>showExpenseDeleteConfirmation(id));
+    hydrateExpenseReceipt(expense);
+  }
+
+  function markExpenseReviewed(id) {
+    const expense = expenseById(id); if (!expense) return; const before = expense.reviewStatus; expense.reviewStatus='ready'; expense.updatedAt=nowIso(); persist('reviewed','Expense',id,{ before, after:'ready' }); renderAll(); openExpenseDetail(id); showToast('Expense marked reviewed');
+  }
+
+  function showExpenseDeleteConfirmation(id) {
+    const expense = expenseById(id); const host=$('#detailDeleteConfirm'); if (!expense || !host) return;
+    $('.record-more[open]', $('#detailBody'))?.removeAttribute('open');
+    host.innerHTML=`<div class="delete-confirm-card"><div><strong>Delete this ${formatMoney(expense.totalCents || 0, activeBusiness().currency)} expense?</strong><p>${escapeHtml(expense.merchant || 'Expense')} and its linked receipt file, if any, will be permanently removed from this local workspace.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-expense-delete>Delete expense</button></div></div>`;
+    $('[data-cancel-delete]',host)?.addEventListener('click',()=>host.innerHTML='');
+    $('[data-confirm-expense-delete]',host)?.addEventListener('click',()=>deleteExpense(id));
+  }
+
+  async function deleteExpense(id) {
+    const expense=expenseById(id); if (!expense) return; const receiptId=expense.receiptId;
+    data.expenses=data.expenses.filter(item=>item.id!==id); data.receipts=data.receipts.filter(item=>item.expenseId!==id && item.id!==receiptId); data.auditEvents=data.auditEvents.filter(event=>event.entityId!==id);
+    data.auditEvents.push({ id:uid('audit'),businessId:data.activeBusinessId,eventType:'deleted',entityType:'Expense',entityId:id,details:{ totalCents:expense.totalCents,businessCents:expense.businessCents,receiptId },occurredAt:nowIso() });
+    repository.save(data); if (receiptId) await receiptBlobStore.delete(receiptId).catch(()=>{}); closeModal(); renderAll(); setView('money'); ui.moneyTab='expenses'; syncMoneyTabs(); showToast('Expense deleted');
+  }
+
+  function renderRecords() {
+    const term=($('#receiptSearch')?.value || '').toLowerCase().trim();
+    const receipts=businessReceipts().slice().sort((a,b)=>(b.createdAt || '').localeCompare(a.createdAt || '')).filter(receipt=>{
+      const expense=expenseById(receipt.expenseId); return !term || `${receipt.fileName || ''} ${expense?.merchant || ''} ${expenseCategoryLabel(expense?.category)} ${expense?.businessPurpose || ''}`.toLowerCase().includes(term);
+    });
+    $('#receiptCount').textContent=`${businessReceipts().length} ${businessReceipts().length === 1 ? 'receipt' : 'receipts'}`;
+    $('#receiptVault').innerHTML=receipts.length ? receipts.map(receipt=>{ const expense=expenseById(receipt.expenseId); if (!expense) return ''; return `<button class="receipt-vault-card" data-receipt-expense="${expense.id}"><span class="receipt-vault-icon">${receipt.mimeType === 'application/pdf' ? 'PDF' : '▧'}</span><span class="receipt-vault-main"><strong>${escapeHtml(expense.merchant || 'Expense')}</strong><small>${escapeHtml(receipt.fileName)} · ${escapeHtml(expenseCategoryLabel(expense.category))}</small></span><span class="receipt-vault-meta"><strong>${formatMoney(expense.totalCents || 0, activeBusiness().currency)}</strong><small>${formatDate(expense.date,{month:'short',day:'numeric',year:'numeric'})}</small></span>${expense.reviewStatus === 'needs_review' ? '<span class="receipt-review-dot" title="Needs review"></span>' : ''}</button>`; }).join('') : `<div class="large-empty receipt-empty"><div class="placeholder-icon small">▧</div><strong>${term ? 'No receipts match this search' : 'No receipts yet'}</strong><p>${term ? 'Try a merchant, category, or file name.' : 'Attach a receipt while saving an expense and it will appear here automatically.'}</p>${term ? '' : '<button class="secondary-btn" data-records-add-expense>Add expense with receipt</button>'}</div>`;
+    $$('[data-receipt-expense]', $('#receiptVault')).forEach(btn=>btn.addEventListener('click',()=>openExpenseDetail(btn.dataset.receiptExpense)));
+    $('[data-records-add-expense]', $('#receiptVault'))?.addEventListener('click',()=>openExpenseForm());
+  }
+
   function renderCommandPalette() {
     const term = ($('#commandInput').value || '').toLowerCase().trim();
     const navigation = [
@@ -1250,18 +1554,21 @@
     }).slice(0,5);
     const invoices = businessInvoices().filter(invoice => term && `${invoice.number} ${invoice.recipientSnapshot?.displayName || ''} ${invoiceDisplayStatus(invoice)}`.toLowerCase().includes(term)).slice(0,5);
     const payments = businessPayments().filter(payment => term && `${paymentSourceLabel(payment)} ${payment.clientNameSnapshot || ''} ${payment.description || ''} ${payment.reference || ''} ${paymentMethodLabel(payment.method)} ${payment.amountCents || 0}`.toLowerCase().includes(term)).slice(0,5);
+    const expenses = businessExpenses().filter(expense => term && `${expense.merchant || ''} ${expense.description || ''} ${expense.businessPurpose || ''} ${expenseCategoryLabel(expense.category)} ${expenseClassLabel(expense.classification)} ${expense.totalCents || 0}`.toLowerCase().includes(term)).slice(0,5);
 
     $('#commandBody').innerHTML = `${navigation.length ? `<p class="command-label">Navigation</p>${navigation.map(n => `<button class="command-result" data-command-view="${n[0]}"><span>${n[1]}</span><div><strong>${n[2]}</strong><small>${n[3]}</small></div></button>`).join('')}` : ''}
       ${clients.length ? `<p class="command-label">Clients</p>${clients.map(c => `<button class="command-result" data-command-client="${c.id}"><span>${escapeHtml(initials(c.displayName))}</span><div><strong>${escapeHtml(c.displayName)}</strong><small>Client · ${formatMoney(c.defaultRateCents || 0)}/hr</small></div></button>`).join('')}` : ''}
       ${sessions.length ? `<p class="command-label">Sessions</p>${sessions.map(s => `<button class="command-result" data-command-session="${s.id}"><span>◫</span><div><strong>${escapeHtml(clientById(s.clientId)?.displayName || s.clientNameSnapshot || 'Unassigned')}</strong><small>${formatDate(s.date)} · ${hoursLabel(sessionMinutes(s))}</small></div></button>`).join('')}` : ''}
       ${invoices.length ? `<p class="command-label">Invoices</p>${invoices.map(invoice => `<button class="command-result" data-command-invoice="${invoice.id}"><span>▧</span><div><strong>${escapeHtml(invoice.number)}</strong><small>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice), activeBusiness().currency)} due · ${escapeHtml(invoiceDisplayStatus(invoice))}</small></div></button>`).join('')}` : ''}
       ${payments.length ? `<p class="command-label">Payments</p>${payments.map(payment => `<button class="command-result" data-command-payment="${payment.id}"><span>$</span><div><strong>${escapeHtml(paymentSourceLabel(payment))}</strong><small>${formatMoney(payment.amountCents || 0, activeBusiness().currency)} · ${escapeHtml(paymentMethodLabel(payment.method))} · ${formatDate(payment.receivedDate)}</small></div></button>`).join('')}` : ''}
-      ${term && !navigation.length && !clients.length && !sessions.length && !invoices.length && !payments.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
+      ${expenses.length ? `<p class="command-label">Expenses</p>${expenses.map(expense => `<button class="command-result" data-command-expense="${expense.id}"><span>−</span><div><strong>${escapeHtml(expense.merchant || 'Expense')}</strong><small>${formatMoney(expense.totalCents || 0, activeBusiness().currency)} · ${escapeHtml(expenseCategoryLabel(expense.category))} · ${formatDate(expense.date)}</small></div></button>`).join('')}` : ''}
+      ${term && !navigation.length && !clients.length && !sessions.length && !invoices.length && !payments.length && !expenses.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
     $$('[data-command-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.commandView)));
     $$('[data-command-client]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openClientDetail(btn.dataset.commandClient); }));
     $$('[data-command-session]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openSessionDetail(btn.dataset.commandSession); }));
     $$('[data-command-invoice]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); openInvoiceDetail(btn.dataset.commandInvoice); }));
     $$('[data-command-payment]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); ui.moneyTab = 'payments'; syncMoneyTabs(); openPaymentDetail(btn.dataset.commandPayment); }));
+    $$('[data-command-expense]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); ui.moneyTab = 'expenses'; syncMoneyTabs(); openExpenseDetail(btn.dataset.commandExpense); }));
   }
 
   function openClientForm(existingId = null) {
@@ -1525,7 +1832,7 @@
     openModal($('#formSheet'));
   }
 
-  function handleFormSubmit(event) {
+  async function handleFormSubmit(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     if (ui.formMode === 'payment') {
@@ -1534,6 +1841,14 @@
       ui.moneyTab = 'payments';
       closeModal(); renderAll(); setView('money');
       if (paymentId) setTimeout(() => openPaymentDetail(paymentId), 35);
+      return;
+    }
+    if (ui.formMode === 'expense') {
+      if (!(await saveExpense(form))) return;
+      const expenseId = ui.formRecordId;
+      ui.moneyTab = 'expenses'; ui.expensePage = 1;
+      closeModal(); renderAll(); setView('money'); syncMoneyTabs();
+      if (expenseId) setTimeout(() => openExpenseDetail(expenseId), 35);
       return;
     }
     if (ui.formMode === 'client') {
@@ -1689,6 +2004,7 @@
         data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'source_session_deleted', entityType: 'Invoice', entityId: linkedInvoice.id, details: { sessionId: id }, occurredAt: nowIso() });
       }
       data.sessions = data.sessions.filter(item => item.id !== id);
+      data.expenses.filter(expense => expense.sessionId === id).forEach(expense => { expense.sessionId = null; expense.updatedAt = nowIso(); });
       data.auditEvents = data.auditEvents.filter(event => event.entityId !== id);
       data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'WorkSession', entityId: id, details: { removedFromDraftInvoice: linkedInvoice?.number || null }, occurredAt: nowIso() });
       repository.save(data);
@@ -1702,6 +2018,7 @@
     const linkedSessionIds = data.sessions.filter(session => session.clientId === id).map(session => session.id);
     const deletedIds = new Set([id, ...linkedSessionIds]);
     data.clients = data.clients.filter(item => item.id !== id);
+    data.expenses.filter(expense => expense.clientId === id).forEach(expense => { expense.clientNameSnapshot ||= client.displayName; expense.clientId = null; if (linkedSessionIds.includes(expense.sessionId)) expense.sessionId = null; expense.updatedAt = nowIso(); });
     data.sessions = data.sessions.filter(session => session.clientId !== id);
     data.auditEvents = data.auditEvents.filter(event => !deletedIds.has(event.entityId));
     data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Client', entityId: id, details: { cascadedSessionCount: linkedSessionIds.length }, occurredAt: nowIso() });
@@ -1718,7 +2035,7 @@
   }
 
   function renderAll() {
-    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); syncMoneyTabs(); renderCommandPalette();
+    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); renderRecords(); syncMoneyTabs(); renderCommandPalette();
   }
 
   navButtons.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
@@ -1747,6 +2064,7 @@
     if (btn.dataset.action === 'add-session') { closeModal(); openSessionForm(); return; }
     if (btn.dataset.action === 'add-invoice') { closeModal(); openInvoiceForm(); return; }
     if (btn.dataset.action === 'add-payment') { closeModal(); openPaymentForm(); return; }
+    if (btn.dataset.action === 'add-expense') { closeModal(); openExpenseForm(); return; }
     showToast(`${$('strong', btn).textContent} activates in its roadmap phase.`);
   }));
 
@@ -1770,6 +2088,7 @@
   $$('[data-money-tab]').forEach(btn => btn.addEventListener('click', () => { closeFilterMenu(); ui.moneyTab = btn.dataset.moneyTab; syncMoneyTabs(); }));
   $('#addInvoiceBtn').addEventListener('click', () => openInvoiceForm());
   $('#addPaymentBtn').addEventListener('click', () => openPaymentForm());
+  $('#addExpenseBtn').addEventListener('click', () => openExpenseForm());
   $('#invoiceSettingsBtn').addEventListener('click', () => openInvoiceSettingsForm());
   $('#invoiceSettingsFromSettings').addEventListener('click', () => { closeModal(); openInvoiceSettingsForm(); });
   $('#invoiceFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
@@ -1786,6 +2105,14 @@
     { value:'invoice', label:'Invoice payments' },
     { value:'direct', label:'Other income' }
   ], ui.paymentFilter, value => { ui.paymentFilter = value; ui.paymentPage = 1; renderMoney(); }));
+  $('#expenseFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'all', label:'All expenses' },
+    { value:'business', label:'Business' },
+    { value:'mixed', label:'Mixed' },
+    { value:'personal', label:'Personal' },
+    { value:'needs_review', label:'Needs review' }
+  ], ui.expenseFilter, value => { ui.expenseFilter = value; ui.expensePage = 1; renderMoney(); }));
+  $('#receiptSearch').addEventListener('input', renderRecords);
   $('#invoiceForm').addEventListener('submit', saveInvoice);
   $('#invoiceClient').addEventListener('change', event => { renderInvoiceSessionChoices(event.target.value, new Set()); updateInvoiceDraftTotal(); });
   $('#invoiceIssueDate').addEventListener('change', event => {

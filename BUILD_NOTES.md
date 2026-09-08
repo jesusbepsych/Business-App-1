@@ -1,3 +1,24 @@
+# Phase 4 Expenses Alpha
+
+## Added
+- Schema v6 with `expenses` and receipt metadata.
+- Business / Mixed / Personal expense classification with preserved original and business-use amounts.
+- Fast expense form with workspace-local date, recent-category default, optional work linking, business-purpose note, and Needs Review toggle.
+- Optional image/PDF receipts (12 MB max) stored as blobs in IndexedDB.
+- Expense edit/delete plus receipt replacement/removal.
+- Money → Expenses tab with filters, month totals, business-portion total, and 7-record pagination.
+- Records → Receipt Vault with local search and expense drill-down.
+- Home Attention integration for expenses needing review.
+- Global command search now finds expenses.
+- Expense links preserve snapshots when linked clients/sessions are later removed.
+
+## Intentionally not added
+- Tax deductibility decisions or tax-form mappings.
+- OCR/automatic receipt parsing.
+- Bank imports.
+- Backup restore/import.
+- Receipt bytes inside the JSON backup.
+
 # Phase 3 usability refinement 9
 
 - Added a restrained diagonal shimmer pass to client-tinted detail panels.
@@ -108,3 +129,8 @@ These remain later roadmap phases so Phase 3 can be tested independently.
 - Client cards reinforce the same identity color through the avatar without adding extra labels or controls.
 - Money metric chips now follow semantic color language: `Cash in` uses received/success green and `Invoices` on Outstanding uses pending amber.
 - Schema advanced to v5 to persist `Client.colorKey`.
+
+## Phase 3 usability refinement 10
+- Removed the redundant invoice-builder helper copy stating that only uninvoiced work appears.
+- Enlarged `Select all` / `Clear` into compact accent-tinted pill controls for easier tapping and faster large-invoice selection without adding permanent visual clutter.
+

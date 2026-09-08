@@ -1,145 +1,61 @@
-# Business Ledger — Phase 3 Usability Refinement 9
+# Business Ledger — Phase 4 Expenses Alpha
 
-A dependency-free interactive prototype for a business finance and traceability app.
+This checkpoint activates the outgoing-money side of Business Ledger while preserving the existing Client → Session → Invoice → Payment architecture.
 
-## Run locally
+## Active workflows
 
-Serve the folder rather than double-clicking the HTML file:
+- Multi-workspace business/gig separation
+- Clients with visual color identities
+- Work sessions with rate snapshots and 5-minute radial time entry
+- Invoices, partial/full payments, and direct income
+- Expenses with Business / Mixed / Personal use classification
+- Separate original total and business-use amount
+- Bookkeeping categories including supplies, vehicle/fuel, parking/tolls, phone/internet, software, training, insurance, marketing, meals, fees, equipment, and other
+- Business-purpose notes and optional client/session linking
+- Needs Review queue integrated with Home Attention
+- Optional receipt image/PDF attachment
+- Receipt Vault in Records with merchant/category/file search
+- Direct filter menus and 7-record pagination across long financial lists
+- Workspace-local date logic using America/Los_Angeles for Play It Forward
 
-```bash
-cd business-finance-app-phase3-usability-refinement-8
-python3 -m http.server 8000
-```
+## Receipt storage
 
-Then open `http://localhost:8000`.
+Structured financial records remain in browser localStorage through the versioned LocalRepository. Receipt file bytes are stored separately in browser IndexedDB so image/PDF data is not embedded in the expense JSON.
 
-## Implemented
+This remains a local prototype. Do not treat it as secure production storage for sensitive client or tax documents yet.
 
-### Foundation
-- responsive desktop / tablet / mobile shell
-- Home, Work, Money, Records navigation
-- multiple business/gig workspaces
-- global search (`/` shortcut)
-- Quick Add
-- system light/dark appearance
-- reduced-motion support
-- explicit local-only sync state
-- provider-neutral repository boundary
-- JSON backup export
+The current JSON backup contains the structured expense and receipt metadata, but **does not package the receipt file bytes**. Restore/import is still intentionally deferred.
 
+## Expense design rules
 
+- `totalCents` records what was actually spent.
+- `businessCents` records the business-use portion without destroying the original amount.
+- Business classification = 100% business portion.
+- Personal classification = $0 business portion.
+- Mixed classification requires a business portion between $0 and the total.
+- Expense category is bookkeeping context, **not a tax deduction decision**.
+- A missing business-purpose note on Business/Mixed entries automatically sends the expense to Needs Review.
+- Receipts are optional and remain evidence linked to the expense rather than determining the accounting amount.
 
-### Refinement 9 — client detail shimmer
-- Added a slow, low-opacity diagonal light shimmer to color-tinted client detail cards.
-- The shimmer uses layered transparency and a long rest interval so it reads as subtle polish rather than a distracting animation.
-- The effect does not intercept clicks or change text/button contrast.
-- `prefers-reduced-motion` disables the shimmer entirely.
+## Suggested Phase 4 test
 
-### Refinement 8 — timezone + client identity polish
-- date-only business defaults and overdue/month calculations use the active workspace timezone rather than UTC
-- Play It Forward therefore treats `America/Los_Angeles` as the source of truth for “today” even when UTC has already moved to the next calendar day
-- true audit/creation timestamps remain ISO UTC timestamps
-- client detail panels inherit a softened version of the client’s chosen identity color while preserving existing text/button contrast
+1. Add a Business expense with a purpose and no receipt.
+2. Add a Mixed expense and verify the business portion cannot exceed/equal the total.
+3. Add a Personal expense and confirm its business portion remains $0.
+4. Attach an image or PDF receipt and confirm it appears in Records → Receipt Vault.
+5. Edit the expense and replace/remove the receipt.
+6. Mark an expense Needs Review and confirm it appears on Home → Attention.
+7. Mark it reviewed from the expense detail panel and confirm it disappears from Attention.
+8. Link an expense to a client/session and verify the context appears in expense detail.
+9. Test the Expenses filter and pagination with more than seven records.
+10. Search receipt file names/merchants/categories from Records.
+11. Refresh the browser and verify the structured records and local receipt remain available.
 
-### Work records
-- client creation/editing/deletion
-- optional client billing details
-- client color categorization for quick visual scanning
-- hourly-rate defaults
-- radial 5-minute work-time picker
-- 12-hour AM/PM display
-- work-session creation/editing/deletion
-- session-specific historical rate snapshots
-- client/session search and details
-- work metrics
+## Deferred by design
 
-### Phase 2 invoice engine
-- sequential invoice numbers per business
-- configurable sender identity, prefix, due period, and payment instructions
-- invoice creation from one or many uninvoiced work sessions
-- custom line items
-- exact total-hours tally
-- Draft → Sent workflow
-- overdue detection
-- void/delete-draft workflows
-- sender/client/rate/line-item snapshots
-- issued-session protections
-- printable / Save-as-PDF invoice view
-
-### Phase 3 payments + income ledger
-- Payment records are separate from Invoice records
-- full and partial invoice payments
-- invoice balance calculated from linked payments
-- derived invoice states: Sent, Partially paid, Paid, Overdue, Draft, Void
-- prominent **Record payment** action from sent invoices
-- remaining invoice balance prefilled for faster payment entry
-- overpayment protection for invoice-linked payments
-- payment date, method, reference/confirmation, and notes
-- supported methods: Zelle, Venmo, ACH, direct deposit, cash, check, card, and other
-- direct/other income that does not require an invoice
-- optional client link for direct income
-- Money dashboard totals for received cash, outstanding invoice balance, and overdue invoices
-- dedicated Invoices / Payments tabs
-- searchable payment records
-- payment detail/edit/delete workflow
-- invoice payment history embedded in invoice detail
-- printable invoices show invoice total, payments received, and current amount due
-- invoices with linked payments are protected from billable-content edits, draft reversal, or voiding until the payment record is corrected/removed
-- cash-received totals use payments only, preventing an invoice and its payment from being counted as two cash entries
-
-## Important security note
-
-This build stores prototype data in browser local storage. It is **not yet appropriate for sensitive production financial information or identifying client information**. Continue using aliases/test data during this stage.
-
-Secure authentication, cloud synchronization, encrypted document storage, and account recovery remain reserved behind the existing persistence boundary.
-
-## Recommended Phase 3 test
-
-1. Create or open a client with several work sessions.
-2. Create an invoice, then mark it Sent.
-3. Use **Record payment** from the invoice detail.
-4. Confirm the remaining invoice balance is prefilled.
-5. Record only part of it and verify the invoice becomes **Partially paid**.
-6. Record the remaining amount and verify the invoice becomes **Paid** with a $0 balance.
-7. Edit or delete one payment and verify the invoice balance/status immediately recalculates.
-8. Try entering more than the remaining invoice balance and verify it is rejected.
-9. Record **Other income** that does not use an invoice and verify it appears in the Payments ledger but not as an invoice.
-10. Print/Save the invoice as PDF and verify payment history and current amount due are correct.
-11. Refresh the browser and make sure all Phase 3 records persist.
-
-## Working name
-
-“Business Ledger” remains a placeholder name.
-
-### Refinement checkpoint
-This build adds seven-session pagination (buttons + touch swipe), reorders key Work/Payments columns for faster scanning, gives Sent and Void invoices distinct status colors, and adds a Home invoice-earnings metric based on recorded invoice payments.
-
-### Refinement 2
-Home financial labels now use semantic colors, logged-hours display includes its unit, and Quick Add is centered on tablet/desktop while retaining the mobile bottom-sheet interaction.
-
-### Refinement 3
-Clients now have an optional visual color identity chosen from a compact curated palette. That color follows the client into the Sessions table (and client avatar) so repeated client work can be recognized at a glance without filtering. Existing local clients receive starter colors automatically and can be changed through Edit Client. Money summary chips now also use semantic green/amber coloring for Cash in and Outstanding invoices.
-
-
-## Refinement 5 transition polish
-
-- Home Recent Work now uses a true slow fade-out / fade-in transition instead of a quick flash-like content swap.
-- Each fade stage lasts about 0.8 seconds, with a slightly longer display interval between rotations.
-- Hover/focus pause and reduced-motion safeguards are preserved.
-
-## Refinement 4 interaction updates
-
-The invoice builder now keeps long client work histories inside their own scrollable session-selection pane instead of lengthening the entire dialog. The Home recent-work card also rotates through randomized recent session snapshots with a restrained crossfade, pausing when the page is not active and respecting reduced-motion preferences.
-
-## Refinement 6 — true recent-work dissolve
-
-The Home Recent Work rotation now uses two temporary overlapping layers. The outgoing rows progressively soften, blur, and fade while the next randomized set begins appearing underneath them. This replaces the prior fade-then-swap behavior that could still look like a flash in Safari. The transition is intentionally more visible and slower, while still pausing during hover/focus and honoring reduced-motion settings.
-
-
-## Refinement 7 — current-stage efficiency polish
-
-- Replaced cycling Session, Client, Invoice, and Payment filters with compact direct-select popover menus.
-- Client status filtering now genuinely filters Active / Inactive / All clients instead of showing a non-functional status pill.
-- Invoice History and Money Received now paginate at 7 records per page using the same compact previous/next treatment established for Sessions.
-- Added `Select all · Clear` shortcuts to the invoice work-session selector so large invoices can be assembled in one action while preserving individual deselection.
-- Home Invoice earnings now carries an `All time` indicator to make its cumulative time basis explicit.
+- Backup restore/import
+- Mileage and vehicles (Phase 5)
+- Tax deduction logic / Schedule C mapping (Phase 6)
+- Full evidence/audit drill-down (Phase 7)
+- Bank transaction importing and reconciliation (Phase 11)
+- Secure cloud authentication/sync and encrypted file storage
