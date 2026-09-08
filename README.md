@@ -59,3 +59,6 @@ The current JSON backup contains the structured expense and receipt metadata, bu
 - Full evidence/audit drill-down (Phase 7)
 - Bank transaction importing and reconciliation (Phase 11)
 - Secure cloud authentication/sync and encrypted file storage
+
+## Phase 4 usability refinement 1
+Desktop/tablet layouts now support an optional collapsible left sidebar. Use the small edge chevron to collapse the navigation; the sidebar fades/slides away and the main workspace expands to use the reclaimed width. Press the same control again to restore the full sidebar. The preference is stored locally. Mobile bottom navigation is unchanged.

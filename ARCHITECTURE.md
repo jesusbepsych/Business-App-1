@@ -226,3 +226,6 @@ The invoice work-session selector is a bounded nested scroll region; this is pre
 - “Today,” overdue status, current-month metrics, and default form dates use the workspace timezone (`America/Los_Angeles` for Play It Forward), preventing UTC day-boundary shifts.
 - Date-only display formatting is timezone-neutral so a stored `YYYY-MM-DD` does not move backward/forward when viewed on a device in another timezone.
 
+
+## Collapsible navigation shell
+The desktop sidebar collapse state is intentionally UI-only and does not touch business data or schema versioning. The app shell transitions its grid from `260px + main` to `0px + main`, allowing the existing responsive content grids to reflow naturally rather than leaving a reserved blank column. The preference is stored separately from financial data under `business-ledger-sidebar-collapsed`. Mobile navigation remains a separate presentation path below 921px.

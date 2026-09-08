@@ -2,6 +2,7 @@
   'use strict';
 
   const STORAGE_KEY = 'business-ledger:v0.2';
+  const SIDEBAR_COLLAPSE_KEY = 'business-ledger-sidebar-collapsed';
   const nowIso = () => new Date().toISOString();
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   const CLIENT_COLOR_KEYS = ['blue','teal','green','amber','coral','purple','pink','sky'];
@@ -171,7 +172,29 @@
   const overlay = $('#overlay');
   const modals = [$('#quickAddSheet'), $('#commandPalette'), $('#businessSheet'), $('#formSheet'), $('#invoiceSheet'), $('#settingsSheet'), $('#detailPanel')];
   const toast = $('#toast');
+  const appShell = $('#appShell');
+  const sidebarCollapseBtn = $('#sidebarCollapseBtn');
   let activeFilterMenu = null;
+
+  function readSidebarCollapsedPreference() {
+    try { return localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === '1'; }
+    catch (error) { return false; }
+  }
+
+  function applySidebarCollapsed(collapsed, { persist = true } = {}) {
+    if (!appShell || !sidebarCollapseBtn) return;
+    appShell.classList.toggle('sidebar-collapsed', collapsed);
+    document.documentElement.classList.remove('sidebar-collapsed-preload');
+    sidebarCollapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    sidebarCollapseBtn.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    sidebarCollapseBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    if (persist) {
+      try { localStorage.setItem(SIDEBAR_COLLAPSE_KEY, collapsed ? '1' : '0'); }
+      catch (error) { /* Sidebar preference is non-critical. */ }
+    }
+  }
+
+  applySidebarCollapsed(readSidebarCollapsedPreference(), { persist: false });
 
   function closeFilterMenu() {
     if (!activeFilterMenu) return;
@@ -2038,6 +2061,9 @@
     renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); renderRecords(); syncMoneyTabs(); renderCommandPalette();
   }
 
+  sidebarCollapseBtn?.addEventListener('click', () => {
+    applySidebarCollapsed(!appShell.classList.contains('sidebar-collapsed'));
+  });
   navButtons.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
   $$('[data-go-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.goView)));
   $('#quickAddBtn').addEventListener('click', () => openModal($('#quickAddSheet')));

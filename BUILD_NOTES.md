@@ -134,3 +134,11 @@ These remain later roadmap phases so Phase 3 can be tested independently.
 - Removed the redundant invoice-builder helper copy stating that only uninvoiced work appears.
 - Enlarged `Select all` / `Clear` into compact accent-tinted pill controls for easier tapping and faster large-invoice selection without adding permanent visual clutter.
 
+
+## Phase 4 usability refinement 1 — collapsible desktop sidebar
+- Added a compact sidebar collapse/expand control on desktop/tablet-width layouts above 920px.
+- Collapse is a true layout state: the grid sidebar track animates from 260px to 0px and the main workspace expands into the recovered space.
+- Sidebar contents fade, soften, and slide away while the edge control remains reachable; expanding reverses the motion.
+- The user's collapsed/expanded preference is persisted locally so the layout is restored on the next visit without a visible layout flash.
+- Mobile navigation remains unchanged; the collapse control is hidden at 920px and below.
+- `prefers-reduced-motion` continues to suppress the animation through the app-wide reduced-motion rule.
