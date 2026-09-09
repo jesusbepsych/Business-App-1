@@ -69,23 +69,9 @@ On a fresh desktop/tablet visit, Business Ledger opens on Home with the sidebar 
 ### Top utility blending
 The sticky search/profile region intentionally avoids applying a full-width backdrop blur. A short page-colored fade now protects control readability while allowing bright underlying text and cards to pass beneath without turning into a broad gray haze.
 
-## Corporate Atrium — Home visual-system alpha
+## Corporate Atrium Home prototype
+The Home view now uses the Corporate Atrium visual system while the rest of Phase 4 remains visually unchanged for A/B review. The environment uses remote Unsplash image plates with a bundled SVG fallback. Unsplash source references used for the prototype environment:
+- E Vos — “Modern office interior with glass walls and walkways” (Unsplash, free under the Unsplash License).
+- Fer Troulik — “Modern office interior with glass walls and reflections” (Unsplash, free under the Unsplash License).
 
-This build temporarily pauses functional expansion to prototype the approved **Corporate Atrium** visual language on **Home only**. Work, Money, Records, forms, invoice builder, expense flows, and all underlying business logic remain on the existing Phase 4 presentation so the Home redesign can be judged in isolation.
-
-Home now adds:
-
-- a locally packaged layered corporate-atrium environment (no remote image dependency)
-- smoked-glass Home metrics/panels with directional edge lighting
-- subtle environment-colored surface tints for uninvoiced/paid states
-- pointer-responsive parallax on desktop and scroll-responsive depth on touch/tablet
-- environment-aware moving glass reflections across Home cards
-- polished floor/light reflection layers and a slow non-random ambient lighting cycle
-- Home-specific glass treatment for the expanded sidebar and top utility controls
-- reduced-motion fallback that removes parallax/ambient animation
-
-The walking business-person and randomized environmental events discussed during design exploration are **not included** in this Home implementation.
-
-
-## Corporate Atrium Home Fidelity Pass fidelity pass
-The Home-only theme now uses a packaged photographic atrium environment asset (`assets/corporate-atrium-bg.jpg`) derived from the approved visual direction, with architectural depth, marble-floor reflections, plants, warm vertical lighting, smoked glass surfaces, environment-aware moving highlights, parallax, and responsive reduced-motion behavior. Work, Money, Records, forms, and detail views retain the prior Phase 4 theme. No people or randomized environmental events are included yet.
+No people animation or randomized ambient events are active in this build.

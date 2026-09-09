@@ -174,6 +174,11 @@
   const toast = $('#toast');
   const appShell = $('#appShell');
   const sidebarCollapseBtn = $('#sidebarCollapseBtn');
+  const homeAtriumScene = $('#homeAtriumScene');
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let atriumFrame = null;
+  let atriumPointerX = 0;
+  let atriumPointerY = 0;
   let activeFilterMenu = null;
 
   function readSidebarCollapsedPreference() {
@@ -464,18 +469,43 @@
     return '';
   }
 
-  function syncHomeAtriumTheme() {
-    const active = ui.activeView === 'home';
-    document.documentElement.classList.remove('home-atrium-active-preload');
-    document.body.classList.toggle('home-atrium-active', active);
-    document.documentElement.classList.toggle('home-atrium-active', active);
+  function applyHomeAtriumState(viewName = ui.activeView) {
+    const isHome = viewName === 'home';
+    document.body.classList.toggle('home-atrium-active', isHome);
+    homeAtriumScene?.setAttribute('aria-hidden', 'true');
+    if (!isHome) {
+      document.documentElement.style.setProperty('--atrium-px', '0');
+      document.documentElement.style.setProperty('--atrium-py', '0');
+      document.documentElement.style.setProperty('--atrium-scroll', '0');
+      document.documentElement.style.setProperty('--atrium-light-x', '52%');
+      document.documentElement.style.setProperty('--atrium-light-y', '28%');
+    }
+  }
+
+  function commitAtriumMotion() {
+    atriumFrame = null;
+    if (ui.activeView !== 'home' || prefersReducedMotion.matches) return;
+    document.documentElement.style.setProperty('--atrium-px', atriumPointerX.toFixed(4));
+    document.documentElement.style.setProperty('--atrium-py', atriumPointerY.toFixed(4));
+    document.documentElement.style.setProperty('--atrium-scroll', String(window.scrollY || 0));
+    document.documentElement.style.setProperty('--atrium-light-x', `${(50 + atriumPointerX * 18).toFixed(1)}%`);
+    document.documentElement.style.setProperty('--atrium-light-y', `${(30 + atriumPointerY * 12).toFixed(1)}%`);
+  }
+
+  function queueAtriumMotion(clientX, clientY) {
+    if (ui.activeView !== 'home' || prefersReducedMotion.matches) return;
+    if (Number.isFinite(clientX) && Number.isFinite(clientY)) {
+      atriumPointerX = Math.max(-1, Math.min(1, (clientX / Math.max(window.innerWidth,1) - .5) * 2));
+      atriumPointerY = Math.max(-1, Math.min(1, (clientY / Math.max(window.innerHeight,1) - .5) * 2));
+    }
+    if (!atriumFrame) atriumFrame = requestAnimationFrame(commitAtriumMotion);
   }
 
   function setView(viewName) {
     ui.activeView = viewName;
+    applyHomeAtriumState(viewName);
     views.forEach(view => view.classList.toggle('active', view.dataset.page === viewName));
     navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
-    syncHomeAtriumTheme();
     window.scrollTo({ top: 0, behavior: 'auto' });
     closeModal();
   }
@@ -2073,6 +2103,19 @@
     renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); renderRecords(); syncMoneyTabs(); renderCommandPalette();
   }
 
+
+  window.addEventListener('pointermove', event => queueAtriumMotion(event.clientX, event.clientY), { passive:true });
+  window.addEventListener('touchmove', event => {
+    const touch = event.touches?.[0];
+    if (touch) queueAtriumMotion(touch.clientX, touch.clientY);
+  }, { passive:true });
+  window.addEventListener('scroll', () => queueAtriumMotion(NaN, NaN), { passive:true });
+  window.addEventListener('resize', () => queueAtriumMotion(window.innerWidth / 2, window.innerHeight / 2), { passive:true });
+  prefersReducedMotion.addEventListener?.('change', () => {
+    if (prefersReducedMotion.matches) { atriumPointerX = 0; atriumPointerY = 0; }
+    commitAtriumMotion();
+  });
+
   sidebarCollapseBtn?.addEventListener('click', () => {
     applySidebarCollapsed(!appShell.classList.contains('sidebar-collapsed'));
   });
@@ -2179,41 +2222,7 @@
     if (!document.hidden && ui.activeView === 'home') startHomeRecentRotation();
   });
 
-  // Corporate Atrium home preview: environmental depth and light response.
-  // This is intentionally UI-only and does not touch financial records.
-  const atriumMotionRoot = document.documentElement;
-  const canHoverAtrium = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
-  function updateAtriumPointer(clientX, clientY) {
-    if (ui.activeView !== 'home') return;
-    const nx = Math.max(-1, Math.min(1, (clientX / Math.max(window.innerWidth, 1) - .5) * 2));
-    const ny = Math.max(-1, Math.min(1, (clientY / Math.max(window.innerHeight, 1) - .5) * 2));
-    atriumMotionRoot.style.setProperty('--atrium-far-x', `${(-nx * 7).toFixed(2)}px`);
-    atriumMotionRoot.style.setProperty('--atrium-far-y', `${(-ny * 4).toFixed(2)}px`);
-    atriumMotionRoot.style.setProperty('--atrium-near-x', `${(nx * 10).toFixed(2)}px`);
-    atriumMotionRoot.style.setProperty('--atrium-near-y', `${(ny * 6).toFixed(2)}px`);
-    atriumMotionRoot.style.setProperty('--atrium-light-x', `${(50 + nx * 18).toFixed(1)}%`);
-    atriumMotionRoot.style.setProperty('--atrium-light-y', `${(22 + ny * 10).toFixed(1)}%`);
-    atriumMotionRoot.style.setProperty('--atrium-card-shift-x', `${(nx * 4).toFixed(2)}px`);
-    atriumMotionRoot.style.setProperty('--atrium-card-shift-y', `${(ny * 2).toFixed(2)}px`);
-  }
-  if (canHoverAtrium) {
-    window.addEventListener('pointermove', event => updateAtriumPointer(event.clientX, event.clientY), { passive:true });
-  } else {
-    // On touch/tablet devices, a light finger move can gently steer the reflection field.
-    // Scroll remains the primary depth cue, so this never blocks native scrolling.
-    window.addEventListener('touchmove', event => {
-      const touch = event.touches && event.touches[0];
-      if (touch) updateAtriumPointer(touch.clientX, touch.clientY);
-    }, { passive:true });
-  }
-  window.addEventListener('scroll', () => {
-    if (ui.activeView !== 'home') return;
-    const sy = Math.min(window.scrollY, 900);
-    atriumMotionRoot.style.setProperty('--atrium-scroll-far', `${(-sy * .018).toFixed(2)}px`);
-    atriumMotionRoot.style.setProperty('--atrium-scroll-near', `${(-sy * .032).toFixed(2)}px`);
-    atriumMotionRoot.style.setProperty('--atrium-scroll-light', `${(sy * .012).toFixed(2)}px`);
-  }, { passive:true });
-
-  syncHomeAtriumTheme();
+  applyHomeAtriumState('home');
+  commitAtriumMotion();
   renderAll();
 })();

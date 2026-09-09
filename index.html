@@ -5,12 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, records, and taxes." />
-  <title>Business Ledger — Phase 4 Corporate Atrium Home Fidelity Pass</title>
-  <script>document.documentElement.classList.add('home-atrium-active-preload');try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
+  <title>Business Ledger — Phase 4 Corporate Atrium Home Rebuild</title>
+  <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body class="home-atrium-active">
+
+  <div class="home-atrium-scene" id="homeAtriumScene" aria-hidden="true">
+    <div class="atrium-layer atrium-photo atrium-photo-primary"></div>
+    <div class="atrium-layer atrium-photo atrium-photo-secondary"></div>
+    <div class="atrium-layer atrium-architectural-light"></div>
+    <div class="atrium-layer atrium-floor-light"></div>
+    <div class="atrium-layer atrium-atmosphere"></div>
+    <div class="atrium-motto atrium-motto-right"><span>PEOPLE</span><span>CAPITAL</span><span>IDEAS</span><span>IMPACT</span></div>
+    <div class="atrium-motto atrium-motto-left"><span>STRUCTURE</span><span>SCALE</span><span>OPPORTUNITY</span></div>
+  </div>
   <div class="app-shell" id="appShell">
     <aside class="sidebar" id="primarySidebar" aria-label="Primary navigation">
       <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-controls="primarySidebar" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><span aria-hidden="true">‹</span></button>
@@ -34,7 +45,7 @@
 
       <div class="sidebar-spacer"></div>
       <div class="sidebar-footer">
-        <button class="sync-chip" id="syncChip" aria-label="Open sync status"><span class="sync-dot local"></span><span><strong>Local implementation</strong><small>Cloud adapter ready</small></span></button>
+        <button class="sync-chip" id="syncChip" aria-label="Open sync status"><span class="sync-dot local"></span><span><strong>Local preview</strong><small>Cloud adapter ready</small></span></button>
         <button class="nav-item" id="openSettings"><span class="nav-icon">⚙</span><span>Settings</span></button>
         <div class="profile-chip"><div class="avatar">JG</div><div><strong>Local owner</strong><span>Sign-in layer reserved</span></div></div>
       </div>
@@ -52,15 +63,8 @@
         </div>
       </header>
 
-      <section class="view active" data-page="home">
-        <div class="atrium-environment" aria-hidden="true">
-          <div class="atrium-layer atrium-scene"></div>
-          <div class="atrium-layer atrium-depth-glass"></div>
-          <div class="atrium-layer atrium-light-field"></div>
-          <div class="atrium-layer atrium-floor-reflection"></div>
-          <div class="atrium-layer atrium-vignette"></div>
-        </div>
-        <div class="content-wrap atrium-content">
+      <section class="view active home-atrium-view" data-page="home">
+        <div class="content-wrap home-atrium-content">
           <div class="page-heading">
             <div><p class="eyebrow" id="homeEyebrow">PLAY IT FORWARD</p><h1>Your business, in one place.</h1><p class="subtitle">Work first. Money and tax traceability build on the same records.</p></div>
             <button class="primary-btn" id="quickAddBtn"><span>＋</span> Add</button>
@@ -245,7 +249,7 @@
   <section class="sheet settings-sheet" id="settingsSheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
     <div class="sheet-handle"></div><div class="sheet-head"><div><p class="eyebrow">SETTINGS</p><h2 id="settingsTitle">Account, sync, and data</h2></div><button class="close-btn" data-close aria-label="Close">×</button></div>
     <div class="settings-stack">
-      <article class="setting-card"><div class="setting-icon">☁</div><div><strong>Cloud synchronization</strong><p>This prototype is intentionally local-only. The data layer is separated so secure authentication, database sync, and encrypted file storage can be connected without rewriting the app.</p><span class="status-label"><span class="sync-dot local"></span> Local-only implementation</span></div></article>
+      <article class="setting-card"><div class="setting-icon">☁</div><div><strong>Cloud synchronization</strong><p>This prototype is intentionally local-only. The data layer is separated so secure authentication, database sync, and encrypted file storage can be connected without rewriting the app.</p><span class="status-label"><span class="sync-dot local"></span> Local-only preview</span></div></article>
       <article class="setting-card"><div class="setting-icon">⇩</div><div class="setting-card-flex"><div><strong>Portable backup</strong><p>Export the complete local workspace as structured JSON. Later, server backups and account recovery will supplement this.</p></div><button class="secondary-btn" id="exportBackupBtn">Export</button></div></article>
       <article class="setting-card"><div class="setting-icon">▧</div><div class="setting-card-flex"><div><strong>Invoice identity & defaults</strong><p>Set the sender name, contact details, invoice prefix, default due period, and payment instructions used when new invoices are created.</p></div><button class="secondary-btn" id="invoiceSettingsFromSettings">Edit</button></div></article>
       <article class="setting-card"><div class="setting-icon">⌘</div><div><strong>Device strategy</strong><p>Responsive web/PWA first, with interaction patterns and data services designed to carry forward into an iPhone/iPad shell later.</p></div></article>

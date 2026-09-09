@@ -154,34 +154,22 @@ These remain later roadmap phases so Phase 3 can be tested independently.
 - The topbar now uses a short, page-colored alpha gradient with no full-width backdrop blur. Search/profile controls keep their own surfaces, so readability remains protected while scrolling without smearing underlying content.
 - Reduced the veil extension below the 72px topbar from 34px to 18px so the transition returns to the document sooner and feels less like an overlay panel.
 
-## Corporate Atrium Home Alpha
+## Corporate Atrium Home Rebuild — fidelity reset
 
-- Added a Home-only `home-atrium-active` UI state, toggled automatically by navigation.
-- Added `assets/corporate-atrium.svg`, a local 1920×1080 layered atrium environment designed for depth, glass, polished flooring, structural lighting, and plants.
-- Added separate scene/depth/light/floor/vignette layers so movement is not a single flat wallpaper transform.
-- Pointer movement (fine-pointer devices) and vertical scroll update CSS environment variables for restrained parallax and reflection response.
-- Home glass surfaces use local backdrop blur, directional inner highlights, environment-aware reflection gradients, and subtle contextual color casting.
-- Other pages retain the Phase 4 Refinement 3 visual system unchanged.
-- No data schema, financial logic, persistence, filtering, invoicing, payments, expenses, receipt handling, or audit behavior changed.
-- No walking person or randomized ambient event system is included.
+This build intentionally restarts the Corporate Atrium visual layer from the clean Phase 4 Usability Refinement 3 base rather than patching the earlier teal/blurred attempts.
 
-## Phase 4 — Corporate Atrium Home Alpha
-- Corporate Atrium is now implemented in the functioning Home view, not baked into a screenshot.
-- Existing Home data bindings, Quick Add, search, sidebar collapse state, Attention actions, Recent Work crossfade, and navigation remain live.
-- The environment uses a local layered SVG plus separate CSS depth/light/reflection layers; no remote asset is required.
-- Desktop pointer movement and Home scrolling drive restrained parallax and glass reflection movement; touch movement also steers the reflection field on tablet/mobile while preserving native scrolling.
-- Work, Money, Records, modals, invoice builder, expense forms, and detail panels intentionally retain the prior Phase 4 theme until the Home treatment is approved.
-- Walking people and randomized environmental events remain intentionally deferred.
+### Home-only visual changes
+- Added an explicit fixed environment DOM layer behind the live application instead of hiding the scene inside pseudo-elements.
+- The physical office environment stays sharp outside UI glass. `backdrop-filter` is applied locally to Home cards/panels only.
+- Added responsive real-office environment plates for widescreen and tablet/mobile compositions, with a packaged `assets/atrium-fallback.svg` for offline/failure fallback.
+- Added subtle warm architectural light rails, floor reflection treatment, edge vignette, and optional decorative atrium typography in wide layouts.
+- Home cards use lighter smoked-glass material, local text-protection gradients, environment-positioned reflection highlights, semantic color casting, and restrained hover elevation.
+- Pointer/touch movement and scroll update CSS variables for shallow multi-layer parallax and moving glass reflections. Reduced-motion freezes those effects.
+- The Home topbar and expanded sidebar adopt the same glass/material system while the non-Home sections retain the prior Phase 4 theme.
+- Existing Home data, Recent Work random crossfade, Attention actions, Quick Add, search, sidebar collapse, and navigation behavior are unchanged.
 
-
-## Corporate Atrium Home Fidelity Pass fidelity pass
-The Home-only theme now uses a packaged photographic atrium environment asset (`assets/corporate-atrium-bg.jpg`) derived from the approved visual direction, with architectural depth, marble-floor reflections, plants, warm vertical lighting, smoked glass surfaces, environment-aware moving highlights, parallax, and responsive reduced-motion behavior. Work, Money, Records, forms, and detail views retain the prior Phase 4 theme. No people or randomized environmental events are included yet.
-
-## Corporate Atrium Fidelity Pass 2
-- Replaced the abstract/flat atrium appearance with a locally packaged photographic/generated environment derived from the approved Corporate Atrium art direction.
-- Removed readable baked-interface detail from the central environment by selective depth-of-field processing; live Business Ledger UI remains separate and functional.
-- Added a transparent sharp-detail edge/floor layer for visible marble, plants, warm light columns, window structure, and architectural depth.
-- Reduced Home glass opacity so the physical office remains visible through the interface.
-- Strengthened pointer/touch-driven environment-aware reflection casts while preserving reduced-motion behavior.
-- Kept Work, Money, Records, modals, invoice builder, expense screens, and business logic unchanged.
-- Walking people and randomized environmental events remain deferred.
+### Explicitly still deferred
+- Walking background person / people animation.
+- Randomized ambient background events.
+- Propagating Corporate Atrium styling to Work, Money, Records, sheets, invoice builder, expense forms, or detail panels.
+- Backup restore/import.

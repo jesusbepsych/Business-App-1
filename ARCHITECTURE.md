@@ -236,12 +236,16 @@ The sidebar remains a layout state rather than an overlay. If no preference exis
 ### Sticky utility scrim
 The desktop/tablet topbar uses an alpha-faded page-color scrim rather than a full-width `backdrop-filter`. This is deliberate: backdrop blur spreads bright underlying pixels and can create a visible light band over text/cards on dark themes. The controls themselves provide their own surface contrast, while the scrim only manages the transition between document content and the sticky utility region.
 
-## Home visual-theme isolation — Corporate Atrium implementation
+## Corporate Atrium Home visual architecture
+The Home theme is isolated from domain/business logic.
 
-The Corporate Atrium experiment is intentionally presentation-only. `setView()` toggles the `home-atrium-active` class when Home is active. All new surface rules are scoped through that class and the Home `data-page`, so leaving Home restores the established Phase 4 styles. Environmental motion only writes CSS custom properties and never mutates repository state.
+Visual stack (back to front):
+1. `#homeAtriumScene` fixed physical environment.
+2. Primary sharp office photo plate + local SVG fallback.
+3. Secondary masked architectural plate for side/depth variation.
+4. CSS structural light rails / floor glints / atmosphere.
+5. Existing live Business Ledger shell and Home DOM.
+6. Local `backdrop-filter` on the actual Home cards/panels.
+7. Environment-aware reflection pseudo-elements driven by CSS variables.
 
-The scene is split into visual layers (`atrium-scene`, `atrium-depth-glass`, `atrium-light-field`, `atrium-floor-reflection`, `atrium-vignette`) instead of treating the environment as one flat background. This supports parallax and reflection changes independently while keeping the existing DOM/content geometry intact.
-
-
-## Corporate Atrium Home Fidelity Pass fidelity pass
-The Home-only theme now uses a packaged photographic atrium environment asset (`assets/corporate-atrium-bg.jpg`) derived from the approved visual direction, with architectural depth, marble-floor reflections, plants, warm vertical lighting, smoked glass surfaces, environment-aware moving highlights, parallax, and responsive reduced-motion behavior. Work, Money, Records, forms, and detail views retain the prior Phase 4 theme. No people or randomized environmental events are included yet.
+`setView()` toggles `body.home-atrium-active`, so navigating to Work/Money/Records removes the atrium visual layer without altering any application data or view behavior. Pointer/touch/scroll input only changes presentation CSS variables and never persists to financial data.
