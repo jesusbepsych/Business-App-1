@@ -172,3 +172,16 @@ These remain later roadmap phases so Phase 3 can be tested independently.
 - Desktop pointer movement and Home scrolling drive restrained parallax and glass reflection movement; touch movement also steers the reflection field on tablet/mobile while preserving native scrolling.
 - Work, Money, Records, modals, invoice builder, expense forms, and detail panels intentionally retain the prior Phase 4 theme until the Home treatment is approved.
 - Walking people and randomized environmental events remain intentionally deferred.
+
+
+## Corporate Atrium Home Fidelity Pass fidelity pass
+The Home-only theme now uses a packaged photographic atrium environment asset (`assets/corporate-atrium-bg.jpg`) derived from the approved visual direction, with architectural depth, marble-floor reflections, plants, warm vertical lighting, smoked glass surfaces, environment-aware moving highlights, parallax, and responsive reduced-motion behavior. Work, Money, Records, forms, and detail views retain the prior Phase 4 theme. No people or randomized environmental events are included yet.
+
+## Corporate Atrium Fidelity Pass 2
+- Replaced the abstract/flat atrium appearance with a locally packaged photographic/generated environment derived from the approved Corporate Atrium art direction.
+- Removed readable baked-interface detail from the central environment by selective depth-of-field processing; live Business Ledger UI remains separate and functional.
+- Added a transparent sharp-detail edge/floor layer for visible marble, plants, warm light columns, window structure, and architectural depth.
+- Reduced Home glass opacity so the physical office remains visible through the interface.
+- Strengthened pointer/touch-driven environment-aware reflection casts while preserving reduced-motion behavior.
+- Kept Work, Money, Records, modals, invoice builder, expense screens, and business logic unchanged.
+- Walking people and randomized environmental events remain deferred.

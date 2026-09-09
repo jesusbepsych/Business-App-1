@@ -85,3 +85,7 @@ Home now adds:
 - reduced-motion fallback that removes parallax/ambient animation
 
 The walking business-person and randomized environmental events discussed during design exploration are **not included** in this Home implementation.
+
+
+## Corporate Atrium Home Fidelity Pass fidelity pass
+The Home-only theme now uses a packaged photographic atrium environment asset (`assets/corporate-atrium-bg.jpg`) derived from the approved visual direction, with architectural depth, marble-floor reflections, plants, warm vertical lighting, smoked glass surfaces, environment-aware moving highlights, parallax, and responsive reduced-motion behavior. Work, Money, Records, forms, and detail views retain the prior Phase 4 theme. No people or randomized environmental events are included yet.

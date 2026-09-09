@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b9d7e4"/>
+      <stop offset=".52" stop-color="#8eb8c9"/>
+      <stop offset="1" stop-color="#5c7f8f"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9eef4" stop-opacity=".56"/>
+      <stop offset=".35" stop-color="#7599a8" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#20333b" stop-opacity=".72"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#72838a"/>
+      <stop offset=".18" stop-color="#59696f"/>
+      <stop offset=".55" stop-color="#354348"/>
+      <stop offset="1" stop-color="#172126"/>
+    </linearGradient>
+    <linearGradient id="marble" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#47545a"/>
+      <stop offset=".35" stop-color="#8d999c"/>
+      <stop offset=".55" stop-color="#506066"/>
+      <stop offset="1" stop-color="#29363c"/>
+    </linearGradient>
+    <linearGradient id="warmLine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff7df" stop-opacity="0"/>
+      <stop offset=".18" stop-color="#fff4cf" stop-opacity=".92"/>
+      <stop offset=".82" stop-color="#e3bd76" stop-opacity=".8"/>
+      <stop offset="1" stop-color="#d79f4c" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="warmGlow">
+      <stop offset="0" stop-color="#fff1c9" stop-opacity=".56"/>
+      <stop offset=".48" stop-color="#dca85f" stop-opacity=".13"/>
+      <stop offset="1" stop-color="#dca85f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="coolGlow">
+      <stop offset="0" stop-color="#9de4ef" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#5ba9c0" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur24"><feGaussianBlur stdDeviation="24"/></filter>
+    <filter id="blur8"><feGaussianBlur stdDeviation="8"/></filter>
+    <filter id="shadow"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#051014" flood-opacity=".42"/></filter>
+  </defs>
+
+  <!-- exterior daylight beyond the glass -->
+  <rect width="1920" height="1080" fill="#13242b"/>
+  <rect x="205" y="0" width="1510" height="700" fill="url(#sky)"/>
+  <g opacity=".18" filter="url(#blur8)" fill="#274c5d">
+    <rect x="300" y="175" width="170" height="380" rx="8"/>
+    <rect x="500" y="105" width="220" height="450" rx="10"/>
+    <rect x="760" y="225" width="130" height="330" rx="8"/>
+    <rect x="920" y="145" width="250" height="410" rx="12"/>
+    <rect x="1205" y="205" width="170" height="350" rx="8"/>
+    <rect x="1400" y="120" width="220" height="440" rx="10"/>
+  </g>
+  <ellipse cx="1180" cy="130" rx="420" ry="330" fill="url(#coolGlow)"/>
+
+  <!-- architecture / glass wall -->
+  <rect x="160" y="0" width="1600" height="675" fill="url(#glass)"/>
+  <g stroke="#d9eef4" stroke-opacity=".21" stroke-width="3">
+    <path d="M280 0V685"/><path d="M470 0V685"/><path d="M660 0V685"/><path d="M850 0V685"/><path d="M1040 0V685"/><path d="M1230 0V685"/><path d="M1420 0V685"/><path d="M1610 0V685"/>
+    <path d="M160 165H1760"/><path d="M160 335H1760"/><path d="M160 505H1760"/>
+  </g>
+  <g stroke="#08171d" stroke-opacity=".52" stroke-width="12">
+    <path d="M170 0V690"/><path d="M1760 0V690"/>
+  </g>
+  <g stroke="#10252d" stroke-opacity=".42" stroke-width="6">
+    <path d="M470 0V680"/><path d="M850 0V680"/><path d="M1230 0V680"/><path d="M1610 0V680"/>
+  </g>
+
+  <!-- left/right stone frames -->
+  <path d="M0 0H205V1080H0Z" fill="#1a252a"/>
+  <path d="M0 0H120V1080H0Z" fill="url(#marble)" opacity=".84"/>
+  <path d="M1715 0H1920V1080H1715Z" fill="#1a2429"/>
+  <path d="M1800 0H1920V1080H1800Z" fill="url(#marble)" opacity=".72"/>
+  <rect x="125" width="10" height="950" fill="url(#warmLine)"/>
+  <rect x="1776" width="9" height="950" fill="url(#warmLine)"/>
+  <ellipse cx="128" cy="390" rx="118" ry="430" fill="url(#warmGlow)"/>
+  <ellipse cx="1777" cy="400" rx="120" ry="430" fill="url(#warmGlow)"/>
+
+  <!-- upper beams -->
+  <path d="M160 40H1760L1695 112H225Z" fill="#111d22" opacity=".92"/>
+  <path d="M225 112H1695" stroke="#d7e4e6" stroke-opacity=".22" stroke-width="3"/>
+  <g opacity=".75">
+    <rect x="490" y="72" width="170" height="5" rx="3" fill="#e7eceb"/>
+    <rect x="875" y="72" width="170" height="5" rx="3" fill="#e7eceb"/>
+    <rect x="1260" y="72" width="170" height="5" rx="3" fill="#e7eceb"/>
+  </g>
+
+  <!-- polished floor -->
+  <path d="M0 615H1920V1080H0Z" fill="url(#floor)"/>
+  <path d="M160 625H1760L1920 1080H0Z" fill="#93a2a5" opacity=".16"/>
+  <g stroke="#dfe7e7" stroke-opacity=".12" stroke-width="2">
+    <path d="M960 620L270 1080"/><path d="M960 620L500 1080"/><path d="M960 620L725 1080"/><path d="M960 620L960 1080"/><path d="M960 620L1195 1080"/><path d="M960 620L1420 1080"/><path d="M960 620L1650 1080"/>
+    <path d="M100 720H1820"/><path d="M55 815H1865"/><path d="M20 915H1900"/>
+  </g>
+  <g opacity=".12" transform="translate(0 1240) scale(1 -1)">
+    <rect x="160" y="560" width="1600" height="420" fill="url(#glass)"/>
+    <g stroke="#d9eef4" stroke-width="5"><path d="M470 560V980"/><path d="M850 560V980"/><path d="M1230 560V980"/><path d="M1610 560V980"/></g>
+  </g>
+  <ellipse cx="960" cy="760" rx="690" ry="180" fill="url(#coolGlow)" opacity=".3"/>
+
+  <!-- lounge silhouettes -->
+  <g fill="#14252b" opacity=".88" filter="url(#shadow)">
+    <rect x="1195" y="550" width="275" height="58" rx="16"/>
+    <rect x="1235" y="495" width="205" height="74" rx="22"/>
+    <rect x="1480" y="545" width="120" height="63" rx="18"/>
+  </g>
+  <g fill="#8aa2a8" opacity=".16">
+    <rect x="1214" y="560" width="235" height="7" rx="4"/>
+    <rect x="1500" y="558" width="82" height="7" rx="4"/>
+  </g>
+
+  <!-- planters / plants -->
+  <g transform="translate(1510 465)">
+    <ellipse cx="90" cy="160" rx="86" ry="24" fill="#101b1f" opacity=".45"/>
+    <path d="M18 104H162L145 185H35Z" fill="#5c696a"/>
+    <path d="M28 111H152L139 175H41Z" fill="#37464a"/>
+    <g fill="#274e43" opacity=".96">
+      <ellipse cx="87" cy="45" rx="25" ry="80" transform="rotate(-18 87 45)"/>
+      <ellipse cx="112" cy="38" rx="22" ry="72" transform="rotate(20 112 38)"/>
+      <ellipse cx="59" cy="54" rx="20" ry="66" transform="rotate(-42 59 54)"/>
+      <ellipse cx="130" cy="78" rx="18" ry="58" transform="rotate(48 130 78)"/>
+      <ellipse cx="48" cy="86" rx="17" ry="55" transform="rotate(-62 48 86)"/>
+    </g>
+    <g fill="#69a987" opacity=".45" filter="url(#blur8)">
+      <ellipse cx="98" cy="42" rx="32" ry="72"/><ellipse cx="62" cy="70" rx="26" ry="58"/>
+    </g>
+  </g>
+  <g transform="translate(250 510) scale(.78)">
+    <ellipse cx="90" cy="160" rx="86" ry="24" fill="#101b1f" opacity=".45"/>
+    <path d="M18 104H162L145 185H35Z" fill="#586366"/>
+    <g fill="#315b4c"><ellipse cx="85" cy="45" rx="24" ry="75" transform="rotate(-18 85 45)"/><ellipse cx="120" cy="56" rx="22" ry="64" transform="rotate(35 120 56)"/><ellipse cx="52" cy="68" rx="20" ry="60" transform="rotate(-45 52 68)"/></g>
+  </g>
+
+  <!-- soft cinematic vignettes -->
+  <rect width="1920" height="1080" fill="url(#warmGlow)" opacity=".08"/>
+  <rect width="1920" height="1080" fill="#071116" opacity=".18"/>
+  <rect width="1920" height="1080" fill="none" stroke="#e6f2f3" stroke-opacity=".05" stroke-width="2"/>
+</svg>

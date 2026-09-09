@@ -241,3 +241,7 @@ The desktop/tablet topbar uses an alpha-faded page-color scrim rather than a ful
 The Corporate Atrium experiment is intentionally presentation-only. `setView()` toggles the `home-atrium-active` class when Home is active. All new surface rules are scoped through that class and the Home `data-page`, so leaving Home restores the established Phase 4 styles. Environmental motion only writes CSS custom properties and never mutates repository state.
 
 The scene is split into visual layers (`atrium-scene`, `atrium-depth-glass`, `atrium-light-field`, `atrium-floor-reflection`, `atrium-vignette`) instead of treating the environment as one flat background. This supports parallax and reflection changes independently while keeping the existing DOM/content geometry intact.
+
+
+## Corporate Atrium Home Fidelity Pass fidelity pass
+The Home-only theme now uses a packaged photographic atrium environment asset (`assets/corporate-atrium-bg.jpg`) derived from the approved visual direction, with architectural depth, marble-floor reflections, plants, warm vertical lighting, smoked glass surfaces, environment-aware moving highlights, parallax, and responsive reduced-motion behavior. Work, Money, Records, forms, and detail views retain the prior Phase 4 theme. No people or randomized environmental events are included yet.

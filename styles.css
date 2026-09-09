@@ -1434,3 +1434,372 @@ body.home-atrium-active {
 /* Prevent a light/old-theme flash before app.js confirms the initial Home state. */
 .home-atrium-active-preload body { background:#102027; }
 .home-atrium-active-preload .main-panel { background:#102027; }
+
+/* ======================================================================
+   Corporate Atrium — fidelity pass
+   Replaces the abstract SVG scene with a packaged photographic atrium
+   environment and increases the physical/material response of Home only.
+   ====================================================================== */
+.home-atrium-active .atrium-environment {
+  background:#0a171d;
+}
+.home-atrium-active .atrium-scene {
+  inset:-72px;
+  background:
+    linear-gradient(180deg, rgba(4,14,19,.08) 0%, rgba(4,14,19,.03) 38%, rgba(3,12,17,.18) 100%),
+    url('assets/corporate-atrium-bg.jpg') center center / cover no-repeat;
+  filter:saturate(1.03) contrast(1.04) brightness(.98);
+  opacity:1;
+  transform:translate3d(var(--atrium-far-x), calc(var(--atrium-far-y) + var(--atrium-scroll-far)), 0) scale(1.075);
+}
+.home-atrium-active .atrium-depth-glass {
+  inset:-90px;
+  background:
+    linear-gradient(90deg, rgba(3,15,20,.33) 0%, transparent 9%, transparent 89%, rgba(3,13,18,.28) 100%),
+    repeating-linear-gradient(90deg, transparent 0 12.4%, rgba(224,243,246,.045) 12.55% 12.66%, transparent 12.8% 25%),
+    linear-gradient(118deg, transparent 0 31%, rgba(224,245,248,.075) 36%, transparent 44% 100%);
+  mix-blend-mode:screen;
+  opacity:.54;
+}
+.home-atrium-active .atrium-light-field {
+  inset:-120px;
+  background:
+    radial-gradient(620px 430px at var(--atrium-light-x) calc(var(--atrium-light-y) + 2%), rgba(218,246,250,.14), transparent 67%),
+    radial-gradient(170px 760px at 14% 42%, rgba(255,218,145,.19), transparent 73%),
+    radial-gradient(180px 760px at 70% 39%, rgba(255,218,145,.15), transparent 74%),
+    radial-gradient(180px 760px at 91% 42%, rgba(255,218,145,.14), transparent 75%),
+    linear-gradient(112deg, transparent 28%, rgba(232,249,250,.055) 39%, transparent 49%);
+  mix-blend-mode:screen;
+  opacity:.82;
+}
+.home-atrium-active .atrium-floor-reflection {
+  top:48%;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(211,236,238,.035) 24%, rgba(232,244,242,.10) 53%, transparent 83%),
+    linear-gradient(103deg, transparent 14%, rgba(255,228,169,.06) 31%, transparent 45%),
+    linear-gradient(79deg, transparent 50%, rgba(210,238,242,.07) 66%, transparent 80%);
+  opacity:.78;
+  filter:blur(1.5px);
+}
+.home-atrium-active .atrium-vignette {
+  background:
+    linear-gradient(180deg, rgba(4,15,20,.13) 0%, transparent 18%, transparent 72%, rgba(3,12,17,.24) 100%),
+    radial-gradient(ellipse at center, transparent 50%, rgba(2,10,14,.18) 100%);
+}
+
+/* Give Home the visual cadence of an executive glass workspace. */
+.home-atrium-active .view[data-page="home"] .atrium-content {
+  padding-top:clamp(32px,4vw,64px);
+  padding-bottom:64px;
+}
+.home-atrium-active .view[data-page="home"] .page-heading {
+  align-items:end;
+  margin-bottom:26px;
+}
+.home-atrium-active .view[data-page="home"] .page-heading h1 {
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Baskerville,Georgia,serif;
+  font-weight:500;
+  letter-spacing:-.035em;
+  line-height:.98;
+  text-shadow:0 3px 22px rgba(0,0,0,.38);
+}
+.home-atrium-active .view[data-page="home"] .page-heading .eyebrow {
+  letter-spacing:.18em;
+  color:rgba(242,247,247,.88);
+}
+.home-atrium-active .view[data-page="home"] .page-heading .subtitle {
+  color:rgba(226,235,237,.78);
+  text-shadow:0 2px 12px rgba(0,0,0,.34);
+}
+
+/* Top controls should feel like separate pieces of smoked glass suspended
+   in the atrium rather than another horizontal app bar. */
+.home-atrium-active .topbar::before {
+  background:linear-gradient(180deg, rgba(5,17,22,.30) 0%, rgba(5,17,22,.12) 45%, rgba(5,17,22,0) 100%);
+}
+.home-atrium-active .search-trigger,
+.home-atrium-active .icon-btn,
+.home-atrium-active .avatar-btn {
+  background:linear-gradient(180deg, rgba(18,35,43,.56), rgba(8,23,30,.45));
+  border-color:rgba(236,248,249,.22);
+  box-shadow:0 14px 34px rgba(0,8,12,.20), inset 0 1px 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(0,0,0,.20);
+  -webkit-backdrop-filter:blur(20px) saturate(132%);
+  backdrop-filter:blur(20px) saturate(132%);
+}
+
+/* Glass is intentionally translucent enough that architectural light can
+   be seen through it, while a local dark wash preserves text legibility. */
+.home-atrium-active .view[data-page="home"] .metric-card,
+.home-atrium-active .view[data-page="home"] .panel-card,
+.home-atrium-active .view[data-page="home"] .status-strip,
+.home-atrium-active .view[data-page="home"] .phase-card {
+  background:
+    linear-gradient(150deg, rgba(37,55,63,.46) 0%, rgba(13,31,39,.54) 48%, rgba(8,22,29,.62) 100%);
+  border:1px solid rgba(231,247,249,.23);
+  box-shadow:
+    0 28px 72px rgba(0,11,16,.28),
+    0 8px 20px rgba(0,9,13,.18),
+    inset 0 1px 0 rgba(255,255,255,.13),
+    inset 0 -1px 0 rgba(0,0,0,.22);
+  -webkit-backdrop-filter:blur(22px) saturate(130%) contrast(104%);
+  backdrop-filter:blur(22px) saturate(130%) contrast(104%);
+}
+.home-atrium-active .view[data-page="home"] .metric-card::before,
+.home-atrium-active .view[data-page="home"] .panel-card::before,
+.home-atrium-active .view[data-page="home"] .status-strip::before,
+.home-atrium-active .view[data-page="home"] .phase-card::before {
+  background:
+    radial-gradient(420px 250px at var(--atrium-light-x) var(--atrium-light-y), rgba(234,250,252,.17), transparent 58%),
+    linear-gradient(116deg, rgba(255,255,255,.10), transparent 20% 62%, rgba(255,221,157,.055) 76%, transparent 92%);
+  opacity:.90;
+}
+.home-atrium-active .view[data-page="home"] .metric-card::after,
+.home-atrium-active .view[data-page="home"] .panel-card::after {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.10), transparent 23% 70%, rgba(5,15,20,.12)),
+    linear-gradient(90deg, transparent 72%, rgba(247,223,176,.045) 91%, transparent 100%);
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.07), inset -1px -1px 0 rgba(0,0,0,.18);
+}
+.home-atrium-active .view[data-page="home"] .metric-card:hover,
+.home-atrium-active .view[data-page="home"] .panel-card:hover {
+  transform:translateY(-3px);
+  border-color:rgba(239,250,251,.36);
+  box-shadow:0 34px 82px rgba(0,10,15,.34), 0 12px 28px rgba(0,10,15,.20), inset 0 1px 0 rgba(255,255,255,.17);
+}
+
+/* Context color is now a light cast rather than an opaque card fill. */
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(1) {
+  background:linear-gradient(150deg, rgba(47,61,65,.44), rgba(10,27,34,.58));
+}
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(2) {
+  background:linear-gradient(150deg, rgba(33,57,65,.44), rgba(9,27,35,.58));
+}
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(3) {
+  background:linear-gradient(150deg, rgba(76,61,36,.38), rgba(15,28,32,.60));
+  border-color:rgba(237,201,135,.24);
+}
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(4) {
+  background:linear-gradient(150deg, rgba(28,75,60,.35), rgba(10,31,33,.61));
+  border-color:rgba(129,219,173,.23);
+}
+.home-atrium-active .view[data-page="home"] .status-strip {
+  background:linear-gradient(150deg, rgba(26,86,67,.39), rgba(9,46,40,.48));
+  border-color:rgba(145,225,186,.24);
+  box-shadow:0 18px 46px rgba(0,11,16,.20), inset 0 1px 0 rgba(255,255,255,.10);
+}
+
+/* Champagne primary action matches the architectural warm light. */
+.home-atrium-active #quickAddBtn {
+  color:#1d231f;
+  background:linear-gradient(180deg, #fff6e4 0%, #e5cf9f 100%);
+  border-color:rgba(255,251,238,.72);
+  box-shadow:0 14px 34px rgba(0,9,13,.24), 0 0 22px rgba(246,216,158,.10), inset 0 1px 0 rgba(255,255,255,.90);
+}
+
+/* A more physical side rail when it is expanded. */
+.home-atrium-active .sidebar {
+  background:linear-gradient(180deg, rgba(5,19,25,.72), rgba(5,17,23,.68));
+  border-right-color:rgba(235,248,249,.18);
+  box-shadow:24px 0 58px rgba(0,9,13,.20), inset -1px 0 0 rgba(255,255,255,.035);
+  -webkit-backdrop-filter:blur(24px) saturate(124%);
+  backdrop-filter:blur(24px) saturate(124%);
+}
+
+/* Improve foreground clarity without flattening the environment. */
+.home-atrium-active .view[data-page="home"] .metric-value,
+.home-atrium-active .view[data-page="home"] .panel-card h2,
+.home-atrium-active .view[data-page="home"] .recent-row strong,
+.home-atrium-active .view[data-page="home"] .attention-item strong {
+  text-shadow:0 2px 12px rgba(0,0,0,.28);
+}
+.home-atrium-active .view[data-page="home"] .metric-caption,
+.home-atrium-active .view[data-page="home"] .panel-copy,
+.home-atrium-active .view[data-page="home"] .recent-row small,
+.home-atrium-active .view[data-page="home"] .attention-item small {
+  color:rgba(214,226,229,.72);
+}
+
+@media (max-width:920px) {
+  .home-atrium-active .atrium-scene {
+    background-position:60% center;
+    transform:translate3d(0, var(--atrium-scroll-far), 0) scale(1.10);
+  }
+  .home-atrium-active .view[data-page="home"] .atrium-content { padding-top:28px; }
+  .home-atrium-active .view[data-page="home"] .metric-card,
+  .home-atrium-active .view[data-page="home"] .panel-card,
+  .home-atrium-active .view[data-page="home"] .status-strip {
+    -webkit-backdrop-filter:blur(17px) saturate(122%);
+    backdrop-filter:blur(17px) saturate(122%);
+  }
+}
+@media (max-width:640px) {
+  .home-atrium-active .atrium-scene {
+    background-position:68% center;
+    filter:saturate(.94) contrast(1.03) brightness(.88);
+  }
+  .home-atrium-active .atrium-depth-glass { opacity:.38; }
+  .home-atrium-active .atrium-light-field { opacity:.58; }
+}
+
+/* ======================================================================
+   Corporate Atrium — Fidelity Pass 2
+   The previous alpha looked like a dark teal dashboard rather than a real
+   environment. This pass restores visible architecture while keeping all
+   Home content live and interactive.
+   ====================================================================== */
+.home-atrium-active .view[data-page="home"] {
+  background:
+    linear-gradient(180deg, rgba(4,14,19,.08) 0%, rgba(4,14,19,.03) 50%, rgba(4,14,19,.14) 100%),
+    url('assets/corporate-atrium-bg.jpg') center center / cover fixed no-repeat;
+}
+
+.home-atrium-active .atrium-environment {
+  background:#0a171c;
+}
+
+.home-atrium-active .atrium-scene {
+  inset:-62px;
+  background:
+    linear-gradient(180deg, rgba(4,13,18,.02) 0%, rgba(4,13,18,.01) 48%, rgba(3,12,16,.12) 100%),
+    url('assets/corporate-atrium-bg.jpg') center center / cover no-repeat;
+  filter:saturate(1.02) contrast(1.06) brightness(1.03);
+  opacity:1;
+  transform:translate3d(var(--atrium-far-x), calc(var(--atrium-far-y) + var(--atrium-scroll-far)), 0) scale(1.06);
+}
+
+/* Restore crisp environmental detail around the outer atrium and the floor
+   without reintroducing any baked dashboard text into the center. */
+.home-atrium-active .atrium-depth-glass::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:url('assets/corporate-atrium-edge-detail.png') center center / cover no-repeat;
+  opacity:.72;
+  filter:saturate(1.02) contrast(1.03) brightness(.98);
+  pointer-events:none;
+}
+
+.home-atrium-active .atrium-depth-glass {
+  opacity:.62;
+}
+
+.home-atrium-active .atrium-light-field {
+  opacity:.92;
+  background:
+    radial-gradient(700px 470px at var(--atrium-light-x) calc(var(--atrium-light-y) + 3%), rgba(221,247,250,.13), transparent 66%),
+    radial-gradient(160px 820px at 15% 40%, rgba(255,216,141,.25), transparent 72%),
+    radial-gradient(150px 820px at 69% 39%, rgba(255,218,148,.20), transparent 74%),
+    radial-gradient(150px 820px at 91% 41%, rgba(255,218,148,.18), transparent 74%),
+    linear-gradient(112deg, transparent 27%, rgba(234,249,250,.07) 39%, transparent 50% 100%);
+}
+
+.home-atrium-active .atrium-floor-reflection {
+  top:45%;
+  opacity:.92;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(225,241,242,.035) 22%, rgba(238,247,245,.11) 54%, transparent 84%),
+    linear-gradient(104deg, transparent 12%, rgba(255,226,165,.09) 31%, transparent 47%),
+    linear-gradient(78deg, transparent 50%, rgba(220,241,244,.08) 67%, transparent 82%);
+}
+
+.home-atrium-active .atrium-vignette {
+  background:
+    linear-gradient(180deg, rgba(3,13,18,.08) 0%, transparent 18%, transparent 76%, rgba(3,12,16,.15) 100%),
+    radial-gradient(ellipse at center, transparent 60%, rgba(2,10,14,.12) 100%);
+}
+
+/* Less opaque glass so the office is unmistakably present behind the app. */
+.home-atrium-active .view[data-page="home"] .metric-card,
+.home-atrium-active .view[data-page="home"] .panel-card,
+.home-atrium-active .view[data-page="home"] .status-strip,
+.home-atrium-active .view[data-page="home"] .phase-card {
+  background:
+    linear-gradient(150deg, rgba(43,59,66,.34) 0%, rgba(13,31,39,.42) 50%, rgba(7,21,28,.50) 100%);
+  border-color:rgba(234,248,250,.28);
+  box-shadow:
+    0 30px 76px rgba(0,9,14,.25),
+    0 9px 24px rgba(0,9,14,.16),
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 -1px 0 rgba(0,0,0,.20);
+  -webkit-backdrop-filter:blur(20px) saturate(132%) contrast(103%);
+  backdrop-filter:blur(20px) saturate(132%) contrast(103%);
+}
+
+/* Environmental reflection moves across the live cards as pointer/touch
+   position changes. */
+.home-atrium-active .view[data-page="home"] .metric-card::before,
+.home-atrium-active .view[data-page="home"] .panel-card::before,
+.home-atrium-active .view[data-page="home"] .status-strip::before,
+.home-atrium-active .view[data-page="home"] .phase-card::before {
+  background:
+    radial-gradient(520px 300px at var(--atrium-light-x) var(--atrium-light-y), rgba(241,252,253,.18), transparent 56%),
+    linear-gradient(116deg, rgba(255,255,255,.12), transparent 20% 58%, rgba(255,221,157,.075) 74%, transparent 92%);
+  opacity:.92;
+}
+
+.home-atrium-active .view[data-page="home"] .metric-card::after,
+.home-atrium-active .view[data-page="home"] .panel-card::after {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.11), transparent 24% 69%, rgba(4,14,19,.10)),
+    linear-gradient(90deg, transparent 70%, rgba(249,226,184,.06) 91%, transparent 100%);
+}
+
+/* Context colors become light cast/reflections rather than solid colored fills. */
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(1) {
+  background:linear-gradient(150deg, rgba(42,60,67,.33), rgba(8,25,32,.47));
+}
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(2) {
+  background:linear-gradient(150deg, rgba(38,60,67,.31), rgba(8,25,32,.46));
+}
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(3) {
+  background:linear-gradient(150deg, rgba(95,70,34,.25), rgba(12,27,31,.49));
+  border-color:rgba(241,204,140,.30);
+}
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(4) {
+  background:linear-gradient(150deg, rgba(25,88,66,.25), rgba(8,29,31,.50));
+  border-color:rgba(132,225,178,.28);
+}
+
+/* The Phase 4 strip should live in the same material system instead of
+   reading as an unrelated opaque green banner. */
+.home-atrium-active .view[data-page="home"] .status-strip {
+  background:linear-gradient(150deg, rgba(30,77,64,.31), rgba(8,39,35,.41));
+  border-color:rgba(137,224,183,.30);
+}
+
+/* Slightly more physical controls and edge-light on Home. */
+.home-atrium-active .search-trigger,
+.home-atrium-active .icon-btn,
+.home-atrium-active .avatar-btn {
+  background:linear-gradient(180deg, rgba(25,43,51,.48), rgba(8,25,32,.42));
+  border-color:rgba(237,249,250,.25);
+  -webkit-backdrop-filter:blur(18px) saturate(130%);
+  backdrop-filter:blur(18px) saturate(130%);
+}
+
+.home-atrium-active #quickAddBtn {
+  background:linear-gradient(180deg,#fff8e9 0%,#ead4a6 100%);
+  box-shadow:0 14px 34px rgba(0,9,13,.24), 0 0 28px rgba(246,216,158,.13), inset 0 1px 0 rgba(255,255,255,.94);
+}
+
+.home-atrium-active .sidebar {
+  background:linear-gradient(180deg, rgba(6,20,26,.62), rgba(5,17,23,.58));
+  border-right-color:rgba(237,249,250,.20);
+  -webkit-backdrop-filter:blur(22px) saturate(126%);
+  backdrop-filter:blur(22px) saturate(126%);
+}
+
+/* The environment should remain visible around the live UI on tablet widths. */
+@media (min-width:921px) and (max-width:1400px) {
+  .home-atrium-active .view[data-page="home"] .atrium-content {
+    max-width:1200px;
+  }
+}
+
+@media (max-width:920px) {
+  .home-atrium-active .atrium-scene {
+    background-position:60% center;
+    filter:saturate(.98) contrast(1.04) brightness(.94);
+  }
+  .home-atrium-active .atrium-depth-glass::before { opacity:.58; }
+}
