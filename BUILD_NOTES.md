@@ -153,3 +153,22 @@ These remain later roadmap phases so Phase 3 can be tested independently.
 - Reworked the sticky top utility veil after iPad testing showed that full-width `backdrop-filter` blur caused bright text/cards underneath to bloom into a conspicuous gray band.
 - The topbar now uses a short, page-colored alpha gradient with no full-width backdrop blur. Search/profile controls keep their own surfaces, so readability remains protected while scrolling without smearing underlying content.
 - Reduced the veil extension below the 72px topbar from 34px to 18px so the transition returns to the document sooner and feels less like an overlay panel.
+
+## Corporate Atrium Home Alpha
+
+- Added a Home-only `home-atrium-active` UI state, toggled automatically by navigation.
+- Added `assets/corporate-atrium.svg`, a local 1920×1080 layered atrium environment designed for depth, glass, polished flooring, structural lighting, and plants.
+- Added separate scene/depth/light/floor/vignette layers so movement is not a single flat wallpaper transform.
+- Pointer movement (fine-pointer devices) and vertical scroll update CSS environment variables for restrained parallax and reflection response.
+- Home glass surfaces use local backdrop blur, directional inner highlights, environment-aware reflection gradients, and subtle contextual color casting.
+- Other pages retain the Phase 4 Refinement 3 visual system unchanged.
+- No data schema, financial logic, persistence, filtering, invoicing, payments, expenses, receipt handling, or audit behavior changed.
+- No walking person or randomized ambient event system is included.
+
+## Phase 4 — Corporate Atrium Home Alpha
+- Corporate Atrium is now implemented in the functioning Home view, not baked into a screenshot.
+- Existing Home data bindings, Quick Add, search, sidebar collapse state, Attention actions, Recent Work crossfade, and navigation remain live.
+- The environment uses a local layered SVG plus separate CSS depth/light/reflection layers; no remote asset is required.
+- Desktop pointer movement and Home scrolling drive restrained parallax and glass reflection movement; touch movement also steers the reflection field on tablet/mobile while preserving native scrolling.
+- Work, Money, Records, modals, invoice builder, expense forms, and detail panels intentionally retain the prior Phase 4 theme until the Home treatment is approved.
+- Walking people and randomized environmental events remain intentionally deferred.

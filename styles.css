@@ -1023,3 +1023,414 @@ h2 { font-size:20px; margin:0; letter-spacing:-.035em; }
 
 [hidden] { display:none !important; }
 .expense-amount-row.single .field:first-child { grid-column:1/-1; }
+
+/* ======================================================================
+   Corporate Atrium — Home visual-system prototype
+   Scoped to Home only through .home-atrium-active. Work / Money / Records
+   retain the existing Phase 4 presentation until this direction is approved.
+   ====================================================================== */
+:root {
+  --atrium-far-x: 0px;
+  --atrium-far-y: 0px;
+  --atrium-near-x: 0px;
+  --atrium-near-y: 0px;
+  --atrium-scroll-far: 0px;
+  --atrium-scroll-near: 0px;
+  --atrium-scroll-light: 0px;
+  --atrium-light-x: 50%;
+  --atrium-light-y: 22%;
+  --atrium-card-shift-x: 0px;
+  --atrium-card-shift-y: 0px;
+  --atrium-champagne: #ead9b7;
+  --atrium-champagne-strong: #f4e6c9;
+  --atrium-glass-line: rgba(222,244,246,.18);
+  --atrium-glass-line-hot: rgba(237,249,250,.33);
+  --atrium-glass: rgba(12,28,35,.56);
+  --atrium-glass-deep: rgba(7,19,25,.72);
+  --atrium-text: #f6f8f8;
+  --atrium-muted: #b5c3c7;
+  --atrium-shadow: 0 26px 64px rgba(3,13,18,.28), 0 8px 22px rgba(3,13,18,.18);
+}
+
+body.home-atrium-active {
+  background:#102027;
+}
+
+.home-atrium-active .main-panel {
+  position:relative;
+  isolation:isolate;
+  background:transparent;
+}
+
+.home-atrium-active .view[data-page="home"] {
+  position:relative;
+  min-height:calc(100vh - 72px);
+  isolation:isolate;
+  overflow:clip;
+}
+
+.home-atrium-active .atrium-environment {
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  overflow:hidden;
+  background:#15252b;
+}
+
+.home-atrium-active .atrium-layer {
+  position:absolute;
+  inset:-34px;
+  will-change:transform,opacity;
+  pointer-events:none;
+}
+
+.home-atrium-active .atrium-scene {
+  inset:-54px;
+  background:
+    linear-gradient(180deg, rgba(8,22,28,.10), rgba(6,17,23,.34)),
+    url('assets/corporate-atrium.svg') center 28% / cover no-repeat;
+  transform:translate3d(var(--atrium-far-x), calc(var(--atrium-far-y) + var(--atrium-scroll-far)), 0) scale(1.055);
+  transition:transform .32s cubic-bezier(.2,.75,.2,1);
+  filter:saturate(.88) contrast(1.03) brightness(.92);
+}
+
+.home-atrium-active .atrium-depth-glass {
+  inset:-70px;
+  background:
+    linear-gradient(90deg, rgba(3,16,22,.42) 0%, transparent 12%, transparent 86%, rgba(4,14,20,.42) 100%),
+    repeating-linear-gradient(90deg, transparent 0 11.8%, rgba(219,240,243,.035) 11.95% 12.05%, transparent 12.2% 23.8%),
+    linear-gradient(118deg, transparent 0 28%, rgba(190,232,240,.07) 34%, transparent 43% 100%);
+  mix-blend-mode:screen;
+  opacity:.72;
+  transform:translate3d(var(--atrium-near-x), calc(var(--atrium-near-y) + var(--atrium-scroll-near)), 0) scale(1.04);
+  transition:transform .28s cubic-bezier(.2,.75,.2,1);
+}
+
+.home-atrium-active .atrium-light-field {
+  inset:-100px;
+  background:
+    radial-gradient(560px 390px at var(--atrium-light-x) calc(var(--atrium-light-y) + 5%), rgba(211,245,249,.22), transparent 67%),
+    radial-gradient(270px 640px at 8% 40%, rgba(239,205,139,.16), transparent 70%),
+    radial-gradient(270px 640px at 92% 42%, rgba(239,205,139,.13), transparent 72%),
+    linear-gradient(115deg, transparent 30%, rgba(226,244,246,.085) 41%, transparent 52%);
+  mix-blend-mode:screen;
+  opacity:.82;
+  transform:translate3d(calc(var(--atrium-near-x) * -0.55), calc(var(--atrium-scroll-light) + var(--atrium-near-y)), 0);
+  animation:atriumAmbientBreathe 14s ease-in-out infinite alternate;
+}
+
+.home-atrium-active .atrium-floor-reflection {
+  top:46%;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(196,226,231,.03) 18%, rgba(207,233,236,.08) 43%, transparent 78%),
+    linear-gradient(102deg, transparent 18%, rgba(235,244,242,.055) 35%, transparent 48%),
+    linear-gradient(78deg, transparent 52%, rgba(232,201,145,.045) 68%, transparent 78%);
+  transform:translate3d(calc(var(--atrium-near-x) * .35), calc(var(--atrium-scroll-near) * .38), 0);
+  filter:blur(2px);
+  opacity:.84;
+}
+
+.home-atrium-active .atrium-vignette {
+  inset:0;
+  background:
+    linear-gradient(180deg, rgba(5,16,22,.31) 0%, transparent 21%, transparent 68%, rgba(4,14,19,.26) 100%),
+    radial-gradient(ellipse at center, transparent 46%, rgba(3,13,18,.22) 100%);
+}
+
+@keyframes atriumAmbientBreathe {
+  from { opacity:.70; filter:saturate(.94); }
+  to { opacity:.92; filter:saturate(1.08); }
+}
+
+/* Keep Home content above the environment while preserving the existing geometry. */
+.home-atrium-active .view[data-page="home"] .atrium-content {
+  position:relative;
+  z-index:2;
+}
+
+/* Home top utility area: local glass controls, no full-width blur/haze. */
+.home-atrium-active .topbar {
+  background:transparent;
+}
+.home-atrium-active .topbar::before {
+  background:linear-gradient(180deg, rgba(8,22,29,.64) 0%, rgba(8,22,29,.34) 48%, rgba(8,22,29,.10) 74%, rgba(8,22,29,0) 100%);
+}
+.home-atrium-active .search-trigger,
+.home-atrium-active .icon-btn,
+.home-atrium-active .avatar-btn {
+  color:#edf4f5;
+  background:linear-gradient(180deg, rgba(19,39,48,.74), rgba(10,27,34,.66));
+  border-color:rgba(220,242,244,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 10px 28px rgba(3,12,17,.22);
+  -webkit-backdrop-filter:blur(13px) saturate(120%);
+  backdrop-filter:blur(13px) saturate(120%);
+}
+.home-atrium-active .search-trigger:hover,
+.home-atrium-active .icon-btn:hover,
+.home-atrium-active .avatar-btn:hover {
+  background:linear-gradient(180deg, rgba(28,53,63,.78), rgba(12,31,39,.72));
+  border-color:rgba(230,247,249,.27);
+}
+.home-atrium-active .search-trigger kbd {
+  color:#e7eff0;
+  background:rgba(237,247,248,.08);
+  border-color:rgba(237,247,248,.13);
+}
+
+/* Expanded sidebar participates in the same material system only while Home is active. */
+.home-atrium-active .sidebar {
+  color:var(--atrium-text);
+  background:linear-gradient(180deg, rgba(8,22,29,.84), rgba(7,18,24,.76));
+  border-right-color:rgba(224,243,244,.12);
+  box-shadow:18px 0 48px rgba(2,12,17,.15);
+  -webkit-backdrop-filter:blur(20px) saturate(116%);
+  backdrop-filter:blur(20px) saturate(116%);
+}
+.home-atrium-active .brand-copy span,
+.home-atrium-active .business-text small,
+.home-atrium-active .chevron,
+.home-atrium-active .profile-chip span,
+.home-atrium-active .sync-chip small { color:#98aab0; }
+.home-atrium-active .business-switcher {
+  color:#f2f6f6;
+  background:rgba(19,39,47,.58);
+  border-color:rgba(226,244,246,.12);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.home-atrium-active .business-switcher:hover { background:rgba(27,49,58,.72); }
+.home-atrium-active .nav-item { color:#aebbc0; }
+.home-atrium-active .nav-item:hover { color:#f5f7f7; background:rgba(235,245,245,.055); }
+.home-atrium-active .nav-item.active {
+  color:#202420;
+  background:linear-gradient(180deg, #f1e5cb, #ddca9f);
+  border:1px solid rgba(255,248,227,.34);
+  box-shadow:0 8px 24px rgba(6,16,20,.20), inset 0 1px 0 rgba(255,255,255,.7);
+}
+.home-atrium-active .sync-chip { border-color:rgba(225,243,245,.10); color:#eaf0f1; }
+.home-atrium-active .sync-chip:hover { background:rgba(235,245,245,.05); }
+.home-atrium-active .profile-chip strong { color:#eef3f3; }
+.home-atrium-active .avatar { color:#e8eff0; background:rgba(224,241,243,.10); }
+
+/* Existing discovery glow is preserved, shifted slightly warmer to harmonize with the atrium. */
+.home-atrium-active .sidebar-collapse-btn {
+  background:linear-gradient(180deg, rgba(39,67,81,.92), rgba(20,44,57,.94));
+  color:#edf7f8;
+  border-color:rgba(163,208,224,.38);
+  box-shadow:0 11px 30px rgba(2,12,17,.27), inset 0 1px 0 rgba(255,255,255,.11);
+}
+.home-atrium-active .sidebar-collapse-btn::before {
+  background:conic-gradient(from 0deg, transparent 0 30%, rgba(163,219,238,.50) 40%, rgba(198,235,246,.98) 49%, rgba(131,204,230,.56) 58%, transparent 69% 100%);
+  filter:drop-shadow(0 0 5px rgba(153,216,238,.42)) drop-shadow(0 0 11px rgba(127,197,225,.24));
+}
+
+/* Home page heading and action. */
+.home-atrium-active .view[data-page="home"] .page-heading h1 {
+  color:var(--atrium-text);
+  text-shadow:0 2px 18px rgba(4,15,20,.32);
+}
+.home-atrium-active .view[data-page="home"] .page-heading .eyebrow {
+  color:#d9e5e7;
+  text-shadow:0 1px 10px rgba(2,10,14,.24);
+}
+.home-atrium-active .view[data-page="home"] .page-heading .subtitle {
+  color:#b8c6ca;
+  text-shadow:0 1px 8px rgba(2,10,14,.22);
+}
+.home-atrium-active #quickAddBtn {
+  color:#1d261f;
+  background:linear-gradient(180deg, #f5ead4, #ddca9f);
+  border:1px solid rgba(255,250,233,.38);
+  box-shadow:0 13px 34px rgba(5,16,20,.25), inset 0 1px 0 rgba(255,255,255,.82);
+}
+.home-atrium-active #quickAddBtn:hover { background:linear-gradient(180deg, #fbf0dc, #e6d2a6); }
+
+/* Smoked glass surface system — Home only. */
+.home-atrium-active .view[data-page="home"] .metric-card,
+.home-atrium-active .view[data-page="home"] .panel-card,
+.home-atrium-active .view[data-page="home"] .status-strip {
+  position:relative;
+  overflow:hidden;
+  color:var(--atrium-text);
+  border:1px solid var(--atrium-glass-line);
+  background:
+    linear-gradient(180deg, rgba(28,50,58,.68), rgba(9,25,32,.62)),
+    rgba(7,20,27,.48);
+  box-shadow:var(--atrium-shadow), inset 0 1px 0 rgba(245,251,252,.075);
+  -webkit-backdrop-filter:blur(15px) saturate(118%);
+  backdrop-filter:blur(15px) saturate(118%);
+}
+
+.home-atrium-active .view[data-page="home"] .metric-card::before,
+.home-atrium-active .view[data-page="home"] .panel-card::before,
+.home-atrium-active .view[data-page="home"] .status-strip::before {
+  content:"";
+  position:absolute;
+  inset:-18%;
+  z-index:0;
+  pointer-events:none;
+  background:
+    radial-gradient(360px 210px at var(--atrium-light-x) var(--atrium-light-y), rgba(225,247,250,.15), transparent 61%),
+    linear-gradient(118deg, rgba(255,255,255,.075), transparent 22% 68%, rgba(231,204,152,.035) 79%, transparent 94%);
+  transform:translate3d(var(--atrium-card-shift-x), var(--atrium-card-shift-y), 0);
+  transition:transform .3s cubic-bezier(.2,.75,.2,1), opacity .2s ease;
+  mix-blend-mode:screen;
+  opacity:.82;
+}
+.home-atrium-active .view[data-page="home"] .metric-card::after,
+.home-atrium-active .view[data-page="home"] .panel-card::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background:linear-gradient(140deg, rgba(255,255,255,.085), transparent 22% 76%, rgba(0,0,0,.10));
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.045), inset -1px -1px 0 rgba(0,0,0,.14);
+}
+.home-atrium-active .view[data-page="home"] .metric-card > *,
+.home-atrium-active .view[data-page="home"] .panel-card > *,
+.home-atrium-active .view[data-page="home"] .status-strip > * { position:relative; z-index:1; }
+
+.home-atrium-active .view[data-page="home"] .metric-card {
+  transition:transform .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.home-atrium-active .view[data-page="home"] .metric-card:hover {
+  transform:translateY(-2px);
+  border-color:var(--atrium-glass-line-hot);
+  box-shadow:0 30px 72px rgba(3,13,18,.31), 0 10px 24px rgba(3,13,18,.20), inset 0 1px 0 rgba(255,255,255,.11);
+}
+.home-atrium-active .view[data-page="home"] .panel-card:hover { border-color:rgba(231,246,248,.23); }
+
+/* Context-colored metric atmosphere, not just colored text. */
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(1) {
+  background:linear-gradient(180deg, rgba(39,57,62,.70), rgba(11,27,33,.64));
+}
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(2) {
+  background:linear-gradient(180deg, rgba(31,53,63,.72), rgba(9,27,35,.64));
+}
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(3) {
+  background:linear-gradient(180deg, rgba(67,54,31,.61), rgba(24,30,30,.67));
+  border-color:rgba(226,190,123,.18);
+}
+.home-atrium-active .view[data-page="home"] .metric-card:nth-child(4) {
+  background:linear-gradient(180deg, rgba(25,65,54,.58), rgba(10,31,31,.68));
+  border-color:rgba(116,211,166,.17);
+}
+
+.home-atrium-active .view[data-page="home"] .metric-head > span:first-child,
+.home-atrium-active .view[data-page="home"] .metric-caption { color:#aebdc1; }
+.home-atrium-active .view[data-page="home"] .metric-value { color:#f8faf9; text-shadow:0 1px 14px rgba(3,13,18,.22); }
+.home-atrium-active .view[data-page="home"] .metric-label-uninvoiced { color:#efbd72 !important; }
+.home-atrium-active .view[data-page="home"] .metric-label-paid { color:#82d7ad !important; }
+.home-atrium-active .view[data-page="home"] .muted-chip,
+.home-atrium-active .view[data-page="home"] .quiet-badge {
+  color:#ced8da;
+  background:rgba(225,241,243,.07);
+  border:1px solid rgba(225,241,243,.065);
+}
+.home-atrium-active .view[data-page="home"] .quiet-badge.green { color:#a8e2c4; background:rgba(61,135,101,.18); }
+
+.home-atrium-active .view[data-page="home"] .status-strip {
+  color:#c9eadb;
+  background:linear-gradient(180deg, rgba(28,77,61,.49), rgba(12,49,42,.48));
+  border-color:rgba(129,209,171,.18);
+}
+.home-atrium-active .view[data-page="home"] .status-strip .status-dot {
+  box-shadow:0 0 0 5px rgba(111,198,159,.10), 0 0 18px rgba(111,198,159,.28);
+}
+
+.home-atrium-active .view[data-page="home"] .panel-card .eyebrow { color:#b8c7ca; }
+.home-atrium-active .view[data-page="home"] .panel-card h2 { color:#f4f7f7; }
+.home-atrium-active .view[data-page="home"] .panel-copy { color:#aebcc0; }
+.home-atrium-active .view[data-page="home"] .text-btn { color:#b9d9f4; }
+.home-atrium-active .view[data-page="home"] .recent-row,
+.home-atrium-active .view[data-page="home"] .attention-item { border-color:rgba(226,242,244,.10); }
+.home-atrium-active .view[data-page="home"] .recent-row strong,
+.home-atrium-active .view[data-page="home"] .attention-item strong { color:#edf3f4; }
+.home-atrium-active .view[data-page="home"] .recent-row small,
+.home-atrium-active .view[data-page="home"] .attention-item small { color:#9eb0b5; }
+.home-atrium-active .view[data-page="home"] .recent-row:hover { background:rgba(235,245,245,.045); }
+
+.home-atrium-active .view[data-page="home"] .empty-illustration .line { background:rgba(151,190,200,.13); }
+.home-atrium-active .view[data-page="home"] .empty-illustration .check {
+  color:#8bd7b4;
+  background:rgba(43,111,88,.22);
+  box-shadow:0 0 28px rgba(64,173,127,.13);
+}
+
+.home-atrium-active .view[data-page="home"] .progress-track { background:rgba(226,241,243,.085); }
+.home-atrium-active .view[data-page="home"] .progress-fill { box-shadow:0 0 18px rgba(127,156,255,.20); }
+.home-atrium-active .view[data-page="home"] .roadmap-steps span { color:#82969c; }
+.home-atrium-active .view[data-page="home"] .roadmap-steps .done { color:#c3d2d5; }
+.home-atrium-active .view[data-page="home"] .roadmap-steps .current { color:#ebd8b0; }
+
+/* Slightly stronger "glass thickness" on the two large Home panels. */
+.home-atrium-active .view[data-page="home"] .two-column .panel-card {
+  box-shadow:0 30px 74px rgba(2,12,17,.27), 0 9px 22px rgba(2,12,17,.18), inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+/* Tablet/phone: keep the atmosphere but reduce GPU-heavy depth effects. */
+@media (max-width: 920px) {
+  .home-atrium-active .atrium-scene { transform:translate3d(0, var(--atrium-scroll-far), 0) scale(1.08); background-position:58% 24%; }
+  .home-atrium-active .atrium-depth-glass { transform:translate3d(0, var(--atrium-scroll-near), 0); opacity:.54; }
+  .home-atrium-active .atrium-light-field { transform:translate3d(0, var(--atrium-scroll-light), 0); opacity:.70; }
+  .home-atrium-active .view[data-page="home"] .metric-card,
+  .home-atrium-active .view[data-page="home"] .panel-card,
+  .home-atrium-active .view[data-page="home"] .status-strip {
+    -webkit-backdrop-filter:blur(11px) saturate(112%);
+    backdrop-filter:blur(11px) saturate(112%);
+  }
+}
+
+@media (max-width: 640px) {
+  .home-atrium-active .atrium-scene { background-position:61% 22%; filter:saturate(.82) contrast(1.02) brightness(.84); }
+  .home-atrium-active .atrium-vignette { background:linear-gradient(180deg, rgba(5,16,22,.43), transparent 22%, rgba(4,14,19,.25) 100%); }
+  .home-atrium-active .view[data-page="home"] .metric-card,
+  .home-atrium-active .view[data-page="home"] .panel-card,
+  .home-atrium-active .view[data-page="home"] .status-strip {
+    background-color:rgba(8,23,30,.72);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-atrium-active .atrium-scene,
+  .home-atrium-active .atrium-depth-glass,
+  .home-atrium-active .atrium-light-field,
+  .home-atrium-active .atrium-floor-reflection,
+  .home-atrium-active .view[data-page="home"] .metric-card::before,
+  .home-atrium-active .view[data-page="home"] .panel-card::before,
+  .home-atrium-active .view[data-page="home"] .status-strip::before {
+    transition:none !important;
+    animation:none !important;
+    transform:none !important;
+  }
+}
+
+/* Home uses an opacity-only view entrance so the fixed atrium layers remain viewport-relative. */
+.home-atrium-active .view[data-page="home"].active {
+  transform:none;
+  animation:atriumHomeViewIn .22s var(--ease) forwards;
+}
+@keyframes atriumHomeViewIn { from { opacity:0; } to { opacity:1; } }
+
+.home-atrium-active .view[data-page="home"] .attention-list button {
+  border-color:rgba(226,242,244,.10);
+  color:#edf3f4;
+  background:transparent;
+}
+.home-atrium-active .view[data-page="home"] .attention-list button:hover { background:rgba(235,245,245,.045); }
+.home-atrium-active .view[data-page="home"] .attention-list button small { color:#9eb0b5; }
+
+/* Base scene is also applied to the Home canvas itself as a robust fallback;
+   the layered copy above it supplies the extra parallax/reflection depth. */
+.home-atrium-active .view[data-page="home"] {
+  background:
+    linear-gradient(180deg, rgba(6,19,26,.28) 0%, rgba(6,19,26,.20) 42%, rgba(5,17,23,.36) 100%),
+    url('assets/corporate-atrium.svg') center 28% / cover fixed no-repeat;
+}
+.home-atrium-active .atrium-scene { opacity:.46; mix-blend-mode:soft-light; }
+
+/* Prevent a light/old-theme flash before app.js confirms the initial Home state. */
+.home-atrium-active-preload body { background:#102027; }
+.home-atrium-active-preload .main-panel { background:#102027; }

@@ -235,3 +235,9 @@ The sidebar remains a layout state rather than an overlay. If no preference exis
 
 ### Sticky utility scrim
 The desktop/tablet topbar uses an alpha-faded page-color scrim rather than a full-width `backdrop-filter`. This is deliberate: backdrop blur spreads bright underlying pixels and can create a visible light band over text/cards on dark themes. The controls themselves provide their own surface contrast, while the scrim only manages the transition between document content and the sticky utility region.
+
+## Home visual-theme isolation — Corporate Atrium implementation
+
+The Corporate Atrium experiment is intentionally presentation-only. `setView()` toggles the `home-atrium-active` class when Home is active. All new surface rules are scoped through that class and the Home `data-page`, so leaving Home restores the established Phase 4 styles. Environmental motion only writes CSS custom properties and never mutates repository state.
+
+The scene is split into visual layers (`atrium-scene`, `atrium-depth-glass`, `atrium-light-field`, `atrium-floor-reflection`, `atrium-vignette`) instead of treating the environment as one flat background. This supports parallax and reflection changes independently while keeping the existing DOM/content geometry intact.
