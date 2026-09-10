@@ -1441,3 +1441,124 @@ html.atrium-lite body.home-atrium-active .home-atrium-view .panel-card:hover { t
 
 /* Embedded atrium fidelity fix: the photographic plate is inlined into this CSS so GitHub Pages/file-copy workflows cannot drop the environment asset. */
 body.home-atrium-active .atrium-motto { display:none; }
+
+
+/* ========================================================================== */
+/* Corporate Atrium — lighting refinement                                     */
+/* More visible than the first pulse, but still background-only and Safari-safe.
+   Important: only opacity animates on the large lighting overlays; the photo,
+   crop, transforms, blur, and scroll position stay fixed. */
+/* ========================================================================== */
+
+@keyframes atriumLightPairA {
+  0%, 100% { opacity:.13; }
+  38%      { opacity:.32; }
+  68%      { opacity:.20; }
+}
+@keyframes atriumLightPairB {
+  0%, 100% { opacity:.10; }
+  46%      { opacity:.28; }
+  74%      { opacity:.16; }
+}
+@keyframes atriumAmbientSparkle {
+  0%, 100% { opacity:.06; }
+  52%      { opacity:.18; }
+}
+
+/* The original architectural light remains a restrained base tint. */
+.atrium-architectural-light {
+  opacity:.18;
+  animation:none;
+  overflow:hidden;
+}
+
+/* Two independently timed pairs make the real light bars feel alive without
+   moving the photograph or causing the scroll-linked repainting seen earlier. */
+.atrium-architectural-light::before,
+.atrium-architectural-light::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background-repeat:no-repeat;
+  will-change:opacity;
+}
+.atrium-architectural-light::before {
+  background:
+    linear-gradient(90deg,
+      transparent 6.7%,
+      rgba(255,211,139,.025) 7.45%,
+      rgba(255,229,180,.105) 8.05%,
+      rgba(255,244,218,.31) 8.52%,
+      rgba(255,216,145,.085) 9.05%,
+      transparent 9.85%),
+    linear-gradient(90deg,
+      transparent 62.35%,
+      rgba(255,211,139,.025) 63.05%,
+      rgba(255,229,180,.095) 63.62%,
+      rgba(255,244,218,.28) 64.08%,
+      rgba(255,216,145,.075) 64.62%,
+      transparent 65.40%);
+  opacity:.13;
+  animation:atriumLightPairA 8.4s ease-in-out infinite;
+}
+.atrium-architectural-light::after {
+  background:
+    linear-gradient(90deg,
+      transparent 30.15%,
+      rgba(255,210,137,.02) 30.92%,
+      rgba(255,227,174,.085) 31.58%,
+      rgba(255,241,208,.25) 32.16%,
+      rgba(255,213,143,.07) 32.70%,
+      transparent 33.50%),
+    linear-gradient(90deg,
+      transparent 87.0%,
+      rgba(255,210,137,.022) 87.70%,
+      rgba(255,229,179,.095) 88.38%,
+      rgba(255,243,214,.28) 89.02%,
+      rgba(255,215,146,.075) 89.62%,
+      transparent 90.45%),
+    radial-gradient(ellipse at 73% 27%,rgba(226,241,249,.12),transparent 17%);
+  opacity:.10;
+  animation:atriumLightPairB 10.6s ease-in-out -2.2s infinite;
+}
+
+/* A very faint daylight shine, intentionally slower than the gold bars. */
+.atrium-atmosphere::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at 71% 22%,rgba(226,244,253,.18),transparent 20%),
+    radial-gradient(ellipse at 43% 31%,rgba(255,236,203,.075),transparent 16%);
+  opacity:.06;
+  will-change:opacity;
+  animation:atriumAmbientSparkle 13.5s ease-in-out -4s infinite;
+}
+
+/* Keep the iPad/Safari stability profile: the effect remains visible there,
+   but only opacity is animated. No transforms, masks, filters, or position shifts. */
+html.atrium-lite .atrium-architectural-light {
+  opacity:.14;
+  animation:none;
+  background-position:0 0 !important;
+}
+html.atrium-lite .atrium-architectural-light::before {
+  animation-duration:9.2s;
+}
+html.atrium-lite .atrium-architectural-light::after {
+  animation-duration:11.4s;
+}
+html.atrium-lite .atrium-atmosphere::after {
+  animation-duration:14.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atrium-architectural-light::before,
+  .atrium-architectural-light::after,
+  .atrium-atmosphere::after {
+    animation:none !important;
+    opacity:.11;
+  }
+}

@@ -1,3 +1,10 @@
+## Corporate Atrium lighting refinement
+
+- Increased the visibility of the Home atrium's dynamic light bars without animating the background image.
+- Added two independently timed warm architectural-light pairs plus a slower ambient daylight shine.
+- Large layers animate opacity only, preserving the Safari/iPad stability profile and avoiding scroll-linked repaint glitches.
+- Existing typography/readability polish remains unchanged.
+
 ## Corporate Atrium embedded-scene fix
 
 - The approved atrium photograph is now embedded directly in `styles.css` as a data URI. This removes the failure mode where the app silently fell back to the synthetic dark SVG because the nested `assets/atrium-primary.jpg` file was missing, stale, or not uploaded to GitHub Pages.
