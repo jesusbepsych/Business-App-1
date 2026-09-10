@@ -1,3 +1,10 @@
+## Corporate Atrium embedded-scene fix
+
+- The approved atrium photograph is now embedded directly in `styles.css` as a data URI. This removes the failure mode where the app silently fell back to the synthetic dark SVG because the nested `assets/atrium-primary.jpg` file was missing, stale, or not uploaded to GitHub Pages.
+- Added cache-busting query versions to `styles.css` and `app.js` for deployment testing.
+- Reduced synthetic light-rail opacity and global darkening so the actual glass walls, skyline, plants, seating, and reflective marble floor remain clearly visible.
+- iPad/Safari keeps the stabilized non-scroll-linked motion profile.
+
 ## Stability pass highlights
 
 - Replaced third-party atrium image dependency with a bundled local background asset so Home no longer depends on remote image hosts.
