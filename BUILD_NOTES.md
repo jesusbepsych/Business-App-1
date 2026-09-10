@@ -156,6 +156,12 @@ These remain later roadmap phases so Phase 3 can be tested independently.
 
 ## Corporate Atrium Home Rebuild — fidelity reset
 
+### Stability pass addendum
+- Bundled a local atrium background plate (`assets/atrium-primary.jpg`).
+- Disabled scroll-driven scene motion and moved touch/Safari devices to a lighter, more stable visual profile.
+- Reduced backdrop blur and removed the heaviest secondary layer effects on lite-profile devices.
+
+
 This build intentionally restarts the Corporate Atrium visual layer from the clean Phase 4 Usability Refinement 3 base rather than patching the earlier teal/blurred attempts.
 
 ### Home-only visual changes

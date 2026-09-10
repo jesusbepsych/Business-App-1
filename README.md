@@ -1,3 +1,9 @@
+## Stability pass highlights
+
+- Replaced third-party atrium image dependency with a bundled local background asset so Home no longer depends on remote image hosts.
+- Removed scroll-linked atrium motion and added an automatic lite profile for iPad/Safari/coarse-pointer environments to reduce shimmer and static during scrolling.
+- Reduced blur and glass complexity on the Home scene for more stable rendering while preserving the atrium look.
+
 # Business Ledger — Phase 4 Expenses Alpha
 
 This checkpoint activates the outgoing-money side of Business Ledger while preserving the existing Client → Session → Invoice → Payment architecture.

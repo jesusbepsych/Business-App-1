@@ -179,6 +179,7 @@
   let atriumFrame = null;
   let atriumPointerX = 0;
   let atriumPointerY = 0;
+  let atriumMotionProfile = 'desktop';
   let activeFilterMenu = null;
 
   function readSidebarCollapsedPreference() {
@@ -473,6 +474,7 @@
     const isHome = viewName === 'home';
     document.body.classList.toggle('home-atrium-active', isHome);
     homeAtriumScene?.setAttribute('aria-hidden', 'true');
+    if (isHome) applyAtriumRuntimeProfile();
     if (!isHome) {
       document.documentElement.style.setProperty('--atrium-px', '0');
       document.documentElement.style.setProperty('--atrium-py', '0');
@@ -485,18 +487,42 @@
   function commitAtriumMotion() {
     atriumFrame = null;
     if (ui.activeView !== 'home' || prefersReducedMotion.matches) return;
-    document.documentElement.style.setProperty('--atrium-px', atriumPointerX.toFixed(4));
-    document.documentElement.style.setProperty('--atrium-py', atriumPointerY.toFixed(4));
-    document.documentElement.style.setProperty('--atrium-scroll', String(window.scrollY || 0));
-    document.documentElement.style.setProperty('--atrium-light-x', `${(50 + atriumPointerX * 18).toFixed(1)}%`);
-    document.documentElement.style.setProperty('--atrium-light-y', `${(30 + atriumPointerY * 12).toFixed(1)}%`);
+    const px = atriumMotionProfile === 'desktop' ? atriumPointerX : 0;
+    const py = atriumMotionProfile === 'desktop' ? atriumPointerY : 0;
+    document.documentElement.style.setProperty('--atrium-px', px.toFixed(4));
+    document.documentElement.style.setProperty('--atrium-py', py.toFixed(4));
+    document.documentElement.style.setProperty('--atrium-scroll', '0');
+    document.documentElement.style.setProperty('--atrium-light-x', `${(50 + px * 14).toFixed(1)}%`);
+    document.documentElement.style.setProperty('--atrium-light-y', `${(29 + py * 10).toFixed(1)}%`);
   }
 
   function queueAtriumMotion(clientX, clientY) {
     if (ui.activeView !== 'home' || prefersReducedMotion.matches) return;
+    if (atriumMotionProfile !== 'desktop') {
+      atriumPointerX = 0;
+      atriumPointerY = 0;
+      if (!atriumFrame) atriumFrame = requestAnimationFrame(commitAtriumMotion);
+      return;
+    }
     if (Number.isFinite(clientX) && Number.isFinite(clientY)) {
       atriumPointerX = Math.max(-1, Math.min(1, (clientX / Math.max(window.innerWidth,1) - .5) * 2));
       atriumPointerY = Math.max(-1, Math.min(1, (clientY / Math.max(window.innerHeight,1) - .5) * 2));
+    }
+    if (!atriumFrame) atriumFrame = requestAnimationFrame(commitAtriumMotion);
+  }
+
+  function applyAtriumRuntimeProfile() {
+    const coarsePointer = window.matchMedia('(hover: none), (pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    const iPadLike = /iPad|iPhone|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const safariLike = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || iPadLike;
+    const liteProfile = coarsePointer || safariLike || window.innerWidth <= 1180;
+    document.documentElement.classList.toggle('atrium-touch', coarsePointer);
+    document.documentElement.classList.toggle('atrium-safari', safariLike);
+    document.documentElement.classList.toggle('atrium-lite', liteProfile);
+    atriumMotionProfile = liteProfile ? 'static' : 'desktop';
+    if (liteProfile) {
+      atriumPointerX = 0;
+      atriumPointerY = 0;
     }
     if (!atriumFrame) atriumFrame = requestAnimationFrame(commitAtriumMotion);
   }
@@ -2105,14 +2131,13 @@
 
 
   window.addEventListener('pointermove', event => queueAtriumMotion(event.clientX, event.clientY), { passive:true });
-  window.addEventListener('touchmove', event => {
-    const touch = event.touches?.[0];
-    if (touch) queueAtriumMotion(touch.clientX, touch.clientY);
+  window.addEventListener('resize', () => {
+    applyAtriumRuntimeProfile();
+    queueAtriumMotion(window.innerWidth / 2, window.innerHeight / 2);
   }, { passive:true });
-  window.addEventListener('scroll', () => queueAtriumMotion(NaN, NaN), { passive:true });
-  window.addEventListener('resize', () => queueAtriumMotion(window.innerWidth / 2, window.innerHeight / 2), { passive:true });
   prefersReducedMotion.addEventListener?.('change', () => {
     if (prefersReducedMotion.matches) { atriumPointerX = 0; atriumPointerY = 0; }
+    applyAtriumRuntimeProfile();
     commitAtriumMotion();
   });
 
@@ -2222,6 +2247,7 @@
     if (!document.hidden && ui.activeView === 'home') startHomeRecentRotation();
   });
 
+  applyAtriumRuntimeProfile();
   applyHomeAtriumState('home');
   commitAtriumMotion();
   renderAll();

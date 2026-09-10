@@ -1,3 +1,5 @@
+> Stability pass note: the Home atrium scene now uses a bundled local image plate plus a runtime lite-profile for Safari/iPad/coarse-pointer devices to avoid scroll shimmer and fallback issues.
+
 # Business Ledger — Architecture
 
 ## Current build
