@@ -193,3 +193,11 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Randomized ambient background events.
 - Propagating Corporate Atrium styling to Work, Money, Records, sheets, invoice builder, expense forms, or detail panels.
 - Backup restore/import.
+
+
+## Corporate Atrium — Work tab alpha
+- Extended atrium activation from Home to Home + Work only.
+- Added Work-specific glass styling without changing data flow or interactions.
+- Kept session/client color/status semantics intact.
+- Preserved iPad/Safari stability by reducing blur on the large data table and client-card surfaces under the lite profile.
+- Money and Records are intentionally unchanged.

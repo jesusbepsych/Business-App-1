@@ -1562,3 +1562,280 @@ html.atrium-lite .atrium-atmosphere::after {
     opacity:.11;
   }
 }
+
+/* ========================================================================== */
+/* Corporate Atrium — Work tab                                                */
+/* Mirrors the proven Home treatment while preserving Work layout + behavior. */
+/* ========================================================================== */
+body.work-atrium-active .work-atrium-view {
+  position:relative;
+  isolation:isolate;
+  min-height:calc(100vh - 72px);
+}
+body.work-atrium-active .work-atrium-content {
+  position:relative;
+  z-index:2;
+  max-width:1320px;
+  padding-top:30px;
+}
+
+/* Editorial heading with a localized readability shadow, never a global wash. */
+body.work-atrium-active .work-atrium-view .page-heading {
+  margin-bottom:18px;
+}
+body.work-atrium-active .work-atrium-view .page-heading > div:first-child {
+  position:relative;
+  isolation:isolate;
+}
+body.work-atrium-active .work-atrium-view .page-heading > div:first-child::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-26px -80px -28px -34px;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at 23% 50%,rgba(4,11,16,.56) 0%,rgba(4,11,16,.34) 40%,rgba(4,11,16,.08) 68%,transparent 82%),
+    linear-gradient(90deg,rgba(4,11,16,.22),transparent 72%);
+  filter:blur(10px);
+}
+body.work-atrium-active .work-atrium-view .page-heading h1 {
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-weight:560;
+  letter-spacing:-.052em;
+  font-size:clamp(38px,4.6vw,62px);
+  color:#fbfdff;
+  text-shadow:0 6px 32px rgba(2,8,12,.48),0 1px 0 rgba(255,255,255,.05);
+}
+body.work-atrium-active .work-atrium-view .eyebrow {
+  color:rgba(241,246,249,.86);
+  text-shadow:0 2px 14px rgba(0,0,0,.36);
+}
+body.work-atrium-active .work-atrium-view .subtitle {
+  color:rgba(243,247,250,.90);
+  font-size:15px;
+  text-shadow:0 3px 20px rgba(0,0,0,.42);
+}
+
+/* Work actions use the same suspended-glass + warm-primary language as Home. */
+body.work-atrium-active .work-atrium-view .heading-actions .secondary-btn {
+  color:#f3f8fb;
+  background:rgba(8,18,25,.48);
+  border-color:rgba(231,244,250,.19);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 12px 28px rgba(0,0,0,.14);
+  backdrop-filter:blur(12px) saturate(1.07);
+  -webkit-backdrop-filter:blur(12px) saturate(1.07);
+}
+body.work-atrium-active .work-atrium-view .heading-actions .primary-btn {
+  color:#172027;
+  background:linear-gradient(180deg,#f6ead0,#e9c98b);
+  border:1px solid rgba(255,255,255,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 14px 34px rgba(79,49,13,.20);
+}
+body.work-atrium-active .work-atrium-view .heading-actions .primary-btn:hover {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.80),0 18px 38px rgba(79,49,13,.28);
+}
+
+/* Segmented navigation becomes a small smoked-glass control. */
+body.work-atrium-active .work-atrium-view .segment-control {
+  border-color:rgba(239,248,252,.16);
+  background:rgba(7,17,23,.46);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 14px 30px rgba(0,0,0,.12);
+  backdrop-filter:blur(12px) saturate(1.06);
+  -webkit-backdrop-filter:blur(12px) saturate(1.06);
+}
+body.work-atrium-active .work-atrium-view .segment {
+  color:rgba(232,240,244,.70);
+}
+body.work-atrium-active .work-atrium-view .segment span {
+  color:rgba(244,248,250,.84);
+  background:rgba(255,255,255,.085);
+}
+body.work-atrium-active .work-atrium-view .segment.active {
+  color:#fbfdff;
+  background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(120,178,207,.12));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 18px rgba(0,0,0,.14);
+}
+
+/* Search + filter are translucent, with stronger text contrast than the old flat UI. */
+body.work-atrium-active .work-atrium-view .mini-search,
+body.work-atrium-active .work-atrium-view .filter-pill {
+  color:#f4f8fa;
+  border-color:rgba(235,247,252,.17);
+  background:rgba(7,17,23,.50);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 28px rgba(0,0,0,.11);
+  backdrop-filter:blur(11px) saturate(1.05);
+  -webkit-backdrop-filter:blur(11px) saturate(1.05);
+}
+body.work-atrium-active .work-atrium-view .mini-search span,
+body.work-atrium-active .work-atrium-view .filter-pill::after {
+  color:rgba(226,237,242,.70);
+}
+body.work-atrium-active .work-atrium-view .mini-search input {
+  color:#f9fbfc;
+  font-weight:620;
+}
+body.work-atrium-active .work-atrium-view .mini-search input::placeholder {
+  color:rgba(224,235,240,.56);
+}
+body.work-atrium-active .work-atrium-view .filter-pill:hover {
+  color:#fff;
+  background:rgba(15,29,37,.62);
+}
+
+/* Large list surface: slightly denser than Home cards for stable scrolling on iPad. */
+body.work-atrium-active .work-atrium-view .data-card {
+  position:relative;
+  overflow:hidden;
+  color:#f6f9fb;
+  border-color:rgba(239,248,252,.20);
+  background:linear-gradient(145deg,rgba(7,17,23,.62),rgba(5,14,19,.50) 52%,rgba(14,26,32,.55));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 24px 54px rgba(0,0,0,.19);
+  backdrop-filter:blur(11px) saturate(1.06) contrast(1.01);
+  -webkit-backdrop-filter:blur(11px) saturate(1.06) contrast(1.01);
+}
+body.work-atrium-active .work-atrium-view .data-card::before {
+  content:"";
+  position:absolute;
+  inset:-30%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,245,221,.10),transparent 20%),
+    linear-gradient(112deg,transparent 31%,rgba(255,255,255,.035) 45%,rgba(255,255,255,.075) 51%,rgba(255,255,255,.02) 58%,transparent 69%);
+  opacity:.42;
+  transform:translate3d(calc(var(--atrium-px) * 3px),calc(var(--atrium-py) * 2px),0);
+  transition:opacity .25s var(--ease);
+}
+body.work-atrium-active .work-atrium-view .data-card > * {
+  position:relative;
+  z-index:1;
+}
+body.work-atrium-active .work-atrium-view .table-head {
+  color:rgba(233,241,245,.68);
+  border-bottom-color:rgba(236,246,250,.10);
+  background:rgba(255,255,255,.018);
+}
+body.work-atrium-active .work-atrium-view .table-row {
+  color:#f8fbfc;
+  border-bottom-color:rgba(236,246,250,.095);
+  text-shadow:0 1px 12px rgba(0,0,0,.16);
+}
+body.work-atrium-active .work-atrium-view .table-row:hover {
+  background:rgba(255,255,255,.045);
+}
+body.work-atrium-active .work-atrium-view .table-row strong {
+  font-weight:760;
+}
+body.work-atrium-active .work-atrium-view .table-row small {
+  color:rgba(229,238,242,.67);
+}
+body.work-atrium-active .work-atrium-view .status-pill {
+  border:1px solid rgba(255,255,255,.04);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+/* Pagination remains visually compact, but now belongs to the glass surface. */
+body.work-atrium-active .work-atrium-view .session-pagination {
+  border-top-color:rgba(236,246,250,.10);
+  background:rgba(5,14,19,.30);
+}
+body.work-atrium-active .work-atrium-view .pagination-arrow {
+  color:#f6fafc;
+  border-color:rgba(235,247,252,.16);
+  background:rgba(255,255,255,.075);
+}
+body.work-atrium-active .work-atrium-view .pagination-arrow:hover:not(:disabled) {
+  background:rgba(255,255,255,.12);
+}
+body.work-atrium-active .work-atrium-view .pagination-copy strong { color:#f8fbfc; }
+body.work-atrium-active .work-atrium-view .pagination-copy small { color:rgba(229,238,242,.62); }
+
+/* Client cards use the same smoked-glass material while preserving client colors. */
+body.work-atrium-active .work-atrium-view .client-card {
+  position:relative;
+  overflow:hidden;
+  color:#f7fafc;
+  border-color:rgba(239,248,252,.19);
+  background:linear-gradient(145deg,rgba(9,20,27,.58),rgba(6,15,20,.46) 52%,rgba(15,27,33,.50));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 20px 44px rgba(0,0,0,.15);
+  backdrop-filter:blur(10px) saturate(1.05);
+  -webkit-backdrop-filter:blur(10px) saturate(1.05);
+}
+body.work-atrium-active .work-atrium-view .client-card::before {
+  content:"";
+  position:absolute;
+  inset:-38%;
+  pointer-events:none;
+  background:linear-gradient(112deg,transparent 32%,rgba(255,255,255,.035) 46%,rgba(255,255,255,.075) 51%,rgba(255,255,255,.02) 58%,transparent 69%);
+  opacity:.38;
+  transform:translate3d(calc(var(--atrium-px) * 3px),calc(var(--atrium-py) * 2px),0);
+}
+body.work-atrium-active .work-atrium-view .client-card > * { position:relative; z-index:1; }
+body.work-atrium-active .work-atrium-view .client-card:hover {
+  transform:translateY(-2px);
+  background:linear-gradient(145deg,rgba(13,25,32,.66),rgba(8,18,24,.52));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 26px 52px rgba(0,0,0,.20);
+}
+body.work-atrium-active .work-atrium-view .client-card > strong {
+  color:#fbfdff;
+  text-shadow:0 2px 14px rgba(0,0,0,.20);
+}
+body.work-atrium-active .work-atrium-view .client-card > small,
+body.work-atrium-active .work-atrium-view .client-meta small {
+  color:rgba(230,239,243,.68);
+}
+body.work-atrium-active .work-atrium-view .client-meta {
+  border-top-color:rgba(236,246,250,.10);
+}
+body.work-atrium-active .work-atrium-view .client-meta b { color:#fbfdff; }
+
+/* Empty state stays legible if a fresh workspace has no sessions/clients yet. */
+body.work-atrium-active .work-atrium-view .large-empty {
+  color:#f7fafc;
+}
+body.work-atrium-active .work-atrium-view .large-empty p {
+  color:rgba(231,239,243,.72);
+}
+body.work-atrium-active .work-atrium-view .large-empty .secondary-btn {
+  color:#f3f8fb;
+  background:rgba(255,255,255,.075);
+  border-color:rgba(235,247,252,.15);
+}
+
+/* Safari/iPad: preserve the proven stable scene and reduce large-surface blur. */
+html.atrium-lite body.work-atrium-active .work-atrium-view .segment-control,
+html.atrium-lite body.work-atrium-active .work-atrium-view .mini-search,
+html.atrium-lite body.work-atrium-active .work-atrium-view .filter-pill,
+html.atrium-lite body.work-atrium-active .work-atrium-view .heading-actions .secondary-btn,
+html.atrium-lite body.work-atrium-active .work-atrium-view .client-card {
+  backdrop-filter:blur(8px) saturate(1.02);
+  -webkit-backdrop-filter:blur(8px) saturate(1.02);
+}
+html.atrium-lite body.work-atrium-active .work-atrium-view .data-card {
+  backdrop-filter:blur(7px) saturate(1.02);
+  -webkit-backdrop-filter:blur(7px) saturate(1.02);
+  background:linear-gradient(145deg,rgba(7,17,23,.70),rgba(5,14,19,.60) 52%,rgba(14,26,32,.62));
+}
+html.atrium-lite body.work-atrium-active .work-atrium-view .data-card::before,
+html.atrium-lite body.work-atrium-active .work-atrium-view .client-card::before {
+  transform:none;
+  opacity:.22;
+}
+html.atrium-lite body.work-atrium-active .work-atrium-view .client-card:hover { transform:none; }
+
+@media (max-width:920px) {
+  body.work-atrium-active .work-atrium-content { padding-top:22px; }
+  body.work-atrium-active .work-atrium-view .page-heading h1 { font-size:clamp(35px,9vw,50px); }
+  body.work-atrium-active .work-atrium-view .table-row.session-grid,
+  body.work-atrium-active .work-atrium-view .session-pagination {
+    background:rgba(7,17,23,.68);
+    border-color:rgba(239,248,252,.16);
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  body.work-atrium-active .work-atrium-view .data-card::before,
+  body.work-atrium-active .work-atrium-view .client-card::before {
+    transform:none !important;
+    transition:none !important;
+  }
+}

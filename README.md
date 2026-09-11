@@ -1,3 +1,11 @@
+## Corporate Atrium — Work tab extension
+
+- The proven Home atrium environment is now also active on the Work tab.
+- Work keeps its existing Sessions/Clients structure and functionality, but its heading, actions, segment control, search/filter controls, session table, pagination, and client cards now use the same smoked-glass/material system.
+- The existing subtle architectural-light animation continues on Work without moving the large background image.
+- Safari/iPad retains the lite rendering profile with reduced blur on large Work surfaces for smooth scrolling.
+- Money and Records remain on the prior theme for now.
+
 ## Corporate Atrium embedded-scene fix
 
 - The approved atrium photograph is now embedded directly in `styles.css` as a data URI. This removes the failure mode where the app silently fell back to the synthetic dark SVG because the nested `assets/atrium-primary.jpg` file was missing, stale, or not uploaded to GitHub Pages.
