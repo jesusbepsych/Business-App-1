@@ -1,3 +1,11 @@
+
+## Corporate Atrium — Money tab
+
+- Extended the proven Home + Work Corporate Atrium scene to the Money view without changing invoice, payment, or expense business logic.
+- Money now shares the same embedded atrium plate, stable iPad/Safari lighting profile, and subtle dynamic architectural lighting.
+- Money-specific surfaces (metric cards, invoice/payment/expense ledgers, filters, pagination, and actions) use dense smoked glass with semantic green/amber/red casts.
+- Invoice/payment/expense modals and detail sheets remain on the existing Phase 4 modal treatment for now; only the Money tab itself was themed in this pass.
+
 ## Corporate Atrium — Work tab extension
 
 - The proven Home atrium environment is now also active on the Work tab.

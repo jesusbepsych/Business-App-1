@@ -258,3 +258,5 @@ Visual stack (back to front):
 7. Environment-aware reflection pseudo-elements driven by CSS variables.
 
 `setView()` toggles `body.home-atrium-active`, so navigating to Work/Money/Records removes the atrium visual layer without altering any application data or view behavior. Pointer/touch/scroll input only changes presentation CSS variables and never persists to financial data.
+
+> Money view now participates in the shared atrium scene and runtime profile. Its page-level surfaces are themed; modal/detail architecture is unchanged.

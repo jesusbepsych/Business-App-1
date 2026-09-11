@@ -471,9 +471,10 @@
   }
 
   function applyHomeAtriumState(viewName = ui.activeView) {
-    const usesAtrium = viewName === 'home' || viewName === 'work';
+    const usesAtrium = ['home','work','money'].includes(viewName);
     document.body.classList.toggle('home-atrium-active', usesAtrium);
     document.body.classList.toggle('work-atrium-active', viewName === 'work');
+    document.body.classList.toggle('money-atrium-active', viewName === 'money');
     homeAtriumScene?.setAttribute('aria-hidden', 'true');
     if (usesAtrium) applyAtriumRuntimeProfile();
     if (!usesAtrium) {
@@ -487,7 +488,7 @@
 
   function commitAtriumMotion() {
     atriumFrame = null;
-    if (!['home','work'].includes(ui.activeView) || prefersReducedMotion.matches) return;
+    if (!['home','work','money'].includes(ui.activeView) || prefersReducedMotion.matches) return;
     const px = atriumMotionProfile === 'desktop' ? atriumPointerX : 0;
     const py = atriumMotionProfile === 'desktop' ? atriumPointerY : 0;
     document.documentElement.style.setProperty('--atrium-px', px.toFixed(4));
@@ -498,7 +499,7 @@
   }
 
   function queueAtriumMotion(clientX, clientY) {
-    if (!['home','work'].includes(ui.activeView) || prefersReducedMotion.matches) return;
+    if (!['home','work','money'].includes(ui.activeView) || prefersReducedMotion.matches) return;
     if (atriumMotionProfile !== 'desktop') {
       atriumPointerX = 0;
       atriumPointerY = 0;

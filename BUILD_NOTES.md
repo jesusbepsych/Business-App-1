@@ -201,3 +201,10 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Kept session/client color/status semantics intact.
 - Preserved iPad/Safari stability by reducing blur on the large data table and client-card surfaces under the lite profile.
 - Money and Records are intentionally unchanged.
+
+## Corporate Atrium — Money tab
+
+- Extended the proven Home + Work Corporate Atrium scene to the Money view without changing invoice, payment, or expense business logic.
+- Money now shares the same embedded atrium plate, stable iPad/Safari lighting profile, and subtle dynamic architectural lighting.
+- Money-specific surfaces (metric cards, invoice/payment/expense ledgers, filters, pagination, and actions) use dense smoked glass with semantic green/amber/red casts.
+- Invoice/payment/expense modals and detail sheets remain on the existing Phase 4 modal treatment for now; only the Money tab itself was themed in this pass.
