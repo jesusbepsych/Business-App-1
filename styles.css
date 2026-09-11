@@ -2371,3 +2371,177 @@ html.atrium-lite body.records-atrium-active .records-atrium-view .receipt-vault-
     transition:none !important;
   }
 }
+
+/* ========================================================================== */
+/* Corporate Atrium — Frosted Window Bays                                    */
+/* Selected material direction: embedded architectural panes, not dark cards. */
+/* ========================================================================== */
+:root {
+  --bay-bg: rgba(118, 148, 164, .26);
+  --bay-bg-strong: rgba(92, 121, 138, .34);
+  --bay-bg-dense: rgba(58, 83, 98, .48);
+  --bay-border: rgba(232, 246, 252, .34);
+  --bay-border-soft: rgba(232, 246, 252, .22);
+  --bay-highlight: rgba(255,255,255,.16);
+  --bay-shadow: 0 20px 44px rgba(0,0,0,.16);
+  --bay-blur: 19px;
+}
+
+/* Shared bay material: the atrium remains visible, but locally softened. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card,.segment-control,.money-segments,.mini-search,.filter-pill,.records-local-note,.large-empty) {
+  border-color: var(--bay-border) !important;
+  background:
+    linear-gradient(145deg, rgba(180,205,217,.23), rgba(103,136,153,.20) 48%, rgba(70,100,116,.27)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.18),
+    inset 0 -1px 0 rgba(255,255,255,.035),
+    var(--bay-shadow) !important;
+  backdrop-filter: blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+  -webkit-backdrop-filter: blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+}
+
+/* Keep long ledgers slightly denser for scanability while preserving the bay look. */
+body.work-atrium-active .work-atrium-view .data-card,
+body.money-atrium-active .money-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(92,121,138,.38),rgba(58,84,99,.35) 52%,rgba(43,68,83,.42)) !important;
+}
+
+/* Bay highlight behaves like light washing across a frosted office window. */
+body.home-atrium-active .home-atrium-view .status-strip::before,
+body.home-atrium-active .home-atrium-view .metric-card::before,
+body.home-atrium-active .home-atrium-view .panel-card::before,
+body.work-atrium-active .work-atrium-view .data-card::before,
+body.work-atrium-active .work-atrium-view .client-card::before,
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card::before,
+body.money-atrium-active .money-atrium-view .data-card::before,
+body.records-atrium-active .records-atrium-view .receipt-vault-card::before {
+  inset:0 !important;
+  opacity:.54 !important;
+  transform:none !important;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 28%,transparent 54%,rgba(205,232,244,.055) 100%) !important;
+}
+
+/* Remove the old per-card color washes; semantic color now lives in typography/chips. */
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(1),
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(2),
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(3),
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(4),
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(1),
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(2),
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(3) {
+  background:linear-gradient(145deg,rgba(177,203,216,.24),rgba(101,134,151,.21) 48%,rgba(67,97,113,.28)) !important;
+  border-color:var(--bay-border) !important;
+}
+
+/* Home: green status remains semantic, but becomes a frosted pane rather than a solid strip. */
+body.home-atrium-active .home-atrium-view .status-strip {
+  background:linear-gradient(100deg,rgba(69,137,116,.31),rgba(96,144,151,.22) 54%,rgba(71,108,124,.25)) !important;
+  border-color:rgba(145,229,195,.34) !important;
+  color:rgba(241,252,247,.96) !important;
+  backdrop-filter:blur(16px) saturate(1.08) !important;
+  -webkit-backdrop-filter:blur(16px) saturate(1.08) !important;
+}
+body.home-atrium-active .home-atrium-view .roadmap-card {
+  background:linear-gradient(145deg,rgba(150,180,194,.19),rgba(70,100,116,.24)) !important;
+  border-color:var(--bay-border-soft) !important;
+}
+
+/* Typography: slightly cleaner against the lighter frost. */
+body.home-atrium-active .home-atrium-view .metric-head,
+body.money-atrium-active .money-atrium-view .metric-head { color:rgba(247,250,252,.91) !important; }
+body.home-atrium-active .home-atrium-view .metric-caption,
+body.home-atrium-active .home-atrium-view .panel-copy,
+body.work-atrium-active .work-atrium-view .table-row small,
+body.work-atrium-active .work-atrium-view .client-card > small,
+body.work-atrium-active .work-atrium-view .client-meta small,
+body.money-atrium-active .money-atrium-view .metric-caption,
+body.money-atrium-active .money-atrium-view .table-row small,
+body.records-atrium-active .records-atrium-view .receipt-vault-main small,
+body.records-atrium-active .records-atrium-view .receipt-vault-meta small,
+body.records-atrium-active .records-atrium-view .records-local-note p {
+  color:rgba(240,246,249,.82) !important;
+}
+body.home-atrium-active .home-atrium-view .metric-value,
+body.money-atrium-active .money-atrium-view .metric-value,
+body.work-atrium-active .work-atrium-view .table-row,
+body.records-atrium-active .records-atrium-view .receipt-vault-main strong,
+body.records-atrium-active .records-atrium-view .receipt-vault-meta strong {
+  text-shadow:0 2px 15px rgba(0,0,0,.28) !important;
+}
+
+/* Internal rules read like window mullions rather than dark table chrome. */
+body.work-atrium-active .work-atrium-view .table-head,
+body.money-atrium-active .money-atrium-view .table-head {
+  background:rgba(255,255,255,.035) !important;
+  border-bottom-color:rgba(239,248,252,.16) !important;
+}
+body.work-atrium-active .work-atrium-view .table-row,
+body.money-atrium-active .money-atrium-view .table-row,
+body.home-atrium-active .home-atrium-view .recent-row {
+  border-bottom-color:rgba(239,248,252,.13) !important;
+}
+body.work-atrium-active .work-atrium-view .table-row:hover,
+body.money-atrium-active .money-atrium-view .table-row:hover,
+body.home-atrium-active .home-atrium-view .recent-row:hover {
+  background:rgba(255,255,255,.065) !important;
+}
+
+/* Compact controls become smaller frosted panes within the larger bays. */
+body.work-atrium-active .work-atrium-view .heading-actions .secondary-btn,
+body.money-atrium-active .money-atrium-view .money-actions .utility-text-btn,
+body.money-atrium-active .money-atrium-view .money-actions .secondary-btn,
+body.records-atrium-active .records-atrium-view .records-heading .secondary-btn,
+body.records-atrium-active .records-atrium-view .records-toolbar .quiet-badge {
+  color:#f8fbfc !important;
+  background:rgba(116,148,165,.26) !important;
+  border-color:rgba(234,247,252,.30) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 28px rgba(0,0,0,.12) !important;
+  backdrop-filter:blur(14px) saturate(1.06) !important;
+  -webkit-backdrop-filter:blur(14px) saturate(1.06) !important;
+}
+
+/* Segmented controls: active state is a brighter inner pane, not a dark pill. */
+body.work-atrium-active .work-atrium-view .segment.active,
+body.money-atrium-active .money-atrium-view .money-segments .segment.active {
+  background:linear-gradient(135deg,rgba(225,239,246,.18),rgba(152,192,211,.16)) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 7px 16px rgba(0,0,0,.10) !important;
+}
+
+/* Records: receipt cards feel like individual panes cut from the same window wall. */
+body.records-atrium-active .records-atrium-view .receipt-vault-card:hover,
+body.work-atrium-active .work-atrium-view .client-card:hover {
+  background:linear-gradient(145deg,rgba(197,218,228,.28),rgba(112,145,161,.25) 48%,rgba(75,105,121,.31)) !important;
+  border-color:rgba(241,251,255,.43) !important;
+}
+
+/* iPad/Safari stability: retain the proven no-motion profile, reduce blur cost, and
+   slightly increase opacity so the frost still reads without expensive compositing. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card,.segment-control,.money-segments,.mini-search,.filter-pill,.records-local-note,.large-empty) {
+  background:linear-gradient(145deg,rgba(133,163,178,.35),rgba(83,116,133,.32) 50%,rgba(56,88,104,.38)) !important;
+  backdrop-filter:blur(10px) saturate(1.03) !important;
+  -webkit-backdrop-filter:blur(10px) saturate(1.03) !important;
+}
+html.atrium-lite body.work-atrium-active .work-atrium-view .data-card,
+html.atrium-lite body.money-atrium-active .money-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(95,127,143,.48),rgba(57,89,106,.45) 52%,rgba(42,73,90,.50)) !important;
+  backdrop-filter:blur(8px) saturate(1.02) !important;
+  -webkit-backdrop-filter:blur(8px) saturate(1.02) !important;
+}
+html.atrium-lite body.home-atrium-active .home-atrium-view .status-strip {
+  background:linear-gradient(100deg,rgba(61,126,105,.40),rgba(82,129,137,.32) 55%,rgba(57,96,113,.34)) !important;
+  backdrop-filter:blur(9px) saturate(1.03) !important;
+  -webkit-backdrop-filter:blur(9px) saturate(1.03) !important;
+}
+
+@media (max-width:920px) {
+  body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+  :is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+  :is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card) {
+    border-color:rgba(235,248,253,.27) !important;
+  }
+}

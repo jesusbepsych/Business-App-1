@@ -215,3 +215,12 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Money now shares the same embedded atrium plate, stable iPad/Safari lighting profile, and subtle dynamic architectural lighting.
 - Money-specific surfaces (metric cards, invoice/payment/expense ledgers, filters, pagination, and actions) use dense smoked glass with semantic green/amber/red casts.
 - Invoice/payment/expense modals and detail sheets remain on the existing Phase 4 modal treatment for now; only the Money tab itself was themed in this pass.
+
+## Frosted Window Bays Alpha
+- Selected design direction implemented across Home, Work, Money, and Records main-tab surfaces.
+- Replaced the prior dark smoked-card treatment with cool architectural frosted panes.
+- Removed whole-card semantic washes from metric surfaces; semantic colors remain in labels/chips/statuses.
+- Large Work/Money ledgers use a denser frosted bay for scanning, while still showing the atrium through the surface.
+- Records receipt cards, controls, and notes use the same bay material.
+- iPad/Safari keeps the proven static atrium runtime profile with reduced blur cost and increased pane opacity.
+- No changes to domain logic, persistence, invoices, payments, expenses, receipts, or modal/detail flows.

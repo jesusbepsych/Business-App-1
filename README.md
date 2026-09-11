@@ -1,3 +1,9 @@
+## Frosted Window Bays Alpha
+
+This build applies the selected **Frosted Window Bays** material direction across the four main Corporate Atrium tabs. Main information surfaces now use cool gray-blue architectural frost, restrained luminous borders, localized background blur, and softer window-like highlights so the atrium remains visible through the interface. Semantic color is kept primarily in labels, chips, and status indicators instead of tinting whole cards.
+
+The established iPad/Safari stability profile remains in place: the atrium itself stays fixed, expensive motion is avoided, and touch/Safari devices use lower blur with slightly stronger pane opacity. Business logic, data models, workflows, modals/detail sheets, and receipt/invoice behavior are unchanged.
+
 ## Corporate Atrium — Records tab
 
 - Extended the proven Home + Work + Money Corporate Atrium scene to the Records view without changing receipt-vault behavior or stored data.
