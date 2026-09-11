@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, records, and taxes." />
-  <title>Business Ledger — Phase 4 Corporate Atrium Home + Work</title>
+  <title>Business Ledger — Phase 4 Corporate Atrium All Tabs</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=atrium-home-work-money-20260910" />
+  <link rel="stylesheet" href="styles.css?v=atrium-home-work-money-records-20260910" />
 </head>
 <body class="home-atrium-active">
 
@@ -175,8 +175,8 @@
         </div>
       </section>
 
-      <section class="view" data-page="records">
-        <div class="content-wrap">
+      <section class="view records-atrium-view" data-page="records">
+        <div class="content-wrap records-atrium-content">
           <div class="page-heading records-heading"><div><p class="eyebrow">RECORDS</p><h1>Receipt evidence, without the filing cabinet.</h1><p class="subtitle">Receipts stay linked to the expense that created them. Search the evidence here; open the expense for full context.</p></div><button class="secondary-btn" id="exportBackupFromRecords">Export local backup</button></div>
           <div class="records-toolbar"><div class="mini-search"><span>⌕</span><input id="receiptSearch" placeholder="Search receipts, merchants, categories" /></div><span class="quiet-badge" id="receiptCount">0 receipts</span></div>
           <div class="receipt-vault-grid" id="receiptVault"></div>
@@ -261,6 +261,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=atrium-home-work-money-20260910"></script>
+  <script src="app.js?v=atrium-home-work-money-records-20260910"></script>
 </body>
 </html>

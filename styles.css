@@ -2150,3 +2150,224 @@ html.atrium-lite body.money-atrium-active .money-atrium-view .money-metric-grid 
     transition:none !important;
   }
 }
+
+/* ========================================================================== */
+/* Corporate Atrium — Records tab                                             */
+/* Extends the proven Home/Work/Money scene to the receipt evidence workspace.*/
+/* ========================================================================== */
+body.records-atrium-active .records-atrium-view {
+  position:relative;
+  isolation:isolate;
+  min-height:calc(100vh - 72px);
+}
+body.records-atrium-active .records-atrium-content {
+  position:relative;
+  z-index:2;
+  max-width:1320px;
+  padding-top:30px;
+}
+
+/* Same editorial heading language with local contrast rather than a page wash. */
+body.records-atrium-active .records-atrium-view .page-heading { margin-bottom:18px; }
+body.records-atrium-active .records-atrium-view .page-heading > div:first-child {
+  position:relative;
+  isolation:isolate;
+}
+body.records-atrium-active .records-atrium-view .page-heading > div:first-child::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-26px -84px -30px -34px;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at 23% 50%,rgba(4,11,16,.58) 0%,rgba(4,11,16,.35) 40%,rgba(4,11,16,.08) 68%,transparent 82%),
+    linear-gradient(90deg,rgba(4,11,16,.23),transparent 72%);
+  filter:blur(10px);
+}
+body.records-atrium-active .records-atrium-view .page-heading h1 {
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-weight:560;
+  letter-spacing:-.052em;
+  font-size:clamp(38px,4.6vw,62px);
+  color:#fbfdff;
+  text-shadow:0 6px 32px rgba(2,8,12,.48),0 1px 0 rgba(255,255,255,.05);
+}
+body.records-atrium-active .records-atrium-view .eyebrow {
+  color:rgba(241,246,249,.86);
+  text-shadow:0 2px 14px rgba(0,0,0,.36);
+}
+body.records-atrium-active .records-atrium-view .subtitle {
+  color:rgba(243,247,250,.90);
+  font-size:15px;
+  text-shadow:0 3px 20px rgba(0,0,0,.42);
+}
+
+/* Export remains secondary: suspended smoked glass rather than a bright CTA. */
+body.records-atrium-active .records-atrium-view .records-heading .secondary-btn {
+  color:#f4f8fb;
+  background:rgba(8,18,25,.50);
+  border-color:rgba(231,244,250,.19);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 12px 28px rgba(0,0,0,.14);
+  backdrop-filter:blur(12px) saturate(1.07);
+  -webkit-backdrop-filter:blur(12px) saturate(1.07);
+}
+body.records-atrium-active .records-atrium-view .records-heading .secondary-btn:hover {
+  color:#fff;
+  background:rgba(15,29,37,.62);
+}
+
+/* Receipt search + count share the compact glass controls from Work/Money. */
+body.records-atrium-active .records-atrium-view .records-toolbar .mini-search,
+body.records-atrium-active .records-atrium-view .records-toolbar .quiet-badge {
+  color:#f4f8fa;
+  border-color:rgba(235,247,252,.17);
+  background:rgba(7,17,23,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 28px rgba(0,0,0,.11);
+  backdrop-filter:blur(11px) saturate(1.05);
+  -webkit-backdrop-filter:blur(11px) saturate(1.05);
+}
+body.records-atrium-active .records-atrium-view .records-toolbar .mini-search span {
+  color:rgba(226,237,242,.72);
+}
+body.records-atrium-active .records-atrium-view .records-toolbar .mini-search input {
+  color:#f9fbfc;
+  font-weight:620;
+}
+body.records-atrium-active .records-atrium-view .records-toolbar .mini-search input::placeholder {
+  color:rgba(224,235,240,.57);
+}
+body.records-atrium-active .records-atrium-view .records-toolbar .quiet-badge {
+  color:rgba(246,249,251,.86);
+  min-height:34px;
+  display:inline-flex;
+  align-items:center;
+}
+
+/* Receipt evidence cards float individually so the physical atrium remains visible. */
+body.records-atrium-active .records-atrium-view .receipt-vault-card {
+  position:relative;
+  overflow:hidden;
+  color:#f7fafc;
+  border-color:rgba(239,248,252,.20);
+  background:linear-gradient(145deg,rgba(7,17,23,.64),rgba(5,14,19,.52) 52%,rgba(14,26,32,.57));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 22px 48px rgba(0,0,0,.18);
+  backdrop-filter:blur(10px) saturate(1.05) contrast(1.01);
+  -webkit-backdrop-filter:blur(10px) saturate(1.05) contrast(1.01);
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-card::before {
+  content:"";
+  position:absolute;
+  inset:-36%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,245,221,.10),transparent 20%),
+    linear-gradient(112deg,transparent 31%,rgba(255,255,255,.035) 45%,rgba(255,255,255,.075) 51%,rgba(255,255,255,.02) 58%,transparent 69%);
+  opacity:.40;
+  transform:translate3d(calc(var(--atrium-px) * 3px),calc(var(--atrium-py) * 2px),0);
+  transition:opacity .25s var(--ease);
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-card > * {
+  position:relative;
+  z-index:1;
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-card:hover {
+  transform:translateY(-2px);
+  border-color:rgba(241,250,253,.30);
+  background:linear-gradient(145deg,rgba(11,23,30,.70),rgba(7,17,22,.57));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 28px 54px rgba(0,0,0,.21);
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-card:hover::before { opacity:.58; }
+body.records-atrium-active .records-atrium-view .receipt-vault-icon {
+  color:#b7e6ff;
+  background:rgba(102,178,220,.16);
+  border:1px solid rgba(160,218,248,.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-main strong,
+body.records-atrium-active .records-atrium-view .receipt-vault-meta strong {
+  color:#fbfdff;
+  font-weight:760;
+  text-shadow:0 2px 14px rgba(0,0,0,.20);
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-main small,
+body.records-atrium-active .records-atrium-view .receipt-vault-meta small {
+  color:rgba(230,239,243,.70);
+}
+body.records-atrium-active .records-atrium-view .receipt-review-dot {
+  background:#f1c674;
+  box-shadow:0 0 0 3px rgba(241,198,116,.10),0 0 14px rgba(241,198,116,.26);
+}
+
+/* The local-storage explanation becomes a quiet glass footnote, not a solid box. */
+body.records-atrium-active .records-atrium-view .records-local-note {
+  color:rgba(232,240,244,.76);
+  border-color:rgba(239,248,252,.14);
+  background:rgba(7,17,23,.42);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 14px 34px rgba(0,0,0,.10);
+  backdrop-filter:blur(9px) saturate(1.03);
+  -webkit-backdrop-filter:blur(9px) saturate(1.03);
+}
+body.records-atrium-active .records-atrium-view .records-local-note > span {
+  color:#b7e6ff;
+  background:rgba(102,178,220,.16);
+  border:1px solid rgba(160,218,248,.08);
+}
+body.records-atrium-active .records-atrium-view .records-local-note p {
+  color:rgba(232,240,244,.72);
+}
+
+/* Fresh-workspace empty state remains legible without masking the office scene. */
+body.records-atrium-active .records-atrium-view .large-empty {
+  color:#f7fafc;
+  border-color:rgba(239,248,252,.18);
+  background:rgba(7,17,23,.50);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 22px 48px rgba(0,0,0,.15);
+  backdrop-filter:blur(9px) saturate(1.03);
+  -webkit-backdrop-filter:blur(9px) saturate(1.03);
+}
+body.records-atrium-active .records-atrium-view .large-empty p { color:rgba(231,239,243,.72); }
+body.records-atrium-active .records-atrium-view .large-empty .secondary-btn {
+  color:#f3f8fb;
+  background:rgba(255,255,255,.075);
+  border-color:rgba(235,247,252,.15);
+}
+body.records-atrium-active .records-atrium-view .placeholder-icon {
+  color:#b7e6ff;
+  background:rgba(102,178,220,.14);
+}
+
+/* Safari/iPad: preserve the same stable lighting profile used by the other tabs. */
+html.atrium-lite body.records-atrium-active .records-atrium-view .records-heading .secondary-btn,
+html.atrium-lite body.records-atrium-active .records-atrium-view .records-toolbar .mini-search,
+html.atrium-lite body.records-atrium-active .records-atrium-view .records-toolbar .quiet-badge,
+html.atrium-lite body.records-atrium-active .records-atrium-view .records-local-note,
+html.atrium-lite body.records-atrium-active .records-atrium-view .large-empty {
+  backdrop-filter:blur(8px) saturate(1.02);
+  -webkit-backdrop-filter:blur(8px) saturate(1.02);
+}
+html.atrium-lite body.records-atrium-active .records-atrium-view .receipt-vault-card {
+  backdrop-filter:blur(7px) saturate(1.02);
+  -webkit-backdrop-filter:blur(7px) saturate(1.02);
+  background:linear-gradient(145deg,rgba(7,17,23,.72),rgba(5,14,19,.62) 52%,rgba(14,26,32,.64));
+}
+html.atrium-lite body.records-atrium-active .records-atrium-view .receipt-vault-card::before {
+  transform:none;
+  opacity:.20;
+}
+html.atrium-lite body.records-atrium-active .records-atrium-view .receipt-vault-card:hover { transform:none; }
+
+@media (max-width:920px) {
+  body.records-atrium-active .records-atrium-content { padding-top:22px; }
+  body.records-atrium-active .records-atrium-view .page-heading h1 { font-size:clamp(35px,9vw,50px); }
+  body.records-atrium-active .records-atrium-view .receipt-vault-card {
+    background:rgba(7,17,23,.68);
+    border-color:rgba(239,248,252,.16);
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  body.records-atrium-active .records-atrium-view .receipt-vault-card::before {
+    transform:none !important;
+    transition:none !important;
+  }
+}

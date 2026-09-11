@@ -1,3 +1,10 @@
+## Corporate Atrium — Records tab
+
+- Extended the proven Home + Work + Money Corporate Atrium scene to the Records view without changing receipt-vault behavior or stored data.
+- Records now shares the same embedded atrium plate, subtle dynamic architectural lighting, and stable Safari/iPad rendering profile.
+- The Records heading, export action, receipt search/count controls, receipt evidence cards, empty state, and local-storage note now use the same smoked-glass/material language with stronger text contrast.
+- Receipt/expense detail sheets and modals remain on the existing Phase 4 modal treatment; this pass themes the Records tab itself only.
+
 
 ## Corporate Atrium — Money tab
 

@@ -1,3 +1,10 @@
+## Corporate Atrium — Records tab extension
+
+- Added Records to the shared atrium activation state and motion/stability profile.
+- Styled receipt-vault cards, search/count controls, export action, empty state, and local receipt note as stable smoked-glass surfaces.
+- Preserved the established iPad/Safari lite profile by lowering blur on receipt cards and disabling their reflection transforms on touch/Safari.
+- No receipt-storage, export, expense-link, or business-logic behavior changed.
+
 ## Corporate Atrium lighting refinement
 
 - Increased the visibility of the Home atrium's dynamic light bars without animating the background image.

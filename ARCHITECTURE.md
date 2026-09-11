@@ -1,3 +1,5 @@
+> Corporate Atrium Records extension: the shared atrium scene is now active across Home, Work, Money, and Records. Records-specific glass styling is presentation-only; receipt-vault data flow and detail/modals are unchanged.
+
 ## Corporate Atrium embedded-scene fix
 
 - The approved atrium photograph is now embedded directly in `styles.css` as a data URI. This removes the failure mode where the app silently fell back to the synthetic dark SVG because the nested `assets/atrium-primary.jpg` file was missing, stale, or not uploaded to GitHub Pages.
