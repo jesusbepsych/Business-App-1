@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, records, and taxes." />
-  <title>Business Ledger — Phase 4 Corporate Atrium All Tabs</title>
+  <title>Business Ledger — Phase 5 Mileage + Vehicles Alpha</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=pills-complete-20260911" />
+  <link rel="stylesheet" href="styles.css?v=phase5-mileage-20260911b" />
 </head>
 <body class="home-atrium-active">
 
@@ -26,7 +26,7 @@
       <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-controls="primarySidebar" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><span aria-hidden="true">‹</span></button>
       <div class="brand-row">
         <div class="brand-mark" aria-hidden="true">B</div>
-        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 4 · Expenses</span></div>
+        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 5 · Mileage</span></div>
       </div>
 
       <button class="business-switcher" id="businessSwitcher" aria-haspopup="dialog">
@@ -39,6 +39,7 @@
         <button class="nav-item active" data-view="home"><span class="nav-icon">⌂</span><span>Home</span></button>
         <button class="nav-item" data-view="work"><span class="nav-icon">◫</span><span>Work</span></button>
         <button class="nav-item" data-view="money"><span class="nav-icon">$</span><span>Money</span></button>
+        <button class="nav-item" data-view="taxes"><span class="nav-icon">↝</span><span>Taxes</span></button>
         <button class="nav-item" data-view="records"><span class="nav-icon">▤</span><span>Records</span></button>
       </nav>
 
@@ -69,7 +70,7 @@
             <button class="primary-btn" id="quickAddBtn"><span>＋</span> Add</button>
           </div>
 
-          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 4 is now active.</strong> Expenses and receipt evidence now connect to the same workspace as work, invoices, and payments; data and receipt files remain local-only until secure cloud sync is connected.</span></div>
+          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 5 is now active.</strong> Mileage and vehicle records now connect to the same workspace as work, money, and evidence; data remains local-only until secure cloud sync is connected.</span></div>
 
           <div class="metric-grid">
             <article class="metric-card"><div class="metric-head"><span>Active clients</span><span class="muted-chip">Work</span></div><strong class="metric-value" id="metricClients">0</strong><span class="metric-caption">In this workspace</span></article>
@@ -92,9 +93,9 @@
           </div>
 
           <article class="panel-card roadmap-card">
-            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 4 — Expenses + receipt vault</h2></div><span class="quiet-badge green">Active</span></div>
-            <div class="progress-track"><div class="progress-fill phase-four"></div></div>
-            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="done">Invoices</span><span class="done">Payments</span><span class="current">Expenses</span><span>Mileage</span><span>Taxes</span></div>
+            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 5 — Mileage + vehicle tracking</h2></div><span class="quiet-badge green">Active</span></div>
+            <div class="progress-track"><div class="progress-fill phase-five"></div></div>
+            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="done">Invoices</span><span class="done">Payments</span><span class="done">Expenses</span><span class="current">Mileage</span><span>Tax layer</span></div>
           </article>
         </div>
       </section>
@@ -175,6 +176,45 @@
         </div>
       </section>
 
+      <section class="view taxes-atrium-view" data-page="taxes">
+        <div class="content-wrap taxes-atrium-content">
+          <div class="page-heading taxes-heading">
+            <div><p class="eyebrow">TAXES</p><h1>Miles today. Tax context tomorrow.</h1><p class="subtitle">Keep vehicle and trip records separate from money transactions. Business mileage can link back to the client or work session that created it.</p></div>
+            <div class="heading-actions taxes-actions"><button class="secondary-btn" id="addVehicleBtn">＋ Vehicle</button><button class="primary-btn" id="addMileageBtn">＋ Mileage</button></div>
+          </div>
+
+          <div class="tax-metric-grid">
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Business miles</span><span class="muted-chip tax-chip-month">This month</span></div><strong class="metric-value" id="taxMonthMiles">0</strong><span class="metric-caption">Business-classified mileage</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Business miles</span><span class="muted-chip">All time</span></div><strong class="metric-value" id="taxAllMiles">0</strong><span class="metric-caption">Across this workspace</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Primary vehicle</span><span class="muted-chip tax-chip-vehicle">Vehicle</span></div><strong class="metric-value tax-vehicle-value" id="taxPrimaryVehicle">None</strong><span class="metric-caption" id="taxVehicleCaption">Add a vehicle to start tracking</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Needs review</span><span class="muted-chip tax-chip-review">Attention</span></div><strong class="metric-value" id="taxReviewCount">0</strong><span class="metric-caption">Trips missing clean tax context</span></article>
+          </div>
+
+          <div class="segment-control taxes-segments" role="tablist" aria-label="Tax sections">
+            <button class="segment active" data-tax-tab="mileage" role="tab">Mileage <span id="mileageCount">0</span></button>
+            <button class="segment" data-tax-tab="vehicles" role="tab">Vehicles <span id="vehicleCount">0</span></button>
+          </div>
+
+          <div class="tax-tab active" data-tax-panel="mileage">
+            <div class="tax-list-head">
+              <div><p class="eyebrow">MILEAGE LEDGER</p><h2>Trip history</h2><div class="tax-summary-line"><span id="taxBusinessTripCount">0 business trips</span><span id="taxLinkedTripCount">0 linked to work</span></div></div>
+              <div class="tax-head-actions"><button class="filter-pill" id="mileageFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All trips</button></div>
+            </div>
+            <div class="data-card" id="mileageContainer"></div>
+          </div>
+
+          <div class="tax-tab" data-tax-panel="vehicles">
+            <div class="tax-list-head">
+              <div><p class="eyebrow">VEHICLE PROFILES</p><h2>Vehicles used for work</h2><div class="tax-summary-line"><span>Profiles preserve which vehicle was used</span><span>One can be primary</span></div></div>
+              <div class="tax-head-actions"><button class="primary-btn compact-action" id="addVehicleInlineBtn">＋ Vehicle</button></div>
+            </div>
+            <div class="vehicle-grid" id="vehiclesContainer"></div>
+          </div>
+
+          <div class="phase-next-note taxes-note"><span>↳</span><div><strong>Mileage is a source record, not an expense.</strong><small>Phase 5 records the facts of each trip. Phase 6 can interpret those records for tax-year calculations without changing the original mileage history.</small></div></div>
+        </div>
+      </section>
+
       <section class="view records-atrium-view" data-page="records">
         <div class="content-wrap records-atrium-content">
           <div class="page-heading records-heading"><div><p class="eyebrow">RECORDS</p><h1>Receipt evidence, without the filing cabinet.</h1><p class="subtitle">Receipts stay linked to the expense that created them. Search the evidence here; open the expense for full context.</p></div><button class="secondary-btn" id="exportBackupFromRecords">Export local backup</button></div>
@@ -189,6 +229,7 @@
         <button class="mobile-nav-item" data-view="work"><span>◫</span><small>Work</small></button>
         <button class="mobile-add" id="mobileAddBtn" aria-label="Add new record">＋</button>
         <button class="mobile-nav-item" data-view="money"><span>$</span><small>Money</small></button>
+        <button class="mobile-nav-item" data-view="taxes"><span>↝</span><small>Taxes</small></button>
         <button class="mobile-nav-item" data-view="records"><span>▤</span><small>Records</small></button>
       </nav>
     </main>
@@ -204,12 +245,12 @@
       <button class="quick-card enabled" data-action="add-invoice"><span class="quick-icon">▧</span><strong>Invoice</strong><small>Active</small></button>
       <button class="quick-card enabled" data-action="add-payment"><span class="quick-icon">$</span><strong>Payment</strong><small>Active</small></button>
       <button class="quick-card enabled" data-action="add-expense"><span class="quick-icon">−</span><strong>Expense</strong><small>Active</small></button>
-      <button class="quick-card"><span class="quick-icon">↝</span><strong>Mileage</strong><small>Phase 5</small></button>
+      <button class="quick-card enabled" data-action="add-mileage"><span class="quick-icon">↝</span><strong>Mileage</strong><small>Active</small></button>
     </div>
   </section>
 
   <section class="command-palette" id="commandPalette" role="dialog" aria-modal="true" aria-labelledby="commandTitle" hidden>
-    <div class="command-input-row"><span>⌕</span><input id="commandInput" aria-label="Search" placeholder="Search clients, sessions, invoices, payments, expenses, records…" autocomplete="off" /><kbd>Esc</kbd></div>
+    <div class="command-input-row"><span>⌕</span><input id="commandInput" aria-label="Search" placeholder="Search clients, sessions, invoices, payments, expenses, mileage, vehicles…" autocomplete="off" /><kbd>Esc</kbd></div>
     <div class="command-body" id="commandBody"><p class="command-label" id="commandTitle">Quick navigation</p></div>
   </section>
 
@@ -261,6 +302,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=pills-complete-20260911"></script>
+  <script src="app.js?v=phase5-mileage-20260911b"></script>
 </body>
 </html>

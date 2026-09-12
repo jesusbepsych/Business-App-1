@@ -1,3 +1,43 @@
+# Phase 5 — Taxes / Mileage + Vehicles Alpha
+
+This checkpoint adds a fifth permanent destination: **Home → Work → Money → Taxes → Records**. The new Taxes area begins with Mileage + Vehicle Tracking and is intentionally designed as the future home for Phase 6 tax interpretation.
+
+## Active Phase 5 behavior
+- Vehicle profiles with year/make/model, optional nickname, active/inactive status, optional odometer, notes, and one primary vehicle.
+- Mileage source records with date, vehicle, miles, Business/Personal classification, optional start/end labels, business purpose, client/session linkage, notes, and Needs Review state.
+- Mileage filters for All / Business / Personal / Needs Review and seven-record pagination.
+- Tax summary metrics for this-month business miles, all-time business miles, primary vehicle, and review count.
+- Vehicle summary cards with linked trip count, business miles, and odometer.
+- Edit/delete/detail flows for trips and vehicles, including audit events and snapshot preservation when linked work/vehicles are later removed.
+- Home Attention now includes mileage records that need review.
+- Global search now finds Taxes, mileage trips, and vehicles.
+- Quick Add includes Mileage.
+- Schema version 7 migrates existing Phase 4 local data without changing invoices, payments, expenses, receipts, clients, or sessions.
+
+## Design rules
+- Mileage is a source record, **not an expense**. A trip can later be interpreted by tax logic without pretending money left the account.
+- Phase 5 records driving facts and business context; it does **not** decide tax deductibility or compute a mileage deduction.
+- Client/session links are optional and keep snapshots so history remains understandable after linked records are removed.
+- The Taxes page uses the existing Corporate Atrium + Frosted Window Bays system and the Safari/iPad no-flash profile.
+
+## Suggested Phase 5 test
+1. Open Taxes and add a vehicle; confirm the first active vehicle becomes Primary.
+2. Add a Business mileage trip with a purpose and verify it appears in Trip history and summary miles.
+3. Add a Personal trip and verify it does not increase Business miles.
+4. Add a Business trip without a purpose; verify it becomes Needs Review and appears on Home → Attention.
+5. Mark that trip reviewed and confirm it leaves Attention.
+6. Link a trip to a client/session, then open its detail view and verify the work context.
+7. Delete the linked session/client and confirm the mileage record survives with snapshots.
+8. Add a second vehicle, make it Primary, and verify the prior Primary clears.
+9. Delete a vehicle with mileage; confirm the trips remain with the saved vehicle-name snapshot.
+10. Search for a vehicle or mileage purpose from global search and confirm navigation opens the correct record.
+
+## Still deferred
+- Tax deduction eligibility/rules, mileage rates, Schedule C mapping, estimated taxes, and tax-year calculations (Phase 6).
+- Automatic GPS/route capture and advanced mileage automation (Phase 12).
+- Backup restore/import.
+- Secure cloud authentication/sync.
+
 ## Frosted Window Bays Alpha
 
 This build applies the selected **Frosted Window Bays** material direction across the four main Corporate Atrium tabs. Main information surfaces now use cool gray-blue architectural frost, restrained luminous borders, localized background blur, and softer window-like highlights so the atrium remains visible through the interface. Semantic color is kept primarily in labels, chips, and status indicators instead of tinting whole cards.

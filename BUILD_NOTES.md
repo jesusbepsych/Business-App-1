@@ -238,3 +238,15 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Strengthened Money summary semantic pills: Cash in (green), Invoices (amber), Attention/Overdue (red).
 - Strengthened small counts inside segmented controls.
 - Safari/iPad keeps solid local color without adding live blur.
+
+
+## Phase 5 — Taxes / Mileage + Vehicles Alpha
+- Added fifth permanent navigation destination: Taxes.
+- Advanced local schema to v7 with `vehicles` and `mileageTrips`.
+- Added vehicle profiles, primary-vehicle invariants, mileage source records, filters, pagination, details, edit/delete flows, and audit events.
+- Added client/session linkage plus snapshots; deleting linked work no longer destroys mileage context.
+- Added mileage review items to Home Attention and mileage/vehicle results to global search.
+- Added Quick Add → Mileage.
+- Added Corporate Atrium / Frosted Window Bays styling for Taxes, with Safari/iPad static-frost no-flash treatment.
+- Added responsive mileage ledger and vehicle-card layouts, including a six-control mobile bottom bar (five destinations plus Quick Add).
+- Explicitly does not calculate tax deductions or mileage rates; those remain Phase 6 concerns.

@@ -2801,3 +2801,452 @@ html.atrium-lite body:is(.work-atrium-active,.money-atrium-active,.records-atriu
   backdrop-filter:none !important;
   -webkit-backdrop-filter:none !important;
 }
+
+/* ========================================================================== */
+/* Phase 5 — Taxes / Mileage + Vehicle Tracking                               */
+/* ========================================================================== */
+
+/* Fifth permanent destination keeps the same Corporate Atrium foundation. */
+body.taxes-atrium-active .taxes-atrium-view {
+  color:#f5f9fb;
+  position:relative;
+  isolation:isolate;
+  min-height:calc(100svh - 72px);
+}
+body.taxes-atrium-active .taxes-atrium-content {
+  position:relative;
+  z-index:2;
+  max-width:1320px;
+  padding-top:30px;
+}
+body.taxes-atrium-active .taxes-atrium-view .page-heading {
+  margin-bottom:18px;
+}
+body.taxes-atrium-active .taxes-atrium-view .page-heading > div:first-child {
+  position:relative;
+  isolation:isolate;
+}
+body.taxes-atrium-active .taxes-atrium-view .page-heading > div:first-child::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-26px -78px -28px -34px;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at 24% 50%,rgba(4,11,16,.56) 0%,rgba(4,11,16,.34) 40%,rgba(4,11,16,.08) 68%,transparent 82%),
+    linear-gradient(90deg,rgba(4,11,16,.22),transparent 72%);
+  filter:blur(10px);
+}
+body.taxes-atrium-active .taxes-atrium-view .page-heading h1 {
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-weight:560;
+  letter-spacing:-.052em;
+  font-size:clamp(38px,4.6vw,62px);
+  color:#fbfdff;
+  text-shadow:0 6px 32px rgba(2,8,12,.48),0 1px 0 rgba(255,255,255,.05);
+}
+body.taxes-atrium-active .taxes-atrium-view .eyebrow {
+  color:rgba(241,246,249,.86);
+  text-shadow:0 2px 14px rgba(0,0,0,.36);
+}
+body.taxes-atrium-active .taxes-atrium-view .subtitle {
+  color:rgba(243,247,250,.90);
+  font-size:15px;
+  text-shadow:0 3px 20px rgba(0,0,0,.42);
+}
+body.taxes-atrium-active .taxes-actions {
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+body.taxes-atrium-active .taxes-actions .secondary-btn,
+body.taxes-atrium-active .tax-head-actions .filter-pill,
+body.taxes-atrium-active .tax-head-actions .secondary-btn {
+  color:#f5fafc;
+  background:linear-gradient(145deg,rgba(91,124,141,.53),rgba(49,78,94,.60));
+  border:1px solid rgba(238,249,253,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 10px 24px rgba(0,0,0,.15);
+  backdrop-filter:blur(10px) saturate(1.04);
+  -webkit-backdrop-filter:blur(10px) saturate(1.04);
+}
+body.taxes-atrium-active .taxes-actions .primary-btn,
+body.taxes-atrium-active .tax-head-actions .primary-btn {
+  color:#172027;
+  background:linear-gradient(180deg,#f6ead0,#e9c98b);
+  border:1px solid rgba(255,255,255,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 14px 34px rgba(79,49,13,.20);
+}
+
+/* Frosted Window Bays for tax summary metrics. */
+.tax-metric-grid {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+  margin-bottom:14px;
+}
+body.taxes-atrium-active .tax-metric-grid .metric-card {
+  position:relative;
+  overflow:hidden;
+  min-height:142px;
+  padding:18px 19px;
+  color:#f5f8fa;
+  border:1px solid rgba(240,248,252,.25);
+  background:linear-gradient(145deg,rgba(121,151,167,.39),rgba(77,108,125,.36) 50%,rgba(48,79,95,.43));
+  backdrop-filter:blur(15px) saturate(1.08) contrast(1.01);
+  -webkit-backdrop-filter:blur(15px) saturate(1.08) contrast(1.01);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(255,255,255,.03),0 22px 48px rgba(0,0,0,.17);
+}
+body.taxes-atrium-active .tax-metric-grid .metric-card::before {
+  content:"";
+  position:absolute;
+  inset:-40%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,245,221,.15),transparent 21%),
+    linear-gradient(110deg,transparent 30%,rgba(255,255,255,.055) 43%,rgba(255,255,255,.11) 50%,rgba(255,255,255,.035) 58%,transparent 69%);
+  opacity:.38;
+}
+body.taxes-atrium-active .tax-metric-grid .metric-card > * { position:relative; z-index:1; }
+body.taxes-atrium-active .taxes-atrium-view .metric-head { color:rgba(244,248,250,.88); }
+body.taxes-atrium-active .taxes-atrium-view .metric-value {
+  color:#fff;
+  font-weight:790;
+  text-shadow:0 3px 18px rgba(0,0,0,.34);
+}
+body.taxes-atrium-active .taxes-atrium-view .metric-caption { color:rgba(234,241,245,.80); }
+body.taxes-atrium-active .tax-vehicle-value {
+  font-size:clamp(19px,2.15vw,27px);
+  line-height:1.08;
+  overflow-wrap:anywhere;
+}
+body.taxes-atrium-active .tax-chip-month {
+  color:#cbe8ff !important;
+  background:rgba(35,76,105,.80) !important;
+  border-color:rgba(142,203,245,.42) !important;
+}
+body.taxes-atrium-active .tax-chip-vehicle {
+  color:#f5dca7 !important;
+  background:rgba(103,77,34,.82) !important;
+  border-color:rgba(236,194,117,.43) !important;
+}
+body.taxes-atrium-active .tax-chip-review {
+  color:#ffd08a !important;
+  background:rgba(119,77,23,.84) !important;
+  border-color:rgba(255,196,111,.48) !important;
+}
+
+/* Mileage / Vehicles section switcher. */
+body.taxes-atrium-active .taxes-segments {
+  width:max-content;
+  max-width:100%;
+  margin:0 0 22px;
+  padding:4px;
+  border:1px solid rgba(239,249,253,.24);
+  background:linear-gradient(145deg,rgba(118,149,166,.38),rgba(61,94,111,.39));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 12px 28px rgba(0,0,0,.13);
+  backdrop-filter:blur(12px) saturate(1.05);
+  -webkit-backdrop-filter:blur(12px) saturate(1.05);
+}
+body.taxes-atrium-active .taxes-segments .segment { color:rgba(237,244,247,.75); }
+body.taxes-atrium-active .taxes-segments .segment.active {
+  color:#fff;
+  background:rgba(221,236,244,.17);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 5px 13px rgba(0,0,0,.12);
+}
+.tax-tab { display:none; }
+.tax-tab.active { display:block; }
+.tax-list-head {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
+  margin:0 0 12px;
+}
+.tax-list-head h2 { color:#f9fcfd; font-size:24px; text-shadow:0 2px 14px rgba(0,0,0,.24); }
+.tax-summary-line {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 18px;
+  margin-top:6px;
+  color:rgba(231,239,243,.72);
+  font-size:10px;
+}
+.tax-summary-line span:last-child { color:rgba(199,228,240,.82); }
+.tax-head-actions { display:flex; gap:8px; align-items:center; }
+
+/* Mileage ledger. */
+body.taxes-atrium-active .taxes-atrium-view .data-card {
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(240,248,252,.25);
+  background:linear-gradient(145deg,rgba(100,132,149,.47),rgba(55,87,104,.45) 52%,rgba(39,70,87,.52));
+  backdrop-filter:blur(14px) saturate(1.06);
+  -webkit-backdrop-filter:blur(14px) saturate(1.06);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 22px 50px rgba(0,0,0,.16);
+}
+body.taxes-atrium-active .taxes-atrium-view .data-card::before {
+  content:"";
+  position:absolute;
+  inset:-38%;
+  pointer-events:none;
+  background:linear-gradient(108deg,transparent 35%,rgba(255,255,255,.055) 47%,rgba(255,255,255,.09) 52%,transparent 65%);
+  opacity:.32;
+}
+body.taxes-atrium-active .taxes-atrium-view .data-card > * { position:relative; z-index:1; }
+.mileage-grid {
+  display:grid;
+  grid-template-columns:.76fr 1.28fr .62fr 1.3fr .64fr;
+  gap:14px;
+  align-items:center;
+}
+body.taxes-atrium-active .taxes-atrium-view .table-head {
+  color:rgba(231,239,243,.68);
+  border-color:rgba(237,247,252,.10);
+}
+body.taxes-atrium-active .taxes-atrium-view .table-row {
+  color:#f7fafc;
+  border-color:rgba(237,247,252,.10);
+}
+body.taxes-atrium-active .taxes-atrium-view .table-row:hover { background:rgba(255,255,255,.045); }
+body.taxes-atrium-active .taxes-atrium-view .table-row strong { font-weight:760; }
+body.taxes-atrium-active .taxes-atrium-view .table-row small { color:rgba(229,238,242,.70); }
+body.taxes-atrium-active .taxes-atrium-view .session-pagination {
+  border-color:rgba(238,248,252,.10);
+  background:rgba(9,22,29,.18);
+}
+body.taxes-atrium-active .taxes-atrium-view .pagination-arrow {
+  color:#f7fafc;
+  background:rgba(255,255,255,.07);
+  border-color:rgba(240,248,252,.14);
+}
+body.taxes-atrium-active .taxes-atrium-view .pagination-copy strong { color:#f8fbfc; }
+body.taxes-atrium-active .taxes-atrium-view .pagination-copy small { color:rgba(229,238,242,.63); }
+
+/* Vehicle profiles are source records, not decorative cards. */
+.vehicle-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+}
+.vehicle-card {
+  appearance:none;
+  text-align:left;
+  font:inherit;
+  min-width:0;
+}
+body.taxes-atrium-active .vehicle-card {
+  position:relative;
+  overflow:hidden;
+  min-height:218px;
+  padding:18px;
+  border-radius:18px;
+  color:#f7fafc;
+  border:1px solid rgba(239,248,252,.23);
+  background:linear-gradient(145deg,rgba(121,151,167,.40),rgba(70,102,119,.37) 52%,rgba(46,76,92,.44));
+  backdrop-filter:blur(14px) saturate(1.07);
+  -webkit-backdrop-filter:blur(14px) saturate(1.07);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 20px 44px rgba(0,0,0,.16);
+  cursor:pointer;
+  transition:transform .16s var(--ease),border-color .16s var(--ease),box-shadow .16s var(--ease);
+}
+body.taxes-atrium-active .vehicle-card::before {
+  content:"";
+  position:absolute;
+  inset:-38%;
+  pointer-events:none;
+  background:radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,243,218,.12),transparent 23%);
+  opacity:.46;
+}
+body.taxes-atrium-active .vehicle-card > * { position:relative; z-index:1; }
+body.taxes-atrium-active .vehicle-card:hover {
+  transform:translateY(-2px);
+  border-color:rgba(242,250,253,.34);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 26px 50px rgba(0,0,0,.20);
+}
+body.taxes-atrium-active .vehicle-card.primary-vehicle {
+  border-color:rgba(238,198,127,.40);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 22px 46px rgba(0,0,0,.17),0 0 20px rgba(234,185,105,.06);
+}
+.vehicle-card-top {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:20px;
+}
+.vehicle-icon {
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  color:#f5dca7;
+  background:rgba(91,68,32,.44);
+  border:1px solid rgba(234,196,125,.24);
+  font-size:20px;
+}
+.vehicle-card > strong {
+  display:block;
+  font-size:18px;
+  letter-spacing:-.025em;
+  overflow-wrap:anywhere;
+}
+.vehicle-card > small {
+  display:block;
+  margin-top:5px;
+  color:rgba(230,239,243,.69);
+}
+.vehicle-meta {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-top:24px;
+  padding-top:15px;
+  border-top:1px solid rgba(238,248,252,.10);
+}
+.vehicle-meta span { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.vehicle-meta b { color:#fff; font-size:15px; overflow-wrap:anywhere; }
+.vehicle-meta small { color:rgba(228,237,241,.59); font-size:9px; }
+
+body.taxes-atrium-active .taxes-atrium-view .large-empty {
+  color:#f7fafc;
+  background:linear-gradient(145deg,rgba(114,145,161,.37),rgba(58,89,106,.40));
+  border-color:rgba(238,248,252,.22);
+}
+body.taxes-atrium-active .taxes-atrium-view .large-empty p { color:rgba(231,239,243,.72); }
+body.taxes-atrium-active .taxes-atrium-view .large-empty .secondary-btn {
+  color:#f5fafc;
+  background:rgba(54,84,100,.66);
+  border-color:rgba(238,248,252,.25);
+}
+body.taxes-atrium-active .taxes-note {
+  margin-top:18px;
+  color:rgba(235,243,247,.78);
+  border:1px solid rgba(238,248,252,.19);
+  background:linear-gradient(145deg,rgba(100,130,146,.34),rgba(49,79,95,.38));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 15px 34px rgba(0,0,0,.12);
+  backdrop-filter:blur(11px) saturate(1.04);
+  -webkit-backdrop-filter:blur(11px) saturate(1.04);
+}
+body.taxes-atrium-active .taxes-note strong { color:#f8fbfc; }
+body.taxes-atrium-active .taxes-note small { color:rgba(229,238,242,.67); }
+
+/* Mileage form classification chooser. */
+.mileage-type-switch {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+}
+.mileage-type-switch .expense-type-option { min-height:78px; }
+.mileage-type-switch .expense-type-option.active {
+  border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent),0 10px 26px rgba(40,84,220,.08);
+}
+
+/* Semantic mileage/vehicle pills join the existing visibility system. */
+body.taxes-atrium-active .status-pill,
+body.taxes-atrium-active .muted-chip,
+body.taxes-atrium-active .quiet-badge {
+  border:1px solid rgba(255,255,255,.18) !important;
+  background:rgba(20,31,39,.78) !important;
+  color:#f7fbfd !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 5px 14px rgba(0,0,0,.22) !important;
+  text-shadow:0 1px 7px rgba(0,0,0,.38);
+}
+body.taxes-atrium-active .status-pill.success {
+  color:#8ff0bb !important;
+  background:rgba(24,92,65,.82) !important;
+  border-color:rgba(126,238,177,.46) !important;
+}
+body.taxes-atrium-active .status-pill.void {
+  color:#d7a7ff !important;
+  background:rgba(87,49,118,.84) !important;
+  border-color:rgba(206,148,255,.48) !important;
+}
+body.taxes-atrium-active .status-pill.review {
+  color:#ffd08a !important;
+  background:rgba(119,77,23,.84) !important;
+  border-color:rgba(255,196,111,.50) !important;
+}
+body.taxes-atrium-active .status-pill.accent {
+  color:#b6d0ff !important;
+  background:rgba(44,69,128,.83) !important;
+  border-color:rgba(142,173,255,.48) !important;
+}
+body.taxes-atrium-active .taxes-segments .segment > span {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:18px;
+  min-height:18px;
+  padding:0 5px;
+  margin-left:4px;
+  border-radius:999px;
+  color:rgba(247,251,253,.93);
+  background:rgba(28,43,53,.78);
+  border:1px solid rgba(235,247,252,.24);
+}
+
+/* Safari/iPad: same pre-tinted frosted material, no live backdrop sampling. */
+html.atrium-lite .tax-tab,
+html.atrium-lite .tax-tab.active {
+  animation:none !important;
+  transition:none !important;
+  transform:none !important;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view
+:is(.metric-card,.data-card,.vehicle-card,.taxes-segments,.filter-pill,.taxes-note) {
+  background:linear-gradient(145deg,rgba(139,169,184,.51),rgba(86,119,136,.49) 49%,rgba(58,89,105,.55)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.17),inset 0 -1px 0 rgba(255,255,255,.035),0 18px 38px rgba(0,0,0,.15) !important;
+  contain:paint;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(94,126,143,.65),rgba(56,88,105,.62) 52%,rgba(40,70,87,.66)) !important;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view
+:is(.metric-card,.data-card,.vehicle-card)::before {
+  transition:none !important;
+  animation:none !important;
+  transform:none !important;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view
+:is(.status-pill,.muted-chip,.quiet-badge,.filter-pill) {
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+html.atrium-lite body.taxes-atrium-active .vehicle-card:hover { transform:none; }
+
+/* Navigation now supports five permanent destinations. */
+@media (max-width:920px) {
+  .mobile-nav {
+    grid-template-columns:repeat(2,minmax(0,1fr)) 56px repeat(3,minmax(0,1fr));
+    padding-left:max(4px,env(safe-area-inset-left));
+    padding-right:max(4px,env(safe-area-inset-right));
+  }
+  .mobile-nav-item { min-width:0; }
+  .mobile-nav-item small { font-size:8px; }
+  body.taxes-atrium-active .taxes-atrium-view .page-heading h1 { font-size:clamp(35px,9vw,50px); }
+  .tax-metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .vehicle-grid { grid-template-columns:1fr; }
+  .tax-list-head { align-items:flex-start; flex-direction:column; }
+  .mileage-grid.table-head { display:none; }
+  .table-row.mileage-grid {
+    grid-template-columns:1fr 1fr;
+    gap:10px 14px;
+  }
+  .table-row.mileage-grid > span:last-child { grid-column:2; justify-self:end; }
+}
+
+@media (max-width:620px) {
+  .tax-metric-grid { grid-template-columns:1fr; }
+  .taxes-actions { width:100%; justify-content:stretch; }
+  .taxes-actions .secondary-btn,.taxes-actions .primary-btn { flex:1; justify-content:center; }
+  .table-row.mileage-grid { grid-template-columns:1fr; }
+  .table-row.mileage-grid > span:last-child { grid-column:auto; justify-self:start; }
+  .vehicle-meta { gap:5px; }
+}

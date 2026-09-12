@@ -12,7 +12,7 @@
   const defaultClientColorForIndex = (index = 0) => CLIENT_COLOR_KEYS[Math.abs(Number(index) || 0) % CLIENT_COLOR_KEYS.length];
 
   const initialData = {
-    schemaVersion: 6,
+    schemaVersion: 7,
     activeBusinessId: 'biz_play_it_forward',
     businesses: [{
       id: 'biz_play_it_forward',
@@ -32,6 +32,8 @@
     payments: [],
     expenses: [],
     receipts: [],
+    vehicles: [],
+    mileageTrips: [],
     auditEvents: [],
   };
 
@@ -44,11 +46,13 @@
   function migrateData(parsed) {
     if (!parsed || typeof parsed !== 'object') return deepClone(initialData);
     if (parsed.schemaVersion === 2) {
-      parsed.schemaVersion = 6;
+      parsed.schemaVersion = 7;
       parsed.invoices = [];
       parsed.payments = [];
       parsed.expenses = [];
       parsed.receipts = [];
+      parsed.vehicles = [];
+      parsed.mileageTrips = [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       const clientNames = new Map((parsed.clients || []).map(c => [c.id, c.displayName]));
       parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
@@ -56,32 +60,47 @@
       return parsed;
     }
     if (parsed.schemaVersion === 3) {
-      parsed.schemaVersion = 6;
+      parsed.schemaVersion = 7;
       parsed.invoices ||= [];
       parsed.payments = [];
       parsed.expenses = [];
       parsed.receipts = [];
+      parsed.vehicles = [];
+      parsed.mileageTrips = [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
       return parsed;
     }
     if (parsed.schemaVersion === 4 || parsed.schemaVersion === 5) {
-      parsed.schemaVersion = 6;
+      parsed.schemaVersion = 7;
       parsed.invoices ||= [];
       parsed.payments ||= [];
       parsed.expenses ||= [];
       parsed.receipts ||= [];
+      parsed.vehicles ||= [];
+      parsed.mileageTrips ||= [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
       return parsed;
     }
     if (parsed.schemaVersion === 6) {
+      parsed.schemaVersion = 7;
       parsed.invoices ||= [];
       parsed.payments ||= [];
       parsed.expenses ||= [];
       parsed.receipts ||= [];
+      parsed.vehicles ||= [];
+      parsed.mileageTrips ||= [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
+      return parsed;
+    }
+    if (parsed.schemaVersion === 7) {
+      parsed.invoices ||= []; parsed.payments ||= []; parsed.expenses ||= []; parsed.receipts ||= [];
+      parsed.vehicles ||= []; parsed.mileageTrips ||= []; parsed.auditEvents ||= [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
@@ -160,7 +179,7 @@
   const repository = new LocalRepository();
   const receiptBlobStore = new ReceiptBlobStore();
   const data = repository.load();
-  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null };
+  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null, taxTab: 'mileage', mileageFilter: 'all', mileagePage: 1, mileagePageSize: 7 };
   let homeRecentRotationTimer = null;
   let homeRecentSignature = '';
   let homeRecentSwapTimer = null;
@@ -314,11 +333,21 @@
     return data.receipts.filter(receipt => receipt.businessId === businessId);
   }
 
+  function businessVehicles(businessId = data.activeBusinessId) {
+    return data.vehicles.filter(vehicle => vehicle.businessId === businessId);
+  }
+
+  function businessMileageTrips(businessId = data.activeBusinessId) {
+    return data.mileageTrips.filter(trip => trip.businessId === businessId);
+  }
+
   function clientById(id) { return data.clients.find(c => c.id === id); }
   function invoiceById(id) { return data.invoices.find(invoice => invoice.id === id); }
   function paymentById(id) { return data.payments.find(payment => payment.id === id); }
   function expenseById(id) { return data.expenses.find(expense => expense.id === id); }
   function receiptById(id) { return data.receipts.find(receipt => receipt.id === id); }
+  function vehicleById(id) { return data.vehicles.find(vehicle => vehicle.id === id); }
+  function mileageTripById(id) { return data.mileageTrips.find(trip => trip.id === id); }
   function clientColorKey(client) { return CLIENT_COLOR_KEYS.includes(client?.colorKey) ? client.colorKey : 'blue'; }
   function clientColorClass(client) { return `client-color-${clientColorKey(client)}`; }
 
@@ -472,10 +501,11 @@
   }
 
   function applyHomeAtriumState(viewName = ui.activeView) {
-    const usesAtrium = ['home','work','money','records'].includes(viewName);
+    const usesAtrium = ['home','work','money','taxes','records'].includes(viewName);
     document.body.classList.toggle('home-atrium-active', usesAtrium);
     document.body.classList.toggle('work-atrium-active', viewName === 'work');
     document.body.classList.toggle('money-atrium-active', viewName === 'money');
+    document.body.classList.toggle('taxes-atrium-active', viewName === 'taxes');
     document.body.classList.toggle('records-atrium-active', viewName === 'records');
     homeAtriumScene?.setAttribute('aria-hidden', 'true');
     if (usesAtrium) applyAtriumRuntimeProfile();
@@ -490,7 +520,7 @@
 
   function commitAtriumMotion() {
     atriumFrame = null;
-    if (!['home','work','money','records'].includes(ui.activeView) || prefersReducedMotion.matches) return;
+    if (!['home','work','money','taxes','records'].includes(ui.activeView) || prefersReducedMotion.matches) return;
     const px = atriumMotionProfile === 'desktop' ? atriumPointerX : 0;
     const py = atriumMotionProfile === 'desktop' ? atriumPointerY : 0;
     document.documentElement.style.setProperty('--atrium-px', px.toFixed(4));
@@ -501,7 +531,7 @@
   }
 
   function queueAtriumMotion(clientX, clientY) {
-    if (!['home','work','money','records'].includes(ui.activeView) || prefersReducedMotion.matches) return;
+    if (!['home','work','money','taxes','records'].includes(ui.activeView) || prefersReducedMotion.matches) return;
     if (atriumMotionProfile !== 'desktop') {
       atriumPointerX = 0;
       atriumPointerY = 0;
@@ -615,16 +645,18 @@
     const incomplete = sessions.filter(s => !s.clientId || !s.date || !s.startTime || !s.endTime);
     const overdue = businessInvoices().filter(invoice => invoiceDisplayStatus(invoice) === 'Overdue');
     const expenseReview = businessExpenses().filter(expense => expense.reviewStatus === 'needs_review');
+    const mileageReview = businessMileageTrips().filter(mileageReviewStatus);
     const attentionItems = [
       ...overdue.map(invoice => ({ type: 'invoice', id: invoice.id, title: `${invoice.number} is overdue`, sub: `${invoice.recipientSnapshot?.displayName || 'Client'} · ${formatMoney(invoiceBalanceCents(invoice), activeBusiness().currency)} still due` })),
       ...expenseReview.map(expense => ({ type: 'expense', id: expense.id, title: `${expense.merchant || 'Expense'} needs review`, sub: `${formatMoney(expense.totalCents || 0, activeBusiness().currency)} · ${expenseCategoryLabel(expense.category)} · ${formatDate(expense.date,{month:'short',day:'numeric'})}` })),
+      ...mileageReview.map(trip => ({ type: 'mileage', id: trip.id, title: `${formatMiles(trip.miles)} mileage trip needs review`, sub: `${trip.purpose || 'Business purpose needed'} · ${formatDate(trip.date,{month:'short',day:'numeric'})}` })),
       ...incomplete.map(session => ({ type: 'session', id: session.id, title: 'Incomplete work session', sub: `${clientById(session.clientId)?.displayName || session.clientNameSnapshot || 'No client'} · ${formatDate(session.date)}` }))
     ];
     $('#attentionCount').textContent = `${attentionItems.length} ${attentionItems.length === 1 ? 'item' : 'items'}`;
     $('#attentionTitle').textContent = attentionItems.length ? 'A few records need review.' : 'Nothing needs your attention.';
     $('#attentionBody').innerHTML = attentionItems.length
-      ? `<div class="attention-list">${attentionItems.slice(0,3).map(item => `<button ${item.type === 'invoice' ? `data-invoice-detail="${item.id}"` : item.type === 'expense' ? `data-expense-detail="${item.id}"` : `data-session-detail="${item.id}"`}><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sub)}</small></button>`).join('')}</div>`
-      : `<p class="panel-copy">Overdue invoices, incomplete work sessions, and expenses you mark for review will collect here.</p>`;
+      ? `<div class="attention-list">${attentionItems.slice(0,3).map(item => `<button ${item.type === 'invoice' ? `data-invoice-detail="${item.id}"` : item.type === 'expense' ? `data-expense-detail="${item.id}"` : item.type === 'mileage' ? `data-mileage-detail="${item.id}"` : `data-session-detail="${item.id}"`}><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sub)}</small></button>`).join('')}</div>`
+      : `<p class="panel-copy">Overdue invoices, incomplete work sessions, expenses, and mileage you mark for review will collect here.</p>`;
 
     renderRandomHomeSessions(sessions, false);
     startHomeRecentRotation();
@@ -632,6 +664,7 @@
     $$('[data-session-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
     $$('[data-invoice-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
     $$('[data-expense-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => { setView('money'); ui.moneyTab='expenses'; syncMoneyTabs(); openExpenseDetail(btn.dataset.expenseDetail); }));
+    $$('[data-mileage-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => { setView('taxes'); ui.taxTab='mileage'; syncTaxTabs(); openMileageDetail(btn.dataset.mileageDetail); }));
   }
 
   function randomSample(items, count) {
@@ -1627,6 +1660,195 @@
     repository.save(data); if (receiptId) await receiptBlobStore.delete(receiptId).catch(()=>{}); closeModal(); renderAll(); setView('money'); ui.moneyTab='expenses'; syncMoneyTabs(); showToast('Expense deleted');
   }
 
+
+  function vehicleDisplayName(vehicle) {
+    if (!vehicle) return 'Unassigned vehicle';
+    const core = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ').trim();
+    return vehicle.nickname ? `${vehicle.nickname}${core ? ` · ${core}` : ''}` : (core || 'Vehicle');
+  }
+
+  function mileageClassificationLabel(value) {
+    return value === 'personal' ? 'Personal' : 'Business';
+  }
+
+  function mileageClassificationClass(value) {
+    return value === 'personal' ? 'void' : 'success';
+  }
+
+  function mileageReviewStatus(trip) {
+    if (trip.reviewStatus === 'needs_review') return true;
+    if (trip.classification === 'business' && !String(trip.purpose || '').trim()) return true;
+    return !trip.vehicleId && !trip.vehicleNameSnapshot;
+  }
+
+  function formatMiles(value) {
+    const miles = Math.max(0, Number(value) || 0);
+    return `${miles.toLocaleString(undefined,{ maximumFractionDigits:2 })} mi`;
+  }
+
+  function syncTaxTabs() {
+    $$('[data-tax-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.taxTab === ui.taxTab));
+    $$('[data-tax-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.taxPanel === ui.taxTab));
+  }
+
+  function renderTaxes() {
+    const vehicles = businessVehicles().slice().sort((a,b) => Number(Boolean(b.isPrimary)) - Number(Boolean(a.isPrimary)) || (a.createdAt || '').localeCompare(b.createdAt || ''));
+    const trips = businessMileageTrips().slice().sort((a,b) => `${b.date || ''}${b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.createdAt || ''}`));
+    const monthKey = businessMonthKey();
+    const businessTrips = trips.filter(trip => trip.classification === 'business');
+    const monthBusinessTrips = businessTrips.filter(trip => trip.date?.slice(0,7) === monthKey);
+    const monthMiles = monthBusinessTrips.reduce((sum,trip)=>sum + Number(trip.miles || 0),0);
+    const allMiles = businessTrips.reduce((sum,trip)=>sum + Number(trip.miles || 0),0);
+    const reviewTrips = trips.filter(mileageReviewStatus);
+    const primary = vehicles.find(vehicle => vehicle.isPrimary) || vehicles[0] || null;
+
+    $('#taxMonthMiles').textContent = formatMiles(monthMiles);
+    $('#taxAllMiles').textContent = formatMiles(allMiles);
+    $('#taxPrimaryVehicle').textContent = primary ? (primary.nickname || [primary.year,primary.make,primary.model].filter(Boolean).join(' ') || 'Vehicle') : 'None';
+    $('#taxVehicleCaption').textContent = primary ? vehicleDisplayName(primary) : 'Add a vehicle to start tracking';
+    $('#taxReviewCount').textContent = reviewTrips.length;
+    $('#mileageCount').textContent = trips.length;
+    $('#vehicleCount').textContent = vehicles.length;
+    $('#taxBusinessTripCount').textContent = `${businessTrips.length} business ${businessTrips.length === 1 ? 'trip' : 'trips'}`;
+    const linkedCount = trips.filter(trip => trip.sessionId || trip.clientId).length;
+    $('#taxLinkedTripCount').textContent = `${linkedCount} linked to work`;
+
+    const filterLabels = { all:'All trips', business:'Business', personal:'Personal', needs_review:'Needs review' };
+    $('#mileageFilterBtn').textContent = filterLabels[ui.mileageFilter] || 'All trips';
+    const filtered = trips.filter(trip => ui.mileageFilter === 'all' || (ui.mileageFilter === 'needs_review' ? mileageReviewStatus(trip) : trip.classification === ui.mileageFilter));
+    const pageSize = ui.mileagePageSize;
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    ui.mileagePage = Math.min(Math.max(1,ui.mileagePage), totalPages);
+    const start = (ui.mileagePage - 1) * pageSize;
+    const pageTrips = filtered.slice(start,start+pageSize);
+    const pagination = filtered.length > pageSize ? `<div class="session-pagination"><button class="pagination-arrow" data-mileage-page-prev ${ui.mileagePage<=1?'disabled':''}>‹</button><span class="pagination-copy"><strong>Page ${ui.mileagePage}</strong><small>of ${totalPages} · ${filtered.length} trips</small></span><button class="pagination-arrow" data-mileage-page-next ${ui.mileagePage>=totalPages?'disabled':''}>›</button></div>` : '';
+
+    $('#mileageContainer').innerHTML = filtered.length ? `<div class="table-head mileage-grid"><span>Date</span><span>Vehicle / route</span><span>Miles</span><span>Purpose / work</span><span>Status</span></div>${pageTrips.map(trip => {
+      const vehicle = vehicleById(trip.vehicleId);
+      const vehicleLabel = vehicle ? vehicleDisplayName(vehicle) : (trip.vehicleNameSnapshot || 'Unassigned vehicle');
+      const client = trip.clientId ? clientById(trip.clientId) : null;
+      const session = trip.sessionId ? data.sessions.find(item=>item.id===trip.sessionId) : null;
+      const workLabel = client?.displayName || trip.clientNameSnapshot || (session ? session.clientNameSnapshot : '');
+      const route = [trip.startLabel,trip.endLabel].filter(Boolean).join(' → ') || vehicleLabel;
+      const review = mileageReviewStatus(trip);
+      return `<button class="table-row mileage-grid" data-mileage-detail="${trip.id}"><span><strong>${formatDate(trip.date,{month:'short',day:'numeric'})}</strong><small>${escapeHtml(vehicleLabel)}</small></span><span><strong>${escapeHtml(route)}</strong><small>${escapeHtml(trip.notes || 'Trip record')}</small></span><span><strong>${escapeHtml(formatMiles(trip.miles))}</strong><small>${escapeHtml(mileageClassificationLabel(trip.classification))}</small></span><span><strong>${escapeHtml(trip.purpose || (trip.classification === 'personal' ? 'Personal trip' : 'Purpose needed'))}</strong><small>${escapeHtml(workLabel || 'Not linked to work')}</small></span><span><span class="status-pill ${review ? 'review' : mileageClassificationClass(trip.classification)}">${review ? 'Needs review' : escapeHtml(mileageClassificationLabel(trip.classification))}</span></span></button>`;
+    }).join('')}${pagination}` : emptyState(trips.length ? 'No trips match this filter' : 'No mileage yet', trips.length ? 'Choose another filter to see the rest of your mileage records.' : 'Log business driving as its own source record. You can connect a trip to a client or work session without turning it into an expense.', trips.length ? 'Show all trips' : 'Add first trip', trips.length ? 'all-mileage' : 'add-mileage');
+
+    $$('[data-mileage-detail]', $('#mileageContainer')).forEach(btn=>btn.addEventListener('click',()=>openMileageDetail(btn.dataset.mileageDetail)));
+    $('[data-mileage-page-prev]', $('#mileageContainer'))?.addEventListener('click',()=>{ ui.mileagePage=Math.max(1,ui.mileagePage-1); renderTaxes(); });
+    $('[data-mileage-page-next]', $('#mileageContainer'))?.addEventListener('click',()=>{ ui.mileagePage=Math.min(totalPages,ui.mileagePage+1); renderTaxes(); });
+    $$('[data-empty-action]', $('#mileageContainer')).forEach(btn=>btn.addEventListener('click',()=>{
+      if (btn.dataset.emptyAction === 'add-mileage') openMileageForm();
+      if (btn.dataset.emptyAction === 'all-mileage') { ui.mileageFilter='all'; ui.mileagePage=1; renderTaxes(); }
+    }));
+
+    $('#vehiclesContainer').innerHTML = vehicles.length ? vehicles.map(vehicle=>{
+      const vehicleTrips = trips.filter(trip=>trip.vehicleId===vehicle.id);
+      const businessMiles = vehicleTrips.filter(trip=>trip.classification==='business').reduce((sum,trip)=>sum+Number(trip.miles||0),0);
+      return `<button class="vehicle-card ${vehicle.isPrimary ? 'primary-vehicle' : ''}" data-vehicle-detail="${vehicle.id}"><div class="vehicle-card-top"><span class="vehicle-icon">◇</span><span class="status-pill ${vehicle.status === 'inactive' ? 'void' : vehicle.isPrimary ? 'accent' : 'success'}">${vehicle.isPrimary ? 'Primary' : vehicle.status === 'inactive' ? 'Inactive' : 'Active'}</span></div><strong>${escapeHtml(vehicle.nickname || vehicleDisplayName(vehicle))}</strong><small>${escapeHtml([vehicle.year,vehicle.make,vehicle.model].filter(Boolean).join(' ') || 'Vehicle profile')}</small><div class="vehicle-meta"><span><b>${vehicleTrips.length}</b><small>trips</small></span><span><b>${escapeHtml(formatMiles(businessMiles))}</b><small>business</small></span><span><b>${escapeHtml(vehicle.odometer ? Number(vehicle.odometer).toLocaleString() : '—')}</b><small>odometer</small></span></div></button>`;
+    }).join('') : emptyState('No vehicles yet','Add the vehicle you use for work. A vehicle profile lets each mileage entry preserve which vehicle was driven.','Add first vehicle','add-vehicle');
+    $$('[data-vehicle-detail]', $('#vehiclesContainer')).forEach(btn=>btn.addEventListener('click',()=>openVehicleDetail(btn.dataset.vehicleDetail)));
+    $$('[data-empty-action]', $('#vehiclesContainer')).forEach(btn=>btn.addEventListener('click',()=>{ if(btn.dataset.emptyAction==='add-vehicle') openVehicleForm(); }));
+    syncTaxTabs();
+  }
+
+  function openVehicleForm(existingId = null) {
+    $('#formSheet').classList.remove('session-form-sheet');
+    const existing = existingId ? vehicleById(existingId) : null;
+    ui.formMode='vehicle'; ui.formRecordId=existingId;
+    $('#formEyebrow').textContent=existing ? 'EDIT VEHICLE' : 'NEW VEHICLE';
+    $('#formTitle').textContent=existing ? (existing.nickname || vehicleDisplayName(existing)) : 'Vehicle profile';
+    $('#formSubmitBtn').textContent=existing ? 'Save changes' : 'Save vehicle';
+    $('#formFields').innerHTML=`<div class="field-row three"><label class="field"><span>Year</span><input name="year" inputmode="numeric" maxlength="4" placeholder="2024" value="${escapeHtml(existing?.year || '')}" /></label><label class="field"><span>Make</span><input name="make" maxlength="60" placeholder="Honda" value="${escapeHtml(existing?.make || '')}" /></label><label class="field"><span>Model</span><input name="model" maxlength="60" placeholder="Civic" value="${escapeHtml(existing?.model || '')}" /></label></div>
+      <label class="field"><span>Nickname <small>optional</small></span><input name="nickname" maxlength="80" placeholder="Main car" value="${escapeHtml(existing?.nickname || '')}" /></label>
+      <div class="field-row"><label class="field"><span>Status</span><select name="status"><option value="active" ${existing?.status!=='inactive'?'selected':''}>Active</option><option value="inactive" ${existing?.status==='inactive'?'selected':''}>Inactive</option></select></label><label class="field"><span>Current odometer <small>optional</small></span><input name="odometer" type="number" inputmode="decimal" min="0" step="1" placeholder="0" value="${escapeHtml(existing?.odometer || '')}" /></label></div>
+      <label class="check-row"><input name="isPrimary" type="checkbox" ${existing?.isPrimary || (!existing && !businessVehicles().some(v=>v.isPrimary)) ? 'checked' : ''} /><span><strong>Primary vehicle</strong><small>Used as the default when logging new mileage.</small></span></label>
+      <label class="field"><span>Notes <small>optional</small></span><textarea name="notes" rows="3" maxlength="400" placeholder="Anything useful about this vehicle">${escapeHtml(existing?.notes || '')}</textarea></label>`;
+    openModal($('#formSheet'));
+  }
+
+  function mileageSessionOptions(selectedId='') {
+    return `<option value="">No linked session</option>${businessSessions().slice().sort((a,b)=>`${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`)).map(session=>`<option value="${session.id}" ${session.id===selectedId?'selected':''}>${formatDate(session.date,{month:'short',day:'numeric'})} · ${escapeHtml(clientById(session.clientId)?.displayName || session.clientNameSnapshot || 'Client')} · ${escapeHtml(sessionTimeRangeLabel(session))}</option>`).join('')}`;
+  }
+
+  function openMileageForm(existingId = null) {
+    $('#formSheet').classList.remove('session-form-sheet');
+    const existing=existingId ? mileageTripById(existingId) : null;
+    const vehicles=businessVehicles().filter(v=>v.status!=='inactive' || v.id===existing?.vehicleId);
+    if (!vehicles.length && !existing) { showToast('Add a vehicle before logging mileage.'); openVehicleForm(); return; }
+    const primary=vehicles.find(v=>v.isPrimary) || vehicles[0];
+    const clients=businessClients();
+    ui.formMode='mileage'; ui.formRecordId=existingId;
+    $('#formEyebrow').textContent=existing ? 'EDIT MILEAGE' : 'MILEAGE';
+    $('#formTitle').textContent=existing ? `${formatMiles(existing.miles)} trip` : 'New mileage trip';
+    $('#formSubmitBtn').textContent=existing ? 'Save changes' : 'Save trip';
+    $('#formFields').innerHTML=`<div class="mileage-type-switch" role="group" aria-label="Trip classification"><button type="button" class="expense-type-option ${(existing?.classification||'business')==='business'?'active':''}" data-mileage-class="business"><span>Business</span><small>Tax-relevant work travel</small></button><button type="button" class="expense-type-option ${existing?.classification==='personal'?'active':''}" data-mileage-class="personal"><span>Personal</span><small>Tracked, not business</small></button></div><input type="hidden" name="classification" id="mileageClassification" value="${escapeHtml(existing?.classification||'business')}" />
+      <div class="field-row three"><label class="field"><span>Date</span><input name="date" type="date" required value="${escapeHtml(existing?.date || businessToday())}" /></label><label class="field"><span>Vehicle</span><select name="vehicleId" required>${vehicles.map(v=>`<option value="${v.id}" ${(existing?.vehicleId || primary?.id)===v.id?'selected':''}>${escapeHtml(vehicleDisplayName(v))}</option>`).join('')}</select></label><label class="field"><span>Miles</span><input name="miles" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="0.0" value="${escapeHtml(existing?.miles || '')}" /></label></div>
+      <div class="field-row"><label class="field"><span>Start <small>optional</small></span><input name="startLabel" maxlength="120" placeholder="Home / starting point" value="${escapeHtml(existing?.startLabel || '')}" /></label><label class="field"><span>End <small>optional</small></span><input name="endLabel" maxlength="120" placeholder="Client / destination" value="${escapeHtml(existing?.endLabel || '')}" /></label></div>
+      <label class="field" id="mileagePurposeField"><span>Business purpose</span><input name="purpose" maxlength="220" placeholder="e.g. Client session, supplies, business meeting" value="${escapeHtml(existing?.purpose || '')}" /></label>
+      <details class="optional-fields" ${existing?.clientId || existing?.sessionId || existing?.notes ? 'open' : ''}><summary>Link work & add notes <span>optional</span></summary><div class="optional-fields-body"><div class="field-row"><label class="field"><span>Client</span><select name="clientId"><option value="">No linked client</option>${clients.map(c=>`<option value="${c.id}" ${c.id===existing?.clientId?'selected':''}>${escapeHtml(c.displayName)}</option>`).join('')}</select></label><label class="field"><span>Work session</span><select name="sessionId">${mileageSessionOptions(existing?.sessionId || '')}</select></label></div><label class="field"><span>Notes</span><textarea name="notes" rows="3" maxlength="500" placeholder="Parking context, route note, or other detail">${escapeHtml(existing?.notes || '')}</textarea></label></div></details>
+      <label class="check-row"><input name="needsReview" type="checkbox" ${existing?.reviewStatus==='needs_review'?'checked':''} /><span><strong>Needs review</strong><small>Keep this trip in the attention queue until its context is complete.</small></span></label>`;
+    $$('[data-mileage-class]', $('#formFields')).forEach(btn=>btn.addEventListener('click',()=>{ $$('[data-mileage-class]', $('#formFields')).forEach(item=>item.classList.toggle('active',item===btn)); $('#mileageClassification').value=btn.dataset.mileageClass; const purpose=$('#mileagePurposeField'); if(purpose) purpose.hidden=btn.dataset.mileageClass==='personal'; }));
+    const mileageSessionSelect = $('[name="sessionId"]', $('#formFields'));
+    const mileageClientSelect = $('[name="clientId"]', $('#formFields'));
+    mileageSessionSelect?.addEventListener('change', () => {
+      const linked = mileageSessionSelect.value ? data.sessions.find(item=>item.id===mileageSessionSelect.value) : null;
+      if (linked && mileageClientSelect) mileageClientSelect.value = linked.clientId || '';
+    });
+    if ((existing?.classification||'business')==='personal') $('#mileagePurposeField').hidden=true;
+    openModal($('#formSheet'));
+  }
+
+  function openMileageDetail(id) {
+    const trip=mileageTripById(id); if(!trip) return;
+    const vehicle=vehicleById(trip.vehicleId);
+    const client=trip.clientId ? clientById(trip.clientId) : null;
+    const session=trip.sessionId ? data.sessions.find(item=>item.id===trip.sessionId) : null;
+    const review=mileageReviewStatus(trip);
+    $('#detailEyebrow').textContent='MILEAGE'; $('#detailTitle').textContent=formatMiles(trip.miles);
+    $('#detailBody').innerHTML=`<div class="detail-actions"><button class="secondary-btn" data-edit-mileage="${trip.id}">Edit</button>${review?`<button class="primary-btn" data-review-mileage="${trip.id}">Mark reviewed</button>`:''}<details class="record-more"><summary aria-label="More mileage actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-mileage="${trip.id}">Delete trip</button></div></details></div><div id="detailDeleteConfirm"></div>
+      <div class="detail-metrics"><div><small>Date</small><strong>${formatDate(trip.date)}</strong></div><div><small>Vehicle</small><strong>${escapeHtml(vehicle?.nickname || trip.vehicleNameSnapshot || vehicleDisplayName(vehicle))}</strong></div><div><small>Class</small><strong>${escapeHtml(mileageClassificationLabel(trip.classification))}</strong></div></div>
+      <div class="expense-hero-card"><div><span class="status-pill ${mileageClassificationClass(trip.classification)}">${escapeHtml(mileageClassificationLabel(trip.classification))}</span>${review?'<span class="status-pill review">Needs review</span>':'<span class="status-pill success">Ready</span>'}</div><strong>${escapeHtml([trip.startLabel,trip.endLabel].filter(Boolean).join(' → ') || 'Mileage trip')}</strong><small>${escapeHtml(trip.purpose || (trip.classification==='personal'?'Personal trip':'Business purpose not documented'))}</small></div>
+      ${client || trip.clientNameSnapshot || session ? `<div class="detail-section"><p class="eyebrow">LINKED WORK</p>${client || trip.clientNameSnapshot ? `<div class="trace-row"><span>Client</span><strong>${escapeHtml(client?.displayName || trip.clientNameSnapshot)}</strong></div>`:''}${session ? `<div class="trace-row"><span>Session</span><strong>${formatDate(session.date,{month:'short',day:'numeric'})} · ${escapeHtml(sessionTimeRangeLabel(session))}</strong></div>`:''}</div>`:''}
+      ${trip.notes?`<div class="detail-section"><p class="eyebrow">NOTE</p><p>${escapeHtml(trip.notes)}</p></div>`:''}
+      <div class="trace-banner"><span>↳</span><div><strong>Mileage source record</strong><small>This trip stores the driving facts separately from expenses. Later tax logic can interpret eligible mileage without rewriting the original record.</small></div></div>`;
+    openModal($('#detailPanel'));
+    $('[data-edit-mileage]')?.addEventListener('click',()=>openMileageForm(id));
+    $('[data-review-mileage]')?.addEventListener('click',()=>{ trip.reviewStatus='ready'; trip.updatedAt=nowIso(); persist('reviewed','MileageTrip',id); renderAll(); openMileageDetail(id); showToast('Mileage marked reviewed'); });
+    $('[data-delete-mileage]')?.addEventListener('click',()=>showMileageDeleteConfirmation(id));
+  }
+
+  function showMileageDeleteConfirmation(id) {
+    const trip=mileageTripById(id); const host=$('#detailDeleteConfirm'); if(!trip||!host) return;
+    host.innerHTML=`<div class="delete-confirm-card"><div><strong>Delete this ${escapeHtml(formatMiles(trip.miles))} trip?</strong><p>The mileage source record will be permanently removed from this local workspace.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-mileage-delete>Delete trip</button></div></div>`;
+    $('[data-cancel-delete]',host)?.addEventListener('click',()=>host.innerHTML='');
+    $('[data-confirm-mileage-delete]',host)?.addEventListener('click',()=>{ data.mileageTrips=data.mileageTrips.filter(item=>item.id!==id); data.auditEvents.push({id:uid('audit'),businessId:data.activeBusinessId,eventType:'deleted',entityType:'MileageTrip',entityId:id,details:{miles:trip.miles,classification:trip.classification},occurredAt:nowIso()}); repository.save(data); closeModal(); renderAll(); setView('taxes'); showToast('Mileage trip deleted'); });
+  }
+
+  function openVehicleDetail(id) {
+    const vehicle=vehicleById(id); if(!vehicle) return;
+    const trips=businessMileageTrips().filter(trip=>trip.vehicleId===id);
+    const businessMiles=trips.filter(trip=>trip.classification==='business').reduce((sum,trip)=>sum+Number(trip.miles||0),0);
+    $('#detailEyebrow').textContent='VEHICLE'; $('#detailTitle').textContent=vehicle.nickname || vehicleDisplayName(vehicle);
+    $('#detailBody').innerHTML=`<div class="detail-actions"><button class="secondary-btn" data-edit-vehicle="${vehicle.id}">Edit</button><button class="primary-btn" data-new-mileage-vehicle="${vehicle.id}">Log mileage</button><details class="record-more"><summary aria-label="More vehicle actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-vehicle="${vehicle.id}">Delete vehicle</button></div></details></div><div id="detailDeleteConfirm"></div>
+      <div class="detail-metrics"><div><small>Status</small><strong>${vehicle.isPrimary?'Primary':vehicle.status==='inactive'?'Inactive':'Active'}</strong></div><div><small>Trips</small><strong>${trips.length}</strong></div><div><small>Business miles</small><strong>${escapeHtml(formatMiles(businessMiles))}</strong></div></div>
+      <div class="payment-hero-card"><small>VEHICLE PROFILE</small><strong>${escapeHtml([vehicle.year,vehicle.make,vehicle.model].filter(Boolean).join(' ') || 'Vehicle')}</strong><span>${vehicle.odometer?`${Number(vehicle.odometer).toLocaleString()} odometer`:'Odometer not recorded'}</span></div>
+      ${vehicle.notes?`<div class="detail-section"><p class="eyebrow">NOTE</p><p>${escapeHtml(vehicle.notes)}</p></div>`:''}
+      <div class="trace-banner"><span>↳</span><div><strong>Vehicle source profile</strong><small>Trips keep a vehicle-name snapshot, so mileage history stays understandable even if this profile changes later.</small></div></div>`;
+    openModal($('#detailPanel'));
+    $('[data-edit-vehicle]')?.addEventListener('click',()=>openVehicleForm(id));
+    $('[data-new-mileage-vehicle]')?.addEventListener('click',()=>{ closeModal(); openMileageForm(); setTimeout(()=>{ const sel=$('[name="vehicleId"]',$('#dynamicForm')); if(sel) sel.value=id; },30); });
+    $('[data-delete-vehicle]')?.addEventListener('click',()=>showVehicleDeleteConfirmation(id));
+  }
+
+  function showVehicleDeleteConfirmation(id) {
+    const vehicle=vehicleById(id); const host=$('#detailDeleteConfirm'); if(!vehicle||!host) return;
+    const linked=businessMileageTrips().filter(trip=>trip.vehicleId===id).length;
+    host.innerHTML=`<div class="delete-confirm-card"><div><strong>Delete ${escapeHtml(vehicle.nickname || vehicleDisplayName(vehicle))}?</strong><p>${linked?`${linked} linked ${linked===1?'trip':'trips'} will remain in mileage history using their saved vehicle snapshot.`:'This vehicle has no linked mileage.'}</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-vehicle-delete>Delete vehicle</button></div></div>`;
+    $('[data-cancel-delete]',host)?.addEventListener('click',()=>host.innerHTML='');
+    $('[data-confirm-vehicle-delete]',host)?.addEventListener('click',()=>{ businessMileageTrips().filter(trip=>trip.vehicleId===id).forEach(trip=>{ trip.vehicleNameSnapshot=trip.vehicleNameSnapshot || vehicleDisplayName(vehicle); trip.vehicleId=null; trip.updatedAt=nowIso(); }); data.vehicles=data.vehicles.filter(item=>item.id!==id); const remaining=businessVehicles().filter(v=>v.status!=='inactive'); if(vehicle.isPrimary && remaining.length) remaining[0].isPrimary=true; data.auditEvents.push({id:uid('audit'),businessId:data.activeBusinessId,eventType:'deleted',entityType:'Vehicle',entityId:id,details:{linkedTrips:linked},occurredAt:nowIso()}); repository.save(data); closeModal(); renderAll(); setView('taxes'); ui.taxTab='vehicles'; syncTaxTabs(); showToast('Vehicle deleted'); });
+  }
+
   function renderRecords() {
     const term=($('#receiptSearch')?.value || '').toLowerCase().trim();
     const receipts=businessReceipts().slice().sort((a,b)=>(b.createdAt || '').localeCompare(a.createdAt || '')).filter(receipt=>{
@@ -1641,7 +1863,7 @@
   function renderCommandPalette() {
     const term = ($('#commandInput').value || '').toLowerCase().trim();
     const navigation = [
-      ['home','⌂','Home','Dashboard and attention queue'], ['work','◫','Work','Clients and sessions'], ['money','$','Money','Invoices, payments, and expenses'], ['records','▤','Records','Documents and evidence']
+      ['home','⌂','Home','Dashboard and attention queue'], ['work','◫','Work','Clients and sessions'], ['money','$','Money','Invoices, payments, and expenses'], ['taxes','↝','Taxes','Mileage, vehicles, and tax preparation'], ['records','▤','Records','Documents and evidence']
     ].filter(item => !term || item.slice(2).join(' ').toLowerCase().includes(term));
     const clients = businessClients().filter(c => term && c.displayName.toLowerCase().includes(term)).slice(0,5);
     const sessions = businessSessions().filter(s => {
@@ -1650,6 +1872,8 @@
     const invoices = businessInvoices().filter(invoice => term && `${invoice.number} ${invoice.recipientSnapshot?.displayName || ''} ${invoiceDisplayStatus(invoice)}`.toLowerCase().includes(term)).slice(0,5);
     const payments = businessPayments().filter(payment => term && `${paymentSourceLabel(payment)} ${payment.clientNameSnapshot || ''} ${payment.description || ''} ${payment.reference || ''} ${paymentMethodLabel(payment.method)} ${payment.amountCents || 0}`.toLowerCase().includes(term)).slice(0,5);
     const expenses = businessExpenses().filter(expense => term && `${expense.merchant || ''} ${expense.description || ''} ${expense.businessPurpose || ''} ${expenseCategoryLabel(expense.category)} ${expenseClassLabel(expense.classification)} ${expense.totalCents || 0}`.toLowerCase().includes(term)).slice(0,5);
+    const mileageTrips = businessMileageTrips().filter(trip => term && `${trip.date || ''} ${trip.miles || ''} ${trip.purpose || ''} ${trip.startLabel || ''} ${trip.endLabel || ''} ${trip.clientNameSnapshot || ''} ${trip.vehicleNameSnapshot || ''} ${mileageClassificationLabel(trip.classification)}`.toLowerCase().includes(term)).slice(0,5);
+    const vehicles = businessVehicles().filter(vehicle => term && `${vehicle.nickname || ''} ${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.status || ''}`.toLowerCase().includes(term)).slice(0,5);
 
     $('#commandBody').innerHTML = `${navigation.length ? `<p class="command-label">Navigation</p>${navigation.map(n => `<button class="command-result" data-command-view="${n[0]}"><span>${n[1]}</span><div><strong>${n[2]}</strong><small>${n[3]}</small></div></button>`).join('')}` : ''}
       ${clients.length ? `<p class="command-label">Clients</p>${clients.map(c => `<button class="command-result" data-command-client="${c.id}"><span>${escapeHtml(initials(c.displayName))}</span><div><strong>${escapeHtml(c.displayName)}</strong><small>Client · ${formatMoney(c.defaultRateCents || 0)}/hr</small></div></button>`).join('')}` : ''}
@@ -1657,13 +1881,17 @@
       ${invoices.length ? `<p class="command-label">Invoices</p>${invoices.map(invoice => `<button class="command-result" data-command-invoice="${invoice.id}"><span>▧</span><div><strong>${escapeHtml(invoice.number)}</strong><small>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice), activeBusiness().currency)} due · ${escapeHtml(invoiceDisplayStatus(invoice))}</small></div></button>`).join('')}` : ''}
       ${payments.length ? `<p class="command-label">Payments</p>${payments.map(payment => `<button class="command-result" data-command-payment="${payment.id}"><span>$</span><div><strong>${escapeHtml(paymentSourceLabel(payment))}</strong><small>${formatMoney(payment.amountCents || 0, activeBusiness().currency)} · ${escapeHtml(paymentMethodLabel(payment.method))} · ${formatDate(payment.receivedDate)}</small></div></button>`).join('')}` : ''}
       ${expenses.length ? `<p class="command-label">Expenses</p>${expenses.map(expense => `<button class="command-result" data-command-expense="${expense.id}"><span>−</span><div><strong>${escapeHtml(expense.merchant || 'Expense')}</strong><small>${formatMoney(expense.totalCents || 0, activeBusiness().currency)} · ${escapeHtml(expenseCategoryLabel(expense.category))} · ${formatDate(expense.date)}</small></div></button>`).join('')}` : ''}
-      ${term && !navigation.length && !clients.length && !sessions.length && !invoices.length && !payments.length && !expenses.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
+      ${mileageTrips.length ? `<p class="command-label">Mileage</p>${mileageTrips.map(trip => `<button class="command-result" data-command-mileage="${trip.id}"><span>↝</span><div><strong>${escapeHtml(formatMiles(trip.miles))} · ${escapeHtml(trip.purpose || mileageClassificationLabel(trip.classification))}</strong><small>${formatDate(trip.date)} · ${escapeHtml(trip.vehicleNameSnapshot || vehicleDisplayName(vehicleById(trip.vehicleId)))}</small></div></button>`).join('')}` : ''}
+      ${vehicles.length ? `<p class="command-label">Vehicles</p>${vehicles.map(vehicle => `<button class="command-result" data-command-vehicle="${vehicle.id}"><span>◇</span><div><strong>${escapeHtml(vehicle.nickname || vehicleDisplayName(vehicle))}</strong><small>${escapeHtml([vehicle.year,vehicle.make,vehicle.model].filter(Boolean).join(' ') || 'Vehicle profile')} · ${vehicle.isPrimary ? 'Primary' : vehicle.status === 'inactive' ? 'Inactive' : 'Active'}</small></div></button>`).join('')}` : ''}
+      ${term && !navigation.length && !clients.length && !sessions.length && !invoices.length && !payments.length && !expenses.length && !mileageTrips.length && !vehicles.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
     $$('[data-command-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.commandView)));
     $$('[data-command-client]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openClientDetail(btn.dataset.commandClient); }));
     $$('[data-command-session]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openSessionDetail(btn.dataset.commandSession); }));
     $$('[data-command-invoice]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); openInvoiceDetail(btn.dataset.commandInvoice); }));
     $$('[data-command-payment]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); ui.moneyTab = 'payments'; syncMoneyTabs(); openPaymentDetail(btn.dataset.commandPayment); }));
     $$('[data-command-expense]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); ui.moneyTab = 'expenses'; syncMoneyTabs(); openExpenseDetail(btn.dataset.commandExpense); }));
+    $$('[data-command-mileage]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('taxes'); ui.taxTab='mileage'; syncTaxTabs(); openMileageDetail(btn.dataset.commandMileage); }));
+    $$('[data-command-vehicle]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('taxes'); ui.taxTab='vehicles'; syncTaxTabs(); openVehicleDetail(btn.dataset.commandVehicle); }));
   }
 
   function openClientForm(existingId = null) {
@@ -1946,6 +2174,50 @@
       if (expenseId) setTimeout(() => openExpenseDetail(expenseId), 35);
       return;
     }
+    if (ui.formMode === 'vehicle') {
+      const year=(form.get('year')||'').trim();
+      const make=(form.get('make')||'').trim();
+      const model=(form.get('model')||'').trim();
+      const nickname=(form.get('nickname')||'').trim();
+      if (!year && !make && !model && !nickname) { showToast('Add at least a nickname or vehicle details.'); return; }
+      const payload={ year,make,model,nickname,status:form.get('status')||'active',odometer:(form.get('odometer')||'').trim(),isPrimary:form.get('isPrimary')==='on',notes:(form.get('notes')||'').trim() };
+      if (payload.status === 'inactive') payload.isPrimary = false;
+      if (payload.isPrimary) businessVehicles().forEach(vehicle=>{ vehicle.isPrimary=false; });
+      if (ui.formRecordId) {
+        const vehicle=vehicleById(ui.formRecordId); if(!vehicle) return;
+        const before=deepClone(vehicle); Object.assign(vehicle,payload,{updatedAt:nowIso()});
+        if (!businessVehicles().some(v=>v.isPrimary)) {
+          const fallback = businessVehicles().find(v=>v.status!=='inactive');
+          if (fallback) fallback.isPrimary=true;
+        }
+        persist('updated','Vehicle',vehicle.id,{before,after:deepClone(vehicle)}); showToast('Vehicle updated');
+      } else {
+        const vehicle={id:uid('vehicle'),businessId:data.activeBusinessId,...payload,createdAt:nowIso(),updatedAt:nowIso()};
+        if (!businessVehicles().some(v=>v.isPrimary) && vehicle.status!=='inactive') vehicle.isPrimary=true;
+        data.vehicles.push(vehicle); ui.formRecordId=vehicle.id; persist('created','Vehicle',vehicle.id,{isPrimary:vehicle.isPrimary}); showToast('Vehicle added');
+      }
+      const id=ui.formRecordId; closeModal(); renderAll(); setView('taxes'); ui.taxTab='vehicles'; syncTaxTabs(); if(id) setTimeout(()=>openVehicleDetail(id),35); return;
+    }
+    if (ui.formMode === 'mileage') {
+      const vehicle=vehicleById(form.get('vehicleId'));
+      const miles=Number(form.get('miles'));
+      const classification=form.get('classification')==='personal'?'personal':'business';
+      const purpose=(form.get('purpose')||'').trim();
+      if (!vehicle) { showToast('Choose a vehicle.'); return; }
+      if (!Number.isFinite(miles) || miles<=0) { showToast('Enter mileage greater than zero.'); return; }
+      const session=form.get('sessionId') ? data.sessions.find(item=>item.id===form.get('sessionId')) : null;
+      const explicitClient=form.get('clientId') ? clientById(form.get('clientId')) : null;
+      const linkedClient=session ? clientById(session.clientId) : explicitClient;
+      let reviewStatus=form.get('needsReview')==='on'?'needs_review':'ready';
+      if (classification==='business' && !purpose) reviewStatus='needs_review';
+      const payload={vehicleId:vehicle.id,vehicleNameSnapshot:vehicleDisplayName(vehicle),date:form.get('date'),miles:Math.round(miles*100)/100,classification,startLabel:(form.get('startLabel')||'').trim(),endLabel:(form.get('endLabel')||'').trim(),purpose:classification==='personal'?'':purpose,clientId:linkedClient?.id||null,clientNameSnapshot:linkedClient?.displayName||'',sessionId:session?.id||null,sessionDateSnapshot:session?.date||'',sessionTimeSnapshot:session?sessionTimeRangeLabel(session):'',reviewStatus,notes:(form.get('notes')||'').trim()};
+      if (ui.formRecordId) {
+        const trip=mileageTripById(ui.formRecordId); if(!trip) return; const before=deepClone(trip); Object.assign(trip,payload,{updatedAt:nowIso()}); persist('updated','MileageTrip',trip.id,{before,after:deepClone(trip)}); showToast('Mileage updated');
+      } else {
+        const trip={id:uid('mileage'),businessId:data.activeBusinessId,...payload,createdAt:nowIso(),updatedAt:nowIso()}; data.mileageTrips.push(trip); ui.formRecordId=trip.id; persist('created','MileageTrip',trip.id,{miles:trip.miles,classification:trip.classification,vehicleId:trip.vehicleId}); showToast('Mileage trip saved');
+      }
+      const id=ui.formRecordId; ui.mileagePage=1; closeModal(); renderAll(); setView('taxes'); ui.taxTab='mileage'; syncTaxTabs(); if(id) setTimeout(()=>openMileageDetail(id),35); return;
+    }
     if (ui.formMode === 'client') {
       const payload = { displayName: form.get('displayName').trim(), colorKey: CLIENT_COLOR_KEYS.includes(form.get('colorKey')) ? form.get('colorKey') : 'blue', defaultRateCents: Math.round(Number(form.get('rate')) * 100), status: form.get('status'), billingEmail: (form.get('billingEmail') || '').trim(), billingAddress: (form.get('billingAddress') || '').trim(), notes: form.get('notes').trim() };
       if (ui.formRecordId) {
@@ -2100,6 +2372,13 @@
       }
       data.sessions = data.sessions.filter(item => item.id !== id);
       data.expenses.filter(expense => expense.sessionId === id).forEach(expense => { expense.sessionId = null; expense.updatedAt = nowIso(); });
+      data.mileageTrips.filter(trip => trip.sessionId === id).forEach(trip => {
+        trip.sessionDateSnapshot ||= session.date || '';
+        trip.sessionTimeSnapshot ||= sessionTimeRangeLabel(session);
+        trip.clientNameSnapshot ||= client?.displayName || session.clientNameSnapshot || '';
+        trip.sessionId = null;
+        trip.updatedAt = nowIso();
+      });
       data.auditEvents = data.auditEvents.filter(event => event.entityId !== id);
       data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'WorkSession', entityId: id, details: { removedFromDraftInvoice: linkedInvoice?.number || null }, occurredAt: nowIso() });
       repository.save(data);
@@ -2114,6 +2393,17 @@
     const deletedIds = new Set([id, ...linkedSessionIds]);
     data.clients = data.clients.filter(item => item.id !== id);
     data.expenses.filter(expense => expense.clientId === id).forEach(expense => { expense.clientNameSnapshot ||= client.displayName; expense.clientId = null; if (linkedSessionIds.includes(expense.sessionId)) expense.sessionId = null; expense.updatedAt = nowIso(); });
+    data.mileageTrips.filter(trip => trip.clientId === id || linkedSessionIds.includes(trip.sessionId)).forEach(trip => {
+      const linkedSession = data.sessions.find(session => session.id === trip.sessionId);
+      trip.clientNameSnapshot ||= client.displayName;
+      if (linkedSession) {
+        trip.sessionDateSnapshot ||= linkedSession.date || '';
+        trip.sessionTimeSnapshot ||= sessionTimeRangeLabel(linkedSession);
+      }
+      trip.clientId = null;
+      if (linkedSessionIds.includes(trip.sessionId)) trip.sessionId = null;
+      trip.updatedAt = nowIso();
+    });
     data.sessions = data.sessions.filter(session => session.clientId !== id);
     data.auditEvents = data.auditEvents.filter(event => !deletedIds.has(event.entityId));
     data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Client', entityId: id, details: { cascadedSessionCount: linkedSessionIds.length }, occurredAt: nowIso() });
@@ -2130,7 +2420,7 @@
   }
 
   function renderAll() {
-    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); renderRecords(); syncMoneyTabs(); renderCommandPalette();
+    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); renderTaxes(); renderRecords(); syncMoneyTabs(); syncTaxTabs(); renderCommandPalette();
   }
 
 
@@ -2182,6 +2472,7 @@
     if (btn.dataset.action === 'add-invoice') { closeModal(); openInvoiceForm(); return; }
     if (btn.dataset.action === 'add-payment') { closeModal(); openPaymentForm(); return; }
     if (btn.dataset.action === 'add-expense') { closeModal(); openExpenseForm(); return; }
+    if (btn.dataset.action === 'add-mileage') { closeModal(); openMileageForm(); return; }
     showToast(`${$('strong', btn).textContent} activates in its roadmap phase.`);
   }));
 
@@ -2202,6 +2493,16 @@
     { value:'inactive', label:'Inactive' },
     { value:'all', label:'All clients' }
   ], ui.clientFilter, value => { ui.clientFilter = value; renderClients(); }));
+  $$('[data-tax-tab]').forEach(btn => btn.addEventListener('click', () => { closeFilterMenu(); ui.taxTab = btn.dataset.taxTab; syncTaxTabs(); }));
+  $('#addVehicleBtn').addEventListener('click', () => openVehicleForm());
+  $('#addVehicleInlineBtn').addEventListener('click', () => openVehicleForm());
+  $('#addMileageBtn').addEventListener('click', () => openMileageForm());
+  $('#mileageFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'all', label:'All trips' },
+    { value:'business', label:'Business' },
+    { value:'personal', label:'Personal' },
+    { value:'needs_review', label:'Needs review' }
+  ], ui.mileageFilter, value => { ui.mileageFilter=value; ui.mileagePage=1; renderTaxes(); }));
   $$('[data-money-tab]').forEach(btn => btn.addEventListener('click', () => { closeFilterMenu(); ui.moneyTab = btn.dataset.moneyTab; syncMoneyTabs(); }));
   $('#addInvoiceBtn').addEventListener('click', () => openInvoiceForm());
   $('#addPaymentBtn').addEventListener('click', () => openPaymentForm());

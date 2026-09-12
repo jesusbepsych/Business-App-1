@@ -262,3 +262,18 @@ Visual stack (back to front):
 `setView()` toggles `body.home-atrium-active`, so navigating to Work/Money/Records removes the atrium visual layer without altering any application data or view behavior. Pointer/touch/scroll input only changes presentation CSS variables and never persists to financial data.
 
 > Money view now participates in the shared atrium scene and runtime profile. Its page-level surfaces are themed; modal/detail architecture is unchanged.
+
+
+## Phase 5 domain additions
+
+### Vehicle
+`Vehicle` belongs to one workspace and stores descriptive identity (`year`, `make`, `model`, optional `nickname`), `status`, optional `odometer`, `isPrimary`, notes, and timestamps. Only an active vehicle should be primary.
+
+### MileageTrip
+`MileageTrip` belongs to one workspace and stores the source facts of a trip: `date`, `miles`, Business/Personal `classification`, optional route labels, business purpose, vehicle link + vehicle snapshot, optional client/session links + snapshots, review state, notes, and timestamps. Mileage is intentionally separate from `Expense`.
+
+### Relationship rules
+- A mileage trip may link to a Vehicle, Client, and WorkSession, but survives deletion of those source records using snapshots.
+- Vehicle deletion detaches linked trips while preserving `vehicleNameSnapshot`.
+- Session/client deletion detaches mileage links while preserving client/session context snapshots.
+- Phase 6 may interpret mileage for tax purposes but should not rewrite the original trip facts.
