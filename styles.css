@@ -2566,3 +2566,86 @@ html.atrium-lite body.home-atrium-active .home-atrium-view .status-strip {
     border-color:rgba(235,248,253,.27) !important;
   }
 }
+
+
+/* ========================================================================== */
+/* Safari/iPad pane compositing stability — no-flash pass                     */
+/* ========================================================================== */
+/*
+   iPad Safari can briefly re-rasterize backdrop-filter layers when a hidden
+   view becomes visible. The result looks like a one-frame "load flash" even
+   though the data is already present. On the lite profile we therefore keep
+   the Frosted Window Bays look with pre-tinted translucent materials and
+   static highlights, but remove live backdrop sampling from the large bays.
+*/
+html.atrium-lite .view,
+html.atrium-lite .view.active,
+html.atrium-lite .work-tab,
+html.atrium-lite .work-tab.active,
+html.atrium-lite .money-tab,
+html.atrium-lite .money-tab.active {
+  animation:none !important;
+  transition:none !important;
+  transform:none !important;
+}
+html.atrium-lite .view.active,
+html.atrium-lite .work-tab.active,
+html.atrium-lite .money-tab.active {
+  opacity:1 !important;
+}
+
+/* Large panes: static frost instead of live backdrop recomposition. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card,.segment-control,.money-segments,.mini-search,.filter-pill,.records-local-note,.large-empty) {
+  background:
+    linear-gradient(145deg,rgba(139,169,184,.49),rgba(86,119,136,.47) 49%,rgba(58,89,105,.53)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.17),
+    inset 0 -1px 0 rgba(255,255,255,.035),
+    0 18px 38px rgba(0,0,0,.15) !important;
+  contain:paint;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+/* Preserve denser ledger readability without asking Safari to blur underneath. */
+html.atrium-lite body.work-atrium-active .work-atrium-view .data-card,
+html.atrium-lite body.money-atrium-active .money-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(94,126,143,.63),rgba(56,88,105,.60) 52%,rgba(40,70,87,.64)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+html.atrium-lite body.home-atrium-active .home-atrium-view .status-strip {
+  background:linear-gradient(100deg,rgba(63,127,107,.56),rgba(84,132,140,.48) 55%,rgba(58,97,114,.50)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* Small glass controls use the same stable material on Safari/iPad. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.search-trigger,.icon-btn,.avatar-btn,.secondary-btn,.utility-text-btn,.quiet-badge) {
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* Do not animate pane pseudo-highlights during page/tab changes. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card)::before,
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card)::after {
+  transition:none !important;
+  animation:none !important;
+  transform:none !important;
+}
+
+/* Promote only the scene itself, not every frosted bay, to avoid a burst of
+   new compositor layers when switching views. */
+html.atrium-lite :is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card) {
+  will-change:auto !important;
+}
