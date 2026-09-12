@@ -2649,3 +2649,74 @@ html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-a
 html.atrium-lite :is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card) {
   will-change:auto !important;
 }
+
+/* ===== Status/category pill visibility refinement ==========================
+   Stronger semantic pills for the frosted atrium treatment. The colors stay
+   restrained, but now have enough local opacity, border contrast and shadow
+   to remain legible over bright plants, windows and architectural highlights. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill {
+  border:1px solid rgba(255,255,255,.18) !important;
+  background:rgba(20,31,39,.74) !important;
+  color:#f7fbfd !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    0 5px 14px rgba(0,0,0,.22) !important;
+  text-shadow:0 1px 7px rgba(0,0,0,.38);
+  backdrop-filter:blur(7px) saturate(1.04);
+  -webkit-backdrop-filter:blur(7px) saturate(1.04);
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.success {
+  color:#8ff0bb !important;
+  background:rgba(24,92,65,.78) !important;
+  border-color:rgba(126,238,177,.46) !important;
+  box-shadow:inset 0 1px 0 rgba(199,255,222,.14),0 5px 15px rgba(0,0,0,.22),0 0 12px rgba(83,215,145,.11) !important;
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.sent {
+  color:#9dc7ff !important;
+  background:rgba(31,76,132,.80) !important;
+  border-color:rgba(130,184,255,.48) !important;
+  box-shadow:inset 0 1px 0 rgba(205,226,255,.13),0 5px 15px rgba(0,0,0,.22),0 0 12px rgba(95,157,238,.10) !important;
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.void {
+  color:#d7a7ff !important;
+  background:rgba(87,49,118,.82) !important;
+  border-color:rgba(206,148,255,.48) !important;
+  box-shadow:inset 0 1px 0 rgba(235,208,255,.13),0 5px 15px rgba(0,0,0,.22),0 0 12px rgba(182,108,239,.10) !important;
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.accent {
+  color:#a9c4ff !important;
+  background:rgba(44,69,128,.80) !important;
+  border-color:rgba(142,173,255,.48) !important;
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.danger {
+  color:#ffb0b8 !important;
+  background:rgba(122,42,51,.82) !important;
+  border-color:rgba(255,145,156,.48) !important;
+  box-shadow:inset 0 1px 0 rgba(255,215,219,.12),0 5px 15px rgba(0,0,0,.22),0 0 12px rgba(236,85,101,.10) !important;
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.review {
+  color:#ffd08a !important;
+  background:rgba(119,77,23,.82) !important;
+  border-color:rgba(255,196,111,.50) !important;
+  box-shadow:inset 0 1px 0 rgba(255,234,196,.12),0 5px 15px rgba(0,0,0,.22),0 0 12px rgba(235,165,68,.10) !important;
+}
+
+/* Keep filter/category selectors visually distinct from semantic statuses. */
+body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .filter-pill {
+  color:#f6fafc !important;
+  background:linear-gradient(145deg,rgba(80,112,129,.64),rgba(50,78,94,.70)) !important;
+  border-color:rgba(238,249,253,.34) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 7px 18px rgba(0,0,0,.18) !important;
+  text-shadow:0 1px 7px rgba(0,0,0,.34);
+}
+body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .filter-pill::after {
+  color:rgba(242,249,252,.78) !important;
+}
+
+/* On the Safari/iPad lite profile, avoid live blur while preserving the same
+   color strength so the pills do not fade back into the environment. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill,
+html.atrium-lite body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .filter-pill {
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
