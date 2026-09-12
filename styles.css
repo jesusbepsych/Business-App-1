@@ -1,4 +1,10 @@
 :root {
+  /* Stable viewport dimensions: Safari's browser chrome can change the visual
+     viewport height while scrolling. Keep the photographic scene sized to the
+     large viewport and content minimums sized to the small viewport so neither
+     has to re-scale when the toolbar collapses. */
+  --app-stable-viewport-h: 100vh;
+  --app-content-viewport-h: 100vh;
   --bg: #f6f7f9;
   --surface: rgba(255,255,255,.88);
   --surface-solid: #ffffff;
@@ -31,6 +37,13 @@
   --radius-md: 14px;
   --ease: cubic-bezier(.2,.8,.2,1);
   --sidebar: 260px;
+}
+
+@supports (height: 100lvh) {
+  :root {
+    --app-stable-viewport-h: 100lvh;
+    --app-content-viewport-h: 100svh;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -1039,12 +1052,18 @@ h2 { font-size:20px; margin:0; letter-spacing:-.035em; }
 
 .home-atrium-scene {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: auto;
+  bottom: auto;
+  width: 100vw;
+  height: var(--app-stable-viewport-h);
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
   background: #0a1116;
+  contain: paint;
   transition: opacity .36s var(--ease);
 }
 body.home-atrium-active .home-atrium-scene { opacity: 1; }
@@ -1052,6 +1071,8 @@ body.home-atrium-active .home-atrium-scene { opacity: 1; }
 .atrium-layer { position:absolute; inset:-4%; transform-origin:center; will-change:transform,opacity; backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:translateZ(0); }
 .atrium-photo {
   background-repeat:no-repeat;
+  /* Parent height is locked to lvh, so cover is calculated once against a stable
+     canvas instead of re-cropping when Safari collapses/expands its toolbar. */
   background-size:cover;
   background-position:center 50%;
 }
@@ -1153,7 +1174,7 @@ body.home-atrium-active .atrium-motto { opacity:.82; }
 /* Keep the entire application above the physical scene. */
 body.home-atrium-active .app-shell { position:relative; z-index:2; }
 body.home-atrium-active .main-panel { background:transparent; }
-body.home-atrium-active .home-atrium-view { position:relative; isolation:isolate; min-height:calc(100vh - 72px); }
+body.home-atrium-active .home-atrium-view { position:relative; isolation:isolate; min-height:calc(var(--app-content-viewport-h) - 72px); }
 body.home-atrium-active .home-atrium-content {
   position:relative;
   z-index:2;
@@ -1349,7 +1370,7 @@ html.sidebar-collapsed-preload body.home-atrium-active .sidebar { background:tra
 }
 
 @media (max-width: 920px) {
-  .home-atrium-scene { bottom:72px; }
+  .home-atrium-scene { height:calc(var(--app-stable-viewport-h) - 72px); }
   .atrium-photo-primary {
     background-image:var(--atrium-scene-image);
     background-position:52% 44%;
@@ -1570,7 +1591,7 @@ html.atrium-lite .atrium-atmosphere::after {
 body.work-atrium-active .work-atrium-view {
   position:relative;
   isolation:isolate;
-  min-height:calc(100vh - 72px);
+  min-height:calc(var(--app-content-viewport-h) - 72px);
 }
 body.work-atrium-active .work-atrium-content {
   position:relative;
@@ -1847,7 +1868,7 @@ html.atrium-lite body.work-atrium-active .work-atrium-view .client-card:hover { 
 body.money-atrium-active .money-atrium-view {
   position:relative;
   isolation:isolate;
-  min-height:calc(100vh - 72px);
+  min-height:calc(var(--app-content-viewport-h) - 72px);
 }
 body.money-atrium-active .money-atrium-content {
   position:relative;
@@ -2158,7 +2179,7 @@ html.atrium-lite body.money-atrium-active .money-atrium-view .money-metric-grid 
 body.records-atrium-active .records-atrium-view {
   position:relative;
   isolation:isolate;
-  min-height:calc(100vh - 72px);
+  min-height:calc(var(--app-content-viewport-h) - 72px);
 }
 body.records-atrium-active .records-atrium-content {
   position:relative;

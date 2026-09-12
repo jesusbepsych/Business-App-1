@@ -117,3 +117,7 @@ The Home view now uses the Corporate Atrium visual system while the rest of Phas
 - Fer Troulik — “Modern office interior with glass walls and reflections” (Unsplash, free under the Unsplash License).
 
 No people animation or randomized ambient events are active in this build.
+
+## Safari scroll stability pass
+
+This build specifically reduces the small visual snap that can occur when iPad/iPhone Safari collapses or expands its browser chrome during the first scroll. The atrium scene now uses a stable large-viewport (`lvh`) canvas rather than a fixed element constrained by both `top` and `bottom`, while themed page minimum heights use the stable small viewport (`svh`). Height-only Safari resize events are ignored by the atrium runtime; true width changes such as rotation and Split View still refresh the layout. The browser's own toolbar collapse still changes how much of the webpage is visible, but the app should no longer re-crop/re-scale the photographic background at the same moment.

@@ -180,6 +180,7 @@
   let atriumPointerX = 0;
   let atriumPointerY = 0;
   let atriumMotionProfile = 'desktop';
+  let atriumViewportWidth = window.innerWidth;
   let activeFilterMenu = null;
 
   function readSidebarCollapsedPreference() {
@@ -2135,6 +2136,13 @@
 
   window.addEventListener('pointermove', event => queueAtriumMotion(event.clientX, event.clientY), { passive:true });
   window.addEventListener('resize', () => {
+    /* iPad/iPhone Safari fires resize while its address/tab chrome collapses.
+       Height-only viewport changes should not cause the atrium to recompute or
+       repaint; only a real width change (rotation, split view, window resize)
+       needs a layout/profile refresh. */
+    const nextWidth = window.innerWidth;
+    if (Math.abs(nextWidth - atriumViewportWidth) < 4) return;
+    atriumViewportWidth = nextWidth;
     applyAtriumRuntimeProfile();
     queueAtriumMotion(window.innerWidth / 2, window.innerHeight / 2);
   }, { passive:true });

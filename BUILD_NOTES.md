@@ -224,3 +224,10 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Records receipt cards, controls, and notes use the same bay material.
 - iPad/Safari keeps the proven static atrium runtime profile with reduced blur cost and increased pane opacity.
 - No changes to domain logic, persistence, invoices, payments, expenses, receipts, or modal/detail flows.
+
+## Safari viewport / first-scroll stability
+- Locked the Corporate Atrium scene to a stable `100lvh` canvas where supported, with a `100vh` fallback.
+- Replaced `position:fixed; inset:0` on the scene with explicit top/left/width/height so Safari toolbar collapse does not recompute the scene from a changing bottom edge.
+- Themed view minimum heights now use `100svh` where supported to avoid layout-height jumps while Safari chrome changes size.
+- Height-only `resize` events are ignored by the atrium JS runtime; width changes still refresh the profile for rotation/Split View.
+- No changes to business data, calculations, tab behavior, frosted-window materials, or background artwork.
