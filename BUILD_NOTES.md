@@ -231,3 +231,10 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Themed view minimum heights now use `100svh` where supported to avoid layout-height jumps while Safari chrome changes size.
 - Height-only `resize` events are ignored by the atrium JS runtime; width changes still refresh the profile for rotation/Split View.
 - No changes to business data, calculations, tab behavior, frosted-window materials, or background artwork.
+
+
+## Comprehensive pill visibility pass
+- Extended high-contrast treatment beyond status-pill to muted-chip and quiet-badge surfaces.
+- Strengthened Money summary semantic pills: Cash in (green), Invoices (amber), Attention/Overdue (red).
+- Strengthened small counts inside segmented controls.
+- Safari/iPad keeps solid local color without adding live blur.

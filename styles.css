@@ -2720,3 +2720,84 @@ html.atrium-lite body:is(.work-atrium-active,.money-atrium-active,.records-atriu
   backdrop-filter:none !important;
   -webkit-backdrop-filter:none !important;
 }
+
+
+/* ===== Comprehensive pill visibility pass =================================
+   Extends the semantic/status treatment to the smaller category/context pills
+   that live in metric headers, attention counts, Records controls, and Money
+   summary cards. These use opaque-enough local surfaces so the atrium cannot
+   wash them out, while keeping the same soft rounded language. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.muted-chip,.quiet-badge) {
+  color:#f6fafc !important;
+  background:rgba(31,47,58,.78) !important;
+  border:1px solid rgba(232,246,252,.28) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.13),
+    0 4px 12px rgba(0,0,0,.20) !important;
+  text-shadow:0 1px 6px rgba(0,0,0,.35);
+}
+
+/* Home metric context chips: neutral but clearly separated from the pane. */
+body.home-atrium-active .home-atrium-view .metric-card .muted-chip {
+  background:rgba(32,48,59,.80) !important;
+  border-color:rgba(235,247,252,.30) !important;
+}
+
+/* Money summary category pills retain semantic color with much stronger fill. */
+body.money-atrium-active .money-atrium-view .money-chip-cash {
+  color:#9af3c2 !important;
+  background:rgba(24,101,70,.84) !important;
+  border-color:rgba(133,241,184,.48) !important;
+  box-shadow:inset 0 1px 0 rgba(207,255,228,.14),0 5px 14px rgba(0,0,0,.22),0 0 12px rgba(83,215,145,.10) !important;
+}
+body.money-atrium-active .money-atrium-view .money-chip-invoices {
+  color:#ffd58c !important;
+  background:rgba(122,82,24,.86) !important;
+  border-color:rgba(255,204,119,.50) !important;
+  box-shadow:inset 0 1px 0 rgba(255,238,202,.13),0 5px 14px rgba(0,0,0,.22),0 0 12px rgba(235,165,68,.10) !important;
+}
+/* The unlabeled semantic pill on Overdue is intentionally warning/red. */
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(3) .muted-chip {
+  color:#ffb5bc !important;
+  background:rgba(118,42,49,.84) !important;
+  border-color:rgba(255,149,158,.48) !important;
+  box-shadow:inset 0 1px 0 rgba(255,216,220,.12),0 5px 14px rgba(0,0,0,.22),0 0 12px rgba(236,85,101,.09) !important;
+}
+
+/* Existing green quiet badges (paid totals / ready states) get the same lift. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .quiet-badge.green {
+  color:#9af3c2 !important;
+  background:rgba(24,101,70,.84) !important;
+  border-color:rgba(133,241,184,.48) !important;
+}
+
+/* Counts inside segmented controls are also tiny pills; strengthen them so
+   Invoices / Payments / Expenses counts do not disappear over the scene. */
+body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .segment > span {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:18px;
+  min-height:18px;
+  padding:0 5px;
+  margin-left:4px;
+  border-radius:999px;
+  color:rgba(247,251,253,.92) !important;
+  background:rgba(28,43,53,.76) !important;
+  border:1px solid rgba(235,247,252,.22) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+}
+body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .segment.active > span {
+  background:rgba(86,123,143,.74) !important;
+  border-color:rgba(239,249,253,.34) !important;
+  color:#fff !important;
+}
+
+/* Safari/iPad: preserve the richer colors without adding another live blur. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.muted-chip,.quiet-badge),
+html.atrium-lite body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .segment > span {
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
