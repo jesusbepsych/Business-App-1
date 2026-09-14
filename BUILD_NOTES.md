@@ -254,3 +254,11 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Added Corporate Atrium / Frosted Window Bays styling for Taxes, with Safari/iPad static-frost no-flash treatment.
 - Added responsive mileage ledger and vehicle-card layouts, including a six-control mobile bottom bar (five destinations plus Quick Add).
 - Explicitly does not calculate tax deductions or mileage rates; those remain Phase 6 concerns.
+
+
+## Phase 5 surface readability refinement
+- Slightly increased opacity of the Frosted Window Bay surfaces across Home, Work, Money, Taxes, and Records.
+- Kept the change deliberately modest so the Corporate Atrium remains visible.
+- Increased density proportionally: long ledger surfaces are a little stronger than smaller cards; compact text-bearing controls receive only a small lift.
+- Preserved the iPad/Safari no-flash profile by using denser static frost rather than reintroducing live backdrop blur.
+- No business logic or data-model changes.
