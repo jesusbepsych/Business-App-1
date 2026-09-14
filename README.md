@@ -165,3 +165,6 @@ No people animation or randomized ambient events are active in this build.
 ## Safari scroll stability pass
 
 This build specifically reduces the small visual snap that can occur when iPad/iPhone Safari collapses or expands its browser chrome during the first scroll. The atrium scene now uses a stable large-viewport (`lvh`) canvas rather than a fixed element constrained by both `top` and `bottom`, while themed page minimum heights use the stable small viewport (`svh`). Height-only Safari resize events are ignored by the atrium runtime; true width changes such as rotation and Split View still refresh the layout. The browser's own toolbar collapse still changes how much of the webpage is visible, but the app should no longer re-crop/re-scale the photographic background at the same moment.
+
+### Phase 6 Tax Layer
+The Taxes workspace now includes Overview, Mileage, Vehicles, and Deductions. It summarizes a selected tax year from existing source records, applies date-aware standard-mileage planning rates, surfaces review gaps, and provides quarterly planning context. It does not prepare a return or calculate final federal/state tax liability.

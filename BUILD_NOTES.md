@@ -262,3 +262,13 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Increased density proportionally: long ledger surfaces are a little stronger than smaller cards; compact text-bearing controls receive only a small lift.
 - Preserved the iPad/Safari no-flash profile by using denser static frost rather than reintroducing live backdrop blur.
 - No business logic or data-model changes.
+
+## Phase 6 — Tax Layer
+- Schema advances to v8; Phase 7 data migrates without changing source transactions.
+- Taxes now opens on Overview with a tax-year selector derived from years present in Payments, Expenses, Mileage, plus the current workspace year.
+- Received income is derived from Payments by received date. Recorded business expenses use each Expense's existing business-use amount.
+- Added a standard-mileage planning scenario. Built-in IRS business mileage rates: 2024 67¢, 2025 70¢, 2026 Jan–Jun 72.5¢, 2026 Jul–Dec 76¢. Rates apply by trip date.
+- Planning profit intentionally excludes recorded Vehicle & fuel operating costs when the standard-mileage scenario is used, preventing obvious stacking of alternative vehicle methods. Parking & tolls remain separately represented.
+- Added tax readiness queue, quarterly received-income view, deductions/category rollup, vehicle-method comparison context, and source navigation back to Money.
+- Quarterly area is explicitly planning groundwork, not a calculated federal/state tax liability.
+- Tax calculations are derived views only; Payments, Expenses, Mileage, Vehicles, and Receipts remain source records.

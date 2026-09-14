@@ -12,7 +12,7 @@
   const defaultClientColorForIndex = (index = 0) => CLIENT_COLOR_KEYS[Math.abs(Number(index) || 0) % CLIENT_COLOR_KEYS.length];
 
   const initialData = {
-    schemaVersion: 7,
+    schemaVersion: 8,
     activeBusinessId: 'biz_play_it_forward',
     businesses: [{
       id: 'biz_play_it_forward',
@@ -46,7 +46,7 @@
   function migrateData(parsed) {
     if (!parsed || typeof parsed !== 'object') return deepClone(initialData);
     if (parsed.schemaVersion === 2) {
-      parsed.schemaVersion = 7;
+      parsed.schemaVersion = 8;
       parsed.invoices = [];
       parsed.payments = [];
       parsed.expenses = [];
@@ -60,7 +60,7 @@
       return parsed;
     }
     if (parsed.schemaVersion === 3) {
-      parsed.schemaVersion = 7;
+      parsed.schemaVersion = 8;
       parsed.invoices ||= [];
       parsed.payments = [];
       parsed.expenses = [];
@@ -73,7 +73,7 @@
       return parsed;
     }
     if (parsed.schemaVersion === 4 || parsed.schemaVersion === 5) {
-      parsed.schemaVersion = 7;
+      parsed.schemaVersion = 8;
       parsed.invoices ||= [];
       parsed.payments ||= [];
       parsed.expenses ||= [];
@@ -86,7 +86,7 @@
       return parsed;
     }
     if (parsed.schemaVersion === 6) {
-      parsed.schemaVersion = 7;
+      parsed.schemaVersion = 8;
       parsed.invoices ||= [];
       parsed.payments ||= [];
       parsed.expenses ||= [];
@@ -98,7 +98,15 @@
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
       return parsed;
     }
-    if (parsed.schemaVersion === 7) {
+    if (parsed.schemaVersion === 7) { parsed.schemaVersion = 8;
+      parsed.invoices ||= []; parsed.payments ||= []; parsed.expenses ||= []; parsed.receipts ||= [];
+      parsed.vehicles ||= []; parsed.mileageTrips ||= []; parsed.auditEvents ||= [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
+      return parsed;
+    }
+    if (parsed.schemaVersion === 8) {
       parsed.invoices ||= []; parsed.payments ||= []; parsed.expenses ||= []; parsed.receipts ||= [];
       parsed.vehicles ||= []; parsed.mileageTrips ||= []; parsed.auditEvents ||= [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
@@ -179,7 +187,7 @@
   const repository = new LocalRepository();
   const receiptBlobStore = new ReceiptBlobStore();
   const data = repository.load();
-  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null, taxTab: 'mileage', mileageFilter: 'all', mileagePage: 1, mileagePageSize: 7 };
+  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null, taxTab: 'overview', taxYear: null, mileageFilter: 'all', mileagePage: 1, mileagePageSize: 7 };
   let homeRecentRotationTimer = null;
   let homeRecentSignature = '';
   let homeRecentSwapTimer = null;
@@ -1691,22 +1699,110 @@
     $$('[data-tax-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.taxPanel === ui.taxTab));
   }
 
+  function availableTaxYears() {
+    const years = new Set([Number(businessToday().slice(0,4))]);
+    businessPayments().forEach(x => x.receivedDate && years.add(Number(x.receivedDate.slice(0,4))));
+    businessExpenses().forEach(x => x.date && years.add(Number(x.date.slice(0,4))));
+    businessMileageTrips().forEach(x => x.date && years.add(Number(x.date.slice(0,4))));
+    return [...years].filter(Boolean).sort((a,b)=>b-a);
+  }
+
+  function taxYear() {
+    const years = availableTaxYears();
+    if (!ui.taxYear || !years.includes(Number(ui.taxYear))) ui.taxYear = years[0] || Number(businessToday().slice(0,4));
+    return Number(ui.taxYear);
+  }
+
+  function businessMileageRateCents(dateString) {
+    const date = String(dateString || '');
+    if (date >= '2026-07-01' && date <= '2026-12-31') return 76;
+    if (date >= '2026-01-01' && date <= '2026-06-30') return 72.5;
+    if (date.startsWith('2025-')) return 70;
+    if (date.startsWith('2024-')) return 67;
+    if (date.startsWith('2023-')) return 65.5;
+    return null;
+  }
+
+  function mileagePotentialDeductionCents(trip) {
+    if (trip?.classification !== 'business') return 0;
+    const rate = businessMileageRateCents(trip.date);
+    return rate == null ? 0 : Math.round(Number(trip.miles || 0) * rate);
+  }
+
+  function taxYearModel(year = taxYear()) {
+    const prefix = `${year}-`;
+    const payments = businessPayments().filter(x => String(x.receivedDate || '').startsWith(prefix));
+    const expenses = businessExpenses().filter(x => String(x.date || '').startsWith(prefix));
+    const trips = businessMileageTrips().filter(x => String(x.date || '').startsWith(prefix));
+    const incomeCents = payments.reduce((sum,x)=>sum + Number(x.amountCents || 0),0);
+    const businessExpenseCents = expenses.reduce((sum,x)=>sum + Number(x.businessCents || 0),0);
+    const vehicleOperatingCents = expenses.filter(x=>x.category==='vehicle_fuel').reduce((sum,x)=>sum + Number(x.businessCents || 0),0);
+    const parkingTollsCents = expenses.filter(x=>x.category==='parking_tolls').reduce((sum,x)=>sum + Number(x.businessCents || 0),0);
+    const nonVehicleExpenseCents = businessExpenseCents - vehicleOperatingCents;
+    const businessTrips = trips.filter(x=>x.classification==='business');
+    const mileageDeductionCents = businessTrips.reduce((sum,x)=>sum + mileagePotentialDeductionCents(x),0);
+    const unknownRateTrips = businessTrips.filter(x=>businessMileageRateCents(x.date)==null);
+    // Standard-mileage planning scenario: recorded vehicle/fuel operating costs are not stacked on top
+    // of standard mileage; separately recorded parking/tolls remain in nonVehicleExpenseCents.
+    const modeledDeductionsCents = Math.max(0, nonVehicleExpenseCents + mileageDeductionCents);
+    const planningProfitCents = incomeCents - modeledDeductionsCents;
+    const reviewExpenses = expenses.filter(x=>x.reviewStatus==='needs_review');
+    const reviewTrips = trips.filter(mileageReviewStatus);
+    const categories = EXPENSE_CATEGORIES.map(([key,label])=>({key,label,cents:expenses.filter(x=>x.category===key).reduce((sum,x)=>sum+Number(x.businessCents||0),0),count:expenses.filter(x=>x.category===key && Number(x.businessCents||0)>0).length})).filter(x=>x.cents>0).sort((a,b)=>b.cents-a.cents);
+    return {year,payments,expenses,trips,incomeCents,businessExpenseCents,vehicleOperatingCents,parkingTollsCents,nonVehicleExpenseCents,businessTrips,mileageDeductionCents,unknownRateTrips,modeledDeductionsCents,planningProfitCents,reviewExpenses,reviewTrips,categories};
+  }
+
+  function taxQuarterForDate(dateString) {
+    const month=Number(String(dateString||'').slice(5,7));
+    if (month<=3) return 1; if (month<=5) return 2; if (month<=8) return 3; return 4;
+  }
+
+  function taxDueLabel(year,q) {
+    const dates={1:`${year}-04-15`,2:`${year}-06-15`,3:`${year}-09-15`,4:`${year+1}-01-15`};
+    return formatDate(dates[q],{month:'short',day:'numeric',year:'numeric'});
+  }
+
+  function renderTaxOverview(model) {
+    $('#taxYearIncome').textContent=formatMoney(model.incomeCents,activeBusiness().currency);
+    $('#taxYearExpenses').textContent=formatMoney(model.businessExpenseCents,activeBusiness().currency);
+    $('#taxMileageDeduction').textContent=formatMoney(model.mileageDeductionCents,activeBusiness().currency);
+    $('#taxPlanningProfit').textContent=formatMoney(model.planningProfitCents,activeBusiness().currency);
+    $('#taxYearBadge').textContent=String(model.year);
+    $('#taxMileageRateCaption').textContent=model.year===2026?'72.5¢ Jan–Jun · 76¢ Jul–Dec':'Potential standard-mileage amount';
+    $('#taxFlowSummary').innerHTML=`
+      <div class="tax-flow-row"><span>Received income</span><strong>${formatMoney(model.incomeCents,activeBusiness().currency)}</strong><small>${model.payments.length} source ${model.payments.length===1?'payment':'payments'}</small></div>
+      <div class="tax-flow-row"><span>Non-vehicle business expenses</span><strong>− ${formatMoney(model.nonVehicleExpenseCents,activeBusiness().currency)}</strong><small>Standard-mileage scenario excludes recorded Vehicle & fuel operating costs</small></div>
+      <div class="tax-flow-row"><span>Standard-mileage scenario</span><strong>− ${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong><small>${formatMiles(model.businessTrips.reduce((n,x)=>n+Number(x.miles||0),0))} business miles</small></div>
+      <div class="tax-flow-row total"><span>Planning profit</span><strong>${formatMoney(model.planningProfitCents,activeBusiness().currency)}</strong><small>Uses standard mileage instead of recorded vehicle/fuel operating costs</small></div>`;
+    const issues=[];
+    if(model.reviewExpenses.length) issues.push(`${model.reviewExpenses.length} expense${model.reviewExpenses.length===1?'':'s'} need review`);
+    if(model.reviewTrips.length) issues.push(`${model.reviewTrips.length} mileage trip${model.reviewTrips.length===1?'':'s'} need review`);
+    if(model.unknownRateTrips.length) issues.push(`${model.unknownRateTrips.length} trip${model.unknownRateTrips.length===1?'':'s'} use a year without a built-in mileage rate`);
+    $('#taxReadinessBadge').textContent=issues.length?`${issues.length} issue${issues.length===1?'':'s'}`:'Ready';
+    $('#taxReadinessBadge').className=`quiet-badge ${issues.length?'':'green'}`;
+    $('#taxReadinessBody').innerHTML=issues.length?`<div class="tax-readiness-list">${issues.map(x=>`<div><span>!</span><strong>${escapeHtml(x)}</strong></div>`).join('')}</div><button class="secondary-btn compact-action" data-tax-review>Review source records</button>`:`<div class="tax-ready-state"><span>✓</span><div><strong>Source records look clean</strong><small>No Needs Review items were found in ${model.year} expenses or mileage.</small></div></div>`;
+    $('[data-tax-review]')?.addEventListener('click',()=>{ui.taxTab='deductions';syncTaxTabs();});
+    $('#taxQuarterGrid').innerHTML=[1,2,3,4].map(q=>{const income=model.payments.filter(x=>taxQuarterForDate(x.receivedDate)===q).reduce((n,x)=>n+Number(x.amountCents||0),0);return `<div class="tax-quarter"><span>Q${q}</span><strong>${formatMoney(income,activeBusiness().currency)}</strong><small>received income · due ${taxDueLabel(model.year,q)}*</small></div>`}).join('');
+  }
+
+  function renderTaxDeductions(model) {
+    const rows=model.categories.map(cat=>`<button class="tax-deduction-row" data-tax-expense-category="${cat.key}"><span><strong>${escapeHtml(cat.label)}</strong><small>${cat.count} source ${cat.count===1?'record':'records'}</small></span><strong>${formatMoney(cat.cents,activeBusiness().currency)}</strong></button>`).join('');
+    $('#taxDeductionContainer').innerHTML=`<div class="tax-deduction-head"><span>Expense category</span><span>Business-use amount</span></div>${rows||'<div class="large-empty"><strong>No business-use expenses this year</strong><p>Expenses recorded in Money will appear here automatically.</p></div>'}<div class="tax-deduction-row mileage-deduction-row"><span><strong>Standard mileage scenario</strong><small>${model.businessTrips.length} business trips · rate applied by trip date</small></span><strong>${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong></div>`;
+    $$('[data-tax-expense-category]').forEach(btn=>btn.addEventListener('click',()=>{setView('money');ui.moneyTab='expenses';ui.expenseFilter='all';syncMoneyTabs();renderMoney();showToast(`${btn.querySelector('strong').textContent} comes from Money → Expenses`);}));
+    $('#taxVehicleMethodCard').innerHTML=`<p class="eyebrow">VEHICLE METHOD CHECK</p><h3>Standard mileage scenario</h3><div class="tax-method-stat"><span>Potential mileage amount</span><strong>${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong></div><div class="tax-method-stat"><span>Recorded vehicle & fuel</span><strong>${formatMoney(model.vehicleOperatingCents,activeBusiness().currency)}</strong></div><div class="tax-method-stat"><span>Parking & tolls on file</span><strong>${formatMoney(model.parkingTollsCents,activeBusiness().currency)}</strong></div><p>Standard mileage and actual vehicle operating costs are alternative methods; this planning view does not stack Vehicle & fuel on top of the standard-mileage amount. Business parking and tolls remain separately visible.</p><small>Eligibility and method-choice rules can depend on the vehicle and prior-year treatment.</small>`;
+  }
+
   function renderTaxes() {
     const vehicles = businessVehicles().slice().sort((a,b) => Number(Boolean(b.isPrimary)) - Number(Boolean(a.isPrimary)) || (a.createdAt || '').localeCompare(b.createdAt || ''));
-    const trips = businessMileageTrips().slice().sort((a,b) => `${b.date || ''}${b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.createdAt || ''}`));
-    const monthKey = businessMonthKey();
+    const allTrips = businessMileageTrips().slice().sort((a,b) => `${b.date || ''}${b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.createdAt || ''}`));
+    const years=availableTaxYears(); const year=taxYear(); const model=taxYearModel(year);
+    const trips = allTrips.filter(trip=>String(trip.date||'').startsWith(`${year}-`));
     const businessTrips = trips.filter(trip => trip.classification === 'business');
-    const monthBusinessTrips = businessTrips.filter(trip => trip.date?.slice(0,7) === monthKey);
-    const monthMiles = monthBusinessTrips.reduce((sum,trip)=>sum + Number(trip.miles || 0),0);
-    const allMiles = businessTrips.reduce((sum,trip)=>sum + Number(trip.miles || 0),0);
     const reviewTrips = trips.filter(mileageReviewStatus);
-    const primary = vehicles.find(vehicle => vehicle.isPrimary) || vehicles[0] || null;
-
-    $('#taxMonthMiles').textContent = formatMiles(monthMiles);
-    $('#taxAllMiles').textContent = formatMiles(allMiles);
-    $('#taxPrimaryVehicle').textContent = primary ? (primary.nickname || [primary.year,primary.make,primary.model].filter(Boolean).join(' ') || 'Vehicle') : 'None';
-    $('#taxVehicleCaption').textContent = primary ? vehicleDisplayName(primary) : 'Add a vehicle to start tracking';
-    $('#taxReviewCount').textContent = reviewTrips.length;
+    const yearSelect=$('#taxYearSelect');
+    yearSelect.innerHTML=years.map(y=>`<option value="${y}" ${y===year?'selected':''}>${y}</option>`).join('');
+    renderTaxOverview(model); renderTaxDeductions(model);
+    $('#taxMileageRateStrip').innerHTML=year===2026?'<strong>2026 IRS standard-mileage scenario</strong><span>72.5¢/mile · Jan 1–Jun 30</span><span>76¢/mile · Jul 1–Dec 31</span>':'<strong>Standard-mileage scenario</strong><span>Rate is applied by trip date when a built-in rate is available.</span>';
     $('#mileageCount').textContent = trips.length;
     $('#vehicleCount').textContent = vehicles.length;
     $('#taxBusinessTripCount').textContent = `${businessTrips.length} business ${businessTrips.length === 1 ? 'trip' : 'trips'}`;
@@ -1743,7 +1839,7 @@
     }));
 
     $('#vehiclesContainer').innerHTML = vehicles.length ? vehicles.map(vehicle=>{
-      const vehicleTrips = trips.filter(trip=>trip.vehicleId===vehicle.id);
+      const vehicleTrips = allTrips.filter(trip=>trip.vehicleId===vehicle.id);
       const businessMiles = vehicleTrips.filter(trip=>trip.classification==='business').reduce((sum,trip)=>sum+Number(trip.miles||0),0);
       return `<button class="vehicle-card ${vehicle.isPrimary ? 'primary-vehicle' : ''}" data-vehicle-detail="${vehicle.id}"><div class="vehicle-card-top"><span class="vehicle-icon">◇</span><span class="status-pill ${vehicle.status === 'inactive' ? 'void' : vehicle.isPrimary ? 'accent' : 'success'}">${vehicle.isPrimary ? 'Primary' : vehicle.status === 'inactive' ? 'Inactive' : 'Active'}</span></div><strong>${escapeHtml(vehicle.nickname || vehicleDisplayName(vehicle))}</strong><small>${escapeHtml([vehicle.year,vehicle.make,vehicle.model].filter(Boolean).join(' ') || 'Vehicle profile')}</small><div class="vehicle-meta"><span><b>${vehicleTrips.length}</b><small>trips</small></span><span><b>${escapeHtml(formatMiles(businessMiles))}</b><small>business</small></span><span><b>${escapeHtml(vehicle.odometer ? Number(vehicle.odometer).toLocaleString() : '—')}</b><small>odometer</small></span></div></button>`;
     }).join('') : emptyState('No vehicles yet','Add the vehicle you use for work. A vehicle profile lets each mileage entry preserve which vehicle was driven.','Add first vehicle','add-vehicle');
@@ -2494,6 +2590,7 @@
     { value:'all', label:'All clients' }
   ], ui.clientFilter, value => { ui.clientFilter = value; renderClients(); }));
   $$('[data-tax-tab]').forEach(btn => btn.addEventListener('click', () => { closeFilterMenu(); ui.taxTab = btn.dataset.taxTab; syncTaxTabs(); }));
+  $('#taxYearSelect').addEventListener('change', event => { ui.taxYear=Number(event.target.value); ui.mileagePage=1; renderTaxes(); });
   $('#addVehicleBtn').addEventListener('click', () => openVehicleForm());
   $('#addVehicleInlineBtn').addEventListener('click', () => openVehicleForm());
   $('#addMileageBtn').addEventListener('click', () => openMileageForm());

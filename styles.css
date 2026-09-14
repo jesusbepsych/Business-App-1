@@ -3264,3 +3264,82 @@ input, select, textarea, button { line-height:1.25; }
 @media (max-width: 760px) {
   .mobile-nav-item { min-height:48px; }
 }
+
+/* ===== Phase 5 surface readability refinement =============================
+   Slightly denser frosted containers across all five primary destinations.
+   This is intentionally a small opacity lift: the atrium remains visible,
+   while text and numeric values sit on a calmer local surface. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card,.segment-control,.money-segments,.mini-search,.filter-pill,.records-local-note,.large-empty) {
+  background:linear-gradient(145deg,rgba(180,205,217,.30),rgba(103,136,153,.27) 48%,rgba(70,100,116,.34)) !important;
+}
+body.work-atrium-active .work-atrium-view .data-card,
+body.money-atrium-active .money-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(92,121,138,.45),rgba(58,84,99,.42) 52%,rgba(43,68,83,.49)) !important;
+}
+body.home-atrium-active .home-atrium-view .status-strip {
+  background:linear-gradient(100deg,rgba(69,137,116,.37),rgba(96,144,151,.29) 54%,rgba(71,108,124,.32)) !important;
+}
+body.home-atrium-active .home-atrium-view .roadmap-card {
+  background:linear-gradient(145deg,rgba(150,180,194,.26),rgba(70,100,116,.31)) !important;
+}
+
+/* Taxes joined the navigation after the original four-tab material pass. */
+body.taxes-atrium-active .taxes-atrium-view
+:is(.metric-card,.data-card,.vehicle-card,.taxes-segments,.filter-pill,.taxes-note,.large-empty) {
+  background:linear-gradient(145deg,rgba(139,169,184,.47),rgba(86,119,136,.45) 49%,rgba(58,89,105,.51)) !important;
+}
+body.taxes-atrium-active .taxes-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(94,126,143,.59),rgba(56,88,105,.56) 52%,rgba(40,70,87,.61)) !important;
+}
+
+/* Small text-bearing controls get the same modest readability lift. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active,.taxes-atrium-active)
+:is(.search-trigger,.icon-btn,.avatar-btn,.secondary-btn,.utility-text-btn,.quiet-badge,.filter-pill) {
+  background-color:rgba(73,103,119,.42) !important;
+}
+
+/* Safari/iPad: preserve the no-flash static frost while making it a touch
+   more opaque. No backdrop-filter is reintroduced. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card,.segment-control,.money-segments,.mini-search,.filter-pill,.records-local-note,.large-empty) {
+  background:linear-gradient(145deg,rgba(139,169,184,.56),rgba(86,119,136,.54) 49%,rgba(58,89,105,.60)) !important;
+}
+html.atrium-lite body.work-atrium-active .work-atrium-view .data-card,
+html.atrium-lite body.money-atrium-active .money-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(94,126,143,.69),rgba(56,88,105,.66) 52%,rgba(40,70,87,.70)) !important;
+}
+html.atrium-lite body.home-atrium-active .home-atrium-view .status-strip {
+  background:linear-gradient(100deg,rgba(63,127,107,.62),rgba(84,132,140,.54) 55%,rgba(58,97,114,.56)) !important;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view
+:is(.metric-card,.data-card,.vehicle-card,.taxes-segments,.filter-pill,.taxes-note,.large-empty) {
+  background:linear-gradient(145deg,rgba(139,169,184,.58),rgba(86,119,136,.56) 49%,rgba(58,89,105,.62)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(94,126,143,.70),rgba(56,88,105,.67) 52%,rgba(40,70,87,.71)) !important;
+}
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active,.taxes-atrium-active)
+:is(.search-trigger,.icon-btn,.avatar-btn,.secondary-btn,.utility-text-btn,.quiet-badge,.filter-pill) {
+  background-color:rgba(70,101,117,.51) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* Phase 6 — Tax Layer */
+.tax-year-control{display:flex;align-items:center;gap:8px;padding:7px 9px 7px 12px;border:1px solid rgba(210,232,240,.24);border-radius:13px;background:linear-gradient(145deg,rgba(31,48,58,.88),rgba(20,34,43,.9));box-shadow:0 9px 24px rgba(0,0,0,.15)}
+.tax-year-control span{font-size:12.5px;font-weight:700;letter-spacing:.04em;color:rgba(225,238,243,.72);text-transform:uppercase}
+.tax-year-control select{appearance:none;border:0;background:transparent;color:#fff;font:700 15px/1.2 inherit;padding:2px 19px 2px 2px;outline:0;cursor:pointer}
+.tax-year-control{position:relative}.tax-year-control::after{content:'⌄';position:absolute;right:10px;top:50%;transform:translateY(-54%);color:rgba(231,243,247,.72);pointer-events:none}
+.tax-chip-income{color:#bff5d7!important;background:rgba(20,84,58,.72)!important;border-color:rgba(90,220,157,.35)!important}.tax-chip-expense{color:#ffe0ae!important;background:rgba(104,68,22,.7)!important;border-color:rgba(235,174,79,.34)!important}.tax-chip-mileage{color:#cfe8ff!important;background:rgba(34,70,105,.72)!important;border-color:rgba(96,167,229,.35)!important}.tax-chip-profit{color:#ddd8ff!important;background:rgba(66,56,111,.72)!important;border-color:rgba(151,139,226,.34)!important}
+.tax-overview-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(290px,.75fr);gap:14px;margin:14px 0}.tax-insight-card,.tax-method-card{border:1px solid rgba(215,233,239,.2);border-radius:20px;background:linear-gradient(145deg,rgba(47,63,72,.88),rgba(29,45,54,.9));box-shadow:0 18px 45px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.06);padding:18px;color:#f6fbfd}.tax-insight-card h2{font-size:24px;margin-top:2px}.tax-flow-list{display:grid;gap:2px;margin-top:15px}.tax-flow-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:12px 4px;border-bottom:1px solid rgba(220,238,244,.1)}.tax-flow-row>span{font-size:14px;color:rgba(230,241,245,.78)}.tax-flow-row>strong{font-size:18px;color:#fff}.tax-flow-row>small{grid-column:1/-1;font-size:12.5px;color:rgba(203,222,229,.6)}.tax-flow-row.total{margin-top:4px;padding-top:15px;border-bottom:0}.tax-flow-row.total>span,.tax-flow-row.total>strong{font-size:19px;font-weight:800}.tax-readiness-list{display:grid;gap:8px;margin:16px 0}.tax-readiness-list div{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:12px;background:rgba(92,60,25,.48);border:1px solid rgba(229,173,91,.2)}.tax-readiness-list div span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(239,174,75,.16);color:#ffd69a;font-weight:900}.tax-readiness-list strong{font-size:13.5px}.tax-ready-state{display:flex;align-items:center;gap:12px;margin-top:17px;padding:15px;border-radius:14px;background:rgba(27,81,60,.4);border:1px solid rgba(99,218,161,.18)}.tax-ready-state>span{font-size:21px;color:#a8f0ca}.tax-ready-state div{display:grid;gap:3px}.tax-ready-state strong{font-size:15px}.tax-ready-state small{color:rgba(209,232,220,.7)}
+.tax-quarter-card{margin:0 0 14px}.tax-quarter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:15px}.tax-quarter{display:grid;gap:4px;padding:13px;border-radius:14px;background:rgba(15,28,35,.42);border:1px solid rgba(215,234,241,.13)}.tax-quarter>span{font-size:12px;font-weight:800;letter-spacing:.08em;color:rgba(203,224,232,.65)}.tax-quarter>strong{font-size:19px}.tax-quarter>small{font-size:11.5px;line-height:1.35;color:rgba(204,222,228,.62)}.tax-disclaimer{margin:13px 1px 0;font-size:12px;line-height:1.5;color:rgba(202,220,227,.62)}
+.tax-mileage-rate-strip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px;padding:10px 13px;border:1px solid rgba(198,224,235,.15);border-radius:13px;background:rgba(30,48,58,.72);color:rgba(226,240,245,.75)}.tax-mileage-rate-strip strong{font-size:13px;color:#f6fbfd}.tax-mileage-rate-strip span{font-size:12.5px}.tax-mileage-rate-strip span+span{padding-left:12px;border-left:1px solid rgba(214,234,241,.15)}
+.tax-deduction-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:14px}.tax-deduction-head,.tax-deduction-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px}.tax-deduction-head{padding:12px 16px 8px;color:rgba(202,220,228,.62);font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.tax-deduction-row{width:100%;padding:13px 16px;border:0;border-top:1px solid rgba(215,234,241,.1);background:transparent;color:#f7fbfd;text-align:left}.tax-deduction-row button{font:inherit}.tax-deduction-row[data-tax-expense-category]{cursor:pointer}.tax-deduction-row[data-tax-expense-category]:hover{background:rgba(224,241,247,.05)}.tax-deduction-row>span{display:grid;gap:3px}.tax-deduction-row>span strong{font-size:14.5px}.tax-deduction-row>span small{font-size:12px;color:rgba(203,221,228,.62)}.tax-deduction-row>strong{font-size:16px}.mileage-deduction-row{background:rgba(40,76,102,.24)}.tax-method-card{align-self:start}.tax-method-card h3{font-size:20px;margin:3px 0 15px}.tax-method-stat{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid rgba(215,234,241,.1)}.tax-method-stat span{font-size:13px;color:rgba(215,231,237,.72)}.tax-method-stat strong{font-size:15px}.tax-method-card p{font-size:12.5px;line-height:1.55;color:rgba(216,231,237,.73);margin:14px 0 8px}.tax-method-card>small{font-size:11.5px;line-height:1.45;color:rgba(197,215,222,.55)}
+html.atrium-lite .tax-insight-card,html.atrium-lite .tax-method-card{backdrop-filter:none;-webkit-backdrop-filter:none;background:linear-gradient(145deg,rgba(53,69,78,.94),rgba(31,47,56,.95))}
+@media(max-width:1050px){.taxes-actions{flex-wrap:wrap}.tax-overview-grid,.tax-deduction-layout{grid-template-columns:1fr}.tax-quarter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.tax-year-control{order:-1}.tax-quarter-grid{grid-template-columns:1fr 1fr}.tax-overview-metrics{grid-template-columns:1fr!important}.taxes-segments{overflow-x:auto;justify-content:flex-start}.taxes-segments .segment{flex:0 0 auto}.tax-flow-row.total>span,.tax-flow-row.total>strong{font-size:17px}}

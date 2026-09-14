@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, records, and taxes." />
-  <title>Business Ledger — Phase 5 Mileage + Vehicles Alpha</title>
+  <title>Business Ledger — Phase 6 Tax Layer</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase5-surface-20260913a" />
+  <link rel="stylesheet" href="styles.css?v=phase6-tax-layer" />
 </head>
 <body class="home-atrium-active">
 
@@ -26,7 +26,7 @@
       <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-controls="primarySidebar" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><span aria-hidden="true">‹</span></button>
       <div class="brand-row">
         <div class="brand-mark" aria-hidden="true">B</div>
-        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 5 · Mileage</span></div>
+        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 6 · Tax Layer</span></div>
       </div>
 
       <button class="business-switcher" id="businessSwitcher" aria-haspopup="dialog">
@@ -70,7 +70,7 @@
             <button class="primary-btn" id="quickAddBtn"><span>＋</span> Add</button>
           </div>
 
-          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 5 is now active.</strong> Mileage and vehicle records now connect to the same workspace as work, money, and evidence; data remains local-only until secure cloud sync is connected.</span></div>
+          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 6 is now active.</strong> Tax-year summaries now interpret the same income, expense, and mileage source records without duplicating them; data remains local-only until secure cloud sync is connected.</span></div>
 
           <div class="metric-grid">
             <article class="metric-card"><div class="metric-head"><span>Active clients</span><span class="muted-chip">Work</span></div><strong class="metric-value" id="metricClients">0</strong><span class="metric-caption">In this workspace</span></article>
@@ -93,9 +93,9 @@
           </div>
 
           <article class="panel-card roadmap-card">
-            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 5 — Mileage + vehicle tracking</h2></div><span class="quiet-badge green">Active</span></div>
+            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 6 — Tax layer</h2></div><span class="quiet-badge green">Active</span></div>
             <div class="progress-track"><div class="progress-fill phase-five"></div></div>
-            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="done">Invoices</span><span class="done">Payments</span><span class="done">Expenses</span><span class="current">Mileage</span><span>Tax layer</span></div>
+            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="done">Invoices</span><span class="done">Payments</span><span class="done">Expenses</span><span class="done">Mileage</span><span class="current">Tax layer</span></div>
           </article>
         </div>
       </section>
@@ -179,39 +179,49 @@
       <section class="view taxes-atrium-view" data-page="taxes">
         <div class="content-wrap taxes-atrium-content">
           <div class="page-heading taxes-heading">
-            <div><p class="eyebrow">TAXES</p><h1>Miles today. Tax context tomorrow.</h1><p class="subtitle">Keep vehicle and trip records separate from money transactions. Business mileage can link back to the client or work session that created it.</p></div>
-            <div class="heading-actions taxes-actions"><button class="secondary-btn" id="addVehicleBtn">＋ Vehicle</button><button class="primary-btn" id="addMileageBtn">＋ Mileage</button></div>
+            <div><p class="eyebrow">TAXES</p><h1>Tax context, without the spreadsheet.</h1><p class="subtitle">A planning layer built from the records you already keep. Source transactions stay untouched while this view summarizes income, business-use expenses, mileage, and review gaps.</p></div>
+            <div class="heading-actions taxes-actions"><label class="tax-year-control"><span>Tax year</span><select id="taxYearSelect" aria-label="Tax year"></select></label><button class="secondary-btn" id="addVehicleBtn">＋ Vehicle</button><button class="primary-btn" id="addMileageBtn">＋ Mileage</button></div>
           </div>
 
-          <div class="tax-metric-grid">
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Business miles</span><span class="muted-chip tax-chip-month">This month</span></div><strong class="metric-value" id="taxMonthMiles">0</strong><span class="metric-caption">Business-classified mileage</span></article>
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Business miles</span><span class="muted-chip">All time</span></div><strong class="metric-value" id="taxAllMiles">0</strong><span class="metric-caption">Across this workspace</span></article>
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Primary vehicle</span><span class="muted-chip tax-chip-vehicle">Vehicle</span></div><strong class="metric-value tax-vehicle-value" id="taxPrimaryVehicle">None</strong><span class="metric-caption" id="taxVehicleCaption">Add a vehicle to start tracking</span></article>
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Needs review</span><span class="muted-chip tax-chip-review">Attention</span></div><strong class="metric-value" id="taxReviewCount">0</strong><span class="metric-caption">Trips missing clean tax context</span></article>
+          <div class="tax-metric-grid tax-overview-metrics">
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Received income</span><span class="muted-chip tax-chip-income">Year</span></div><strong class="metric-value" id="taxYearIncome">$0</strong><span class="metric-caption">Payments actually received</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Business expenses</span><span class="muted-chip tax-chip-expense">Recorded</span></div><strong class="metric-value" id="taxYearExpenses">$0</strong><span class="metric-caption">Business-use portions on file</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Mileage scenario</span><span class="muted-chip tax-chip-mileage">Standard rate</span></div><strong class="metric-value" id="taxMileageDeduction">$0</strong><span class="metric-caption" id="taxMileageRateCaption">Potential standard-mileage amount</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span>Planning profit</span><span class="muted-chip tax-chip-profit">Estimate</span></div><strong class="metric-value" id="taxPlanningProfit">$0</strong><span class="metric-caption">Income less modeled business deductions</span></article>
           </div>
 
           <div class="segment-control taxes-segments" role="tablist" aria-label="Tax sections">
-            <button class="segment active" data-tax-tab="mileage" role="tab">Mileage <span id="mileageCount">0</span></button>
+            <button class="segment active" data-tax-tab="overview" role="tab">Overview</button>
+            <button class="segment" data-tax-tab="mileage" role="tab">Mileage <span id="mileageCount">0</span></button>
             <button class="segment" data-tax-tab="vehicles" role="tab">Vehicles <span id="vehicleCount">0</span></button>
+            <button class="segment" data-tax-tab="deductions" role="tab">Deductions</button>
           </div>
 
-          <div class="tax-tab active" data-tax-panel="mileage">
-            <div class="tax-list-head">
-              <div><p class="eyebrow">MILEAGE LEDGER</p><h2>Trip history</h2><div class="tax-summary-line"><span id="taxBusinessTripCount">0 business trips</span><span id="taxLinkedTripCount">0 linked to work</span></div></div>
-              <div class="tax-head-actions"><button class="filter-pill" id="mileageFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All trips</button></div>
+          <div class="tax-tab active" data-tax-panel="overview">
+            <div class="tax-overview-grid">
+              <article class="tax-insight-card"><div class="panel-title-row"><div><p class="eyebrow">YEAR AT A GLANCE</p><h2>From ledger to tax context</h2></div><span class="quiet-badge green" id="taxYearBadge">2026</span></div><div class="tax-flow-list" id="taxFlowSummary"></div></article>
+              <article class="tax-insight-card"><div class="panel-title-row"><div><p class="eyebrow">READINESS</p><h2>What needs attention</h2></div><span class="quiet-badge" id="taxReadinessBadge">Ready</span></div><div id="taxReadinessBody"></div></article>
             </div>
+            <article class="tax-insight-card tax-quarter-card"><div class="panel-title-row"><div><p class="eyebrow">ESTIMATED TAX GROUNDWORK</p><h2>Quarterly planning</h2></div><span class="muted-chip">Planning only</span></div><div class="tax-quarter-grid" id="taxQuarterGrid"></div><p class="tax-disclaimer">This workspace does not calculate your federal or state tax liability. Estimated-tax requirements depend on your full return, withholding, credits, filing status, and other income. Use Form 1040-ES or a tax professional for the payment amount.</p></article>
+          </div>
+
+          <div class="tax-tab" data-tax-panel="mileage">
+            <div class="tax-list-head"><div><p class="eyebrow">MILEAGE LEDGER</p><h2>Trip history</h2><div class="tax-summary-line"><span id="taxBusinessTripCount">0 business trips</span><span id="taxLinkedTripCount">0 linked to work</span></div></div><div class="tax-head-actions"><button class="filter-pill" id="mileageFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All trips</button></div></div>
+            <div class="tax-mileage-rate-strip" id="taxMileageRateStrip"></div>
             <div class="data-card" id="mileageContainer"></div>
           </div>
 
           <div class="tax-tab" data-tax-panel="vehicles">
-            <div class="tax-list-head">
-              <div><p class="eyebrow">VEHICLE PROFILES</p><h2>Vehicles used for work</h2><div class="tax-summary-line"><span>Profiles preserve which vehicle was used</span><span>One can be primary</span></div></div>
-              <div class="tax-head-actions"><button class="primary-btn compact-action" id="addVehicleInlineBtn">＋ Vehicle</button></div>
-            </div>
+            <div class="tax-list-head"><div><p class="eyebrow">VEHICLE PROFILES</p><h2>Vehicles used for work</h2><div class="tax-summary-line"><span>Profiles preserve which vehicle was used</span><span>One can be primary</span></div></div><div class="tax-head-actions"><button class="primary-btn compact-action" id="addVehicleInlineBtn">＋ Vehicle</button></div></div>
             <div class="vehicle-grid" id="vehiclesContainer"></div>
           </div>
 
-          <div class="phase-next-note taxes-note"><span>↳</span><div><strong>Mileage is a source record, not an expense.</strong><small>Phase 5 records the facts of each trip. Phase 6 can interpret those records for tax-year calculations without changing the original mileage history.</small></div></div>
+          <div class="tax-tab" data-tax-panel="deductions">
+            <div class="tax-list-head"><div><p class="eyebrow">DEDUCTION VIEW</p><h2>Recorded business-use amounts</h2><div class="tax-summary-line"><span>Grouped from Money and Mileage</span><span>Tap a category to trace the source records</span></div></div></div>
+            <div class="tax-deduction-layout"><div class="data-card" id="taxDeductionContainer"></div><aside class="tax-method-card" id="taxVehicleMethodCard"></aside></div>
+          </div>
+
+          <div class="phase-next-note taxes-note"><span>↳</span><div><strong>Tax figures are interpretations, not new transactions.</strong><small>Phase 6 reads Payments, Expenses, and Mileage without rewriting those source records. Potential deductions and planning profit are bookkeeping estimates, not a filed return or tax advice.</small></div></div>
         </div>
       </section>
 
@@ -302,6 +312,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase5-surface-20260913a"></script>
+  <script src="app.js?v=phase6-tax-layer"></script>
 </body>
 </html>
