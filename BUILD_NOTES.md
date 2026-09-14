@@ -1,3 +1,7 @@
+## Typography scale refinement
+
+All explicit interface typography has been increased slightly while preserving the existing hierarchy: compact labels receive about +1px, normal interface text about +7%, and large display/title text about +5%. Compact text-bearing controls receive minor breathing-room adjustments to avoid crowding. No business logic or data model behavior changed.
+
 ## Corporate Atrium — Records tab extension
 
 - Added Records to the shared atrium activation state and motion/stability profile.

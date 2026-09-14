@@ -1,3 +1,7 @@
+## Typography scale refinement
+
+All explicit interface typography has been increased slightly while preserving the existing hierarchy: compact labels receive about +1px, normal interface text about +7%, and large display/title text about +5%. Compact text-bearing controls receive minor breathing-room adjustments to avoid crowding. No business logic or data model behavior changed.
+
 # Phase 5 — Taxes / Mileage + Vehicles Alpha
 
 This checkpoint adds a fifth permanent destination: **Home → Work → Money → Taxes → Records**. The new Taxes area begins with Mileage + Vehicle Tracking and is intentionally designed as the future home for Phase 6 tax interpretation.
