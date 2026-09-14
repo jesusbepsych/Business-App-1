@@ -3343,3 +3343,47 @@ html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-a
 html.atrium-lite .tax-insight-card,html.atrium-lite .tax-method-card{backdrop-filter:none;-webkit-backdrop-filter:none;background:linear-gradient(145deg,rgba(53,69,78,.94),rgba(31,47,56,.95))}
 @media(max-width:1050px){.taxes-actions{flex-wrap:wrap}.tax-overview-grid,.tax-deduction-layout{grid-template-columns:1fr}.tax-quarter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.tax-year-control{order:-1}.tax-quarter-grid{grid-template-columns:1fr 1fr}.tax-overview-metrics{grid-template-columns:1fr!important}.taxes-segments{overflow-x:auto;justify-content:flex-start}.taxes-segments .segment{flex:0 0 auto}.tax-flow-row.total>span,.tax-flow-row.total>strong{font-size:17px}}
+
+/* ===== Phase 6 — Home + Money depth hierarchy refinement ================
+   Match the visual hierarchy established by the Taxes Overview: lighter,
+   more transparent summary/header bays above; deeper charcoal-blue frosted
+   surfaces for the detailed content below. Work and Records remain untouched. */
+
+/* HOME — keep status + metric summary bays unchanged; deepen only the
+   detailed lower information surfaces (Attention, Recent Work, Roadmap). */
+body.home-atrium-active .home-atrium-view .two-column > .panel-card,
+body.home-atrium-active .home-atrium-view .roadmap-card {
+  background:linear-gradient(145deg,rgba(47,63,72,.88),rgba(29,45,54,.90)) !important;
+  border-color:rgba(215,233,239,.20) !important;
+  box-shadow:0 18px 45px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.06) !important;
+}
+
+/* MONEY — metrics + section switcher stay on the lighter frosted material;
+   the active ledger itself gets the same deeper material as Taxes detail. */
+body.money-atrium-active .money-atrium-view .money-tab .data-card {
+  background:linear-gradient(145deg,rgba(47,63,72,.88),rgba(29,45,54,.90)) !important;
+  border-color:rgba(215,233,239,.20) !important;
+  box-shadow:0 18px 45px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.06) !important;
+}
+
+/* The explanatory footer belongs to the detail region visually, but remains
+   intentionally quieter than the ledger/card above it. */
+body.money-atrium-active .money-atrium-view .phase-next-note {
+  background:linear-gradient(145deg,rgba(42,57,66,.82),rgba(25,39,48,.84)) !important;
+  border-color:rgba(215,233,239,.16) !important;
+}
+
+/* iPad/Safari no-flash profile: use denser static frost, matching the Taxes
+   detail cards without restoring live backdrop sampling/compositor churn. */
+html.atrium-lite body.home-atrium-active .home-atrium-view .two-column > .panel-card,
+html.atrium-lite body.home-atrium-active .home-atrium-view .roadmap-card,
+html.atrium-lite body.money-atrium-active .money-atrium-view .money-tab .data-card {
+  background:linear-gradient(145deg,rgba(53,69,78,.94),rgba(31,47,56,.95)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+html.atrium-lite body.money-atrium-active .money-atrium-view .phase-next-note {
+  background:linear-gradient(145deg,rgba(49,64,73,.92),rgba(29,44,53,.93)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}

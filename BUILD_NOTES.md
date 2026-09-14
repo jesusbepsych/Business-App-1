@@ -272,3 +272,9 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Added tax readiness queue, quarterly received-income view, deductions/category rollup, vehicle-method comparison context, and source navigation back to Money.
 - Quarterly area is explicitly planning groundwork, not a calculated federal/state tax liability.
 - Tax calculations are derived views only; Payments, Expenses, Mileage, Vehicles, and Receipts remain source records.
+
+## Home + Money depth hierarchy refinement
+- Home: kept the upper status/metric Frosted Window Bays unchanged; changed the lower Attention, Recent Work, and Roadmap containers to the deeper charcoal-blue material already established by the Taxes overview detail cards.
+- Money: kept the upper summary metrics and Invoices/Payments/Expenses switcher unchanged; changed the lower active ledger container to the deeper Taxes-style detail material. The explanatory footer uses a quieter version of the same depth family.
+- Work and Records were intentionally not changed.
+- The `atrium-lite` iPad/Safari path continues to use static frost with no live `backdrop-filter`.
