@@ -174,3 +174,6 @@ Phase 7 adds evidence drill-through and record history to the completed Phase 6 
 # Business Ledger — Phase 8 Dashboard / Analytics
 
 Phase 8 expands Home with a calm analytics workspace. It adds selectable ranges, prior-period comparisons, monthly business-flow and work trends, client/source income and workload, expense-category patterns, invoice collection health, and full source-record drill-through. All analytics are calculated at render time from the existing Phase 7 source-of-truth model.
+# Phase 8 Analytics Chart Refinement
+
+This refinement adds proportional currency axes, a continuously scrubbable monthly net-movement chart, a separate Income vs Expenses trend, and small traceable donut charts for income sources and expense categories. Every visualization responds to the Analytics date-range control and remains derived from authoritative source records.

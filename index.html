@@ -116,7 +116,7 @@
 
             <div class="analytics-primary-grid">
               <article class="analytics-card analytics-cashflow-card">
-                <div class="analytics-card-head"><div><p class="eyebrow">BUSINESS FLOW</p><h2>Received and business use</h2></div><div class="analytics-legend"><span class="income">Received</span><span class="expense">Business-use expenses</span></div></div>
+                <div class="analytics-card-head"><div><p class="eyebrow">BUSINESS FLOW</p><h2>Monthly net movement</h2></div><div class="analytics-legend"><span class="net">Received minus business use</span></div></div>
                 <div class="analytics-chart" id="analyticsCashflowChart"></div>
               </article>
               <article class="analytics-card analytics-invoice-card">
@@ -128,17 +128,17 @@
             <div class="analytics-secondary-grid">
               <article class="analytics-card">
                 <div class="analytics-card-head"><div><p class="eyebrow">CLIENTS & SOURCES</p><h2>Received income by source</h2></div><span class="muted-chip">Payments</span></div>
-                <div class="analytics-ranking" id="analyticsClients"></div>
+                <div class="analytics-composition"><div class="analytics-donut" id="analyticsIncomePie"></div><div class="analytics-ranking" id="analyticsClients"></div></div>
               </article>
               <article class="analytics-card">
                 <div class="analytics-card-head"><div><p class="eyebrow">EXPENSE MIX</p><h2>Where business money went</h2></div><span class="muted-chip">Business use</span></div>
-                <div class="analytics-ranking" id="analyticsExpenses"></div>
+                <div class="analytics-composition"><div class="analytics-donut" id="analyticsExpensePie"></div><div class="analytics-ranking" id="analyticsExpenses"></div></div>
               </article>
             </div>
 
-            <article class="analytics-card analytics-work-card">
-              <div class="analytics-card-head"><div><p class="eyebrow">WORK RHYTHM</p><h2>Hours and unbilled value</h2></div><span class="muted-chip">Sessions</span></div>
-              <div class="analytics-chart" id="analyticsWorkChart"></div>
+            <article class="analytics-card analytics-income-expense-card">
+              <div class="analytics-card-head"><div><p class="eyebrow">INCOME VS EXPENSES</p><h2>Monthly comparison</h2></div><div class="analytics-legend"><span class="income">Income received</span><span class="expense">Business-use expenses</span></div></div>
+              <div class="analytics-chart" id="analyticsIncomeExpenseChart"></div>
             </article>
 
             <div class="phase-next-note analytics-note"><span>↳</span><div><strong>Analytics explain; source records decide.</strong><small>Open any chart, metric, client, category, or invoice state to see the exact records contributing to it.</small></div></div>
@@ -358,6 +358,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase8-dashboard-analytics"></script>
+  <script src="app.js?v=phase8-analytics-chart-refinement"></script>
 </body>
 </html>

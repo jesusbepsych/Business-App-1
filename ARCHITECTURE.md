@@ -307,3 +307,10 @@ Analytics are pure derived projections and are never persisted as transactions o
 Ranges include 3, 6, and 12 months, year to date, and all time. Rolling ranges compare to the immediately preceding equal-length period. Year to date compares to the same elapsed dates in the prior year. All-time totals intentionally omit a misleading comparison.
 
 Every aggregate retains a drill-through predicate and opens the Phase 7 evidence surface with the exact contributing records. Charts are inline SVG with keyboard-selectable month targets; they add no network dependency and remain static under the Safari/iPad lite profile.
+## Phase 8 chart refinement
+
+The Business Flow graph now plots monthly `payments.amountCents − expenses.businessCents`. Its currency domain always includes zero and expands proportionally to the selected range, including negative movement. Pointer tracking uses the rendered SVG path for continuous visual interpolation; the displayed tooltip anchors to the nearest source month. A horizontal drag suppresses the subsequent click so scrubbing does not unintentionally open evidence.
+
+Income vs Expenses plots the two underlying monthly series separately. Composition donuts reuse the already-filtered client/source and expense-category rollups. When a donut would exceed five named slices, smaller slices are grouped as a visual `Other` segment only; detail rankings and drill-through records remain unabridged.
+
+All chart models are rebuilt from the current Analytics range on every render. No chart data is persisted.

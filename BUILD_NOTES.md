@@ -296,3 +296,14 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Analytics are read-only derived views. No Phase 8 collection, schema migration, duplicated transaction, or stored aggregate was introduced.
 - Used inline, accessible SVG charts with keyboard-enabled data points and no external chart dependency.
 - Added responsive two-column-to-single-column layouts, bounded ranking lists, touch scrolling, reduced-motion behavior, and static-frost compatibility for iPad/Safari.
+# Phase 8 — Analytics Chart Refinement
+
+- Replaced the former Hours / unbilled value chart with a range-aware Income vs Expenses comparison using smooth monthly lines and restrained area fills.
+- Reframed Business Flow as monthly net movement: received Payments minus saved business-use Expense amounts.
+- Added a proportional currency Y-axis to both monetary charts, including a visible zero line and negative values when expenses exceed received income.
+- Added pointer/finger scrubbing to Business Flow. Its indicator follows the actual curved SVG path continuously, while the tooltip resolves to the nearest monthly source bucket.
+- Prevented drag gestures from accidentally opening evidence; ordinary taps and keyboard activation still drill into the selected month.
+- Added compact income-source and expense-category donut charts beside the existing exact-value rankings. More than five slices are grouped visually as Other while the underlying ranking remains complete.
+- Donut slices remain traceable and open the exact Payment or Expense records represented by the selected slice.
+- All charts, pies, KPIs, rankings, and evidence predicates use the single top-level Analytics range selection.
+- No transaction model, stored aggregate, or schema behavior changed.

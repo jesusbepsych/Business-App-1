@@ -3443,3 +3443,20 @@ html.atrium-lite .analytics-card,html.atrium-lite .analytics-kpi,html.atrium-lit
 .roadmap-steps{grid-template-columns:repeat(8,1fr)}
 .progress-fill.phase-eight{width:100%}
 @media(max-width:680px){.roadmap-steps span{display:none!important}.roadmap-steps span:nth-child(1),.roadmap-steps span:nth-child(3),.roadmap-steps span:nth-child(6),.roadmap-steps span:nth-child(8){display:block!important}}
+
+/* Phase 8 chart refinement — scaled axes, fluid scrubber, and composition rings */
+.analytics-legend .net:before{background:#72deb0;box-shadow:0 0 12px rgba(114,222,176,.48)}
+.analytics-svg.scrubbable-chart{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.chart-grid .axis-value{fill:rgba(226,238,244,.58);font-size:9px;font-variant-numeric:tabular-nums}
+.chart-grid line.zero{stroke:rgba(225,239,246,.24);stroke-width:1.25}
+.chart-line.net{stroke:#72deb0;filter:drop-shadow(0 5px 10px rgba(80,204,157,.24))}
+.chart-area{pointer-events:none}.chart-area.net{fill:url(#netFlowFill)}.chart-area.income{fill:url(#incomeAreaFill)}.chart-area.expense{fill:url(#expenseAreaFill)}
+.comparison-svg .chart-line.income{stroke:#72deb0}.comparison-svg .chart-line.expense{stroke:#ef9dba}
+.comparison-svg .chart-hit circle.expense{fill:#ef9dba}
+.net-hit rect{fill:transparent}.chart-scrubber{opacity:0;pointer-events:none;transition:opacity .16s ease}.chart-scrubber.active{opacity:1}.chart-scrubber>line{stroke:rgba(227,243,249,.38);stroke-width:1;stroke-dasharray:3 4}.chart-scrubber>circle{fill:#72deb0;stroke:#102531;stroke-width:3;filter:drop-shadow(0 0 7px rgba(114,222,176,.7))}.scrub-tooltip rect{fill:rgba(7,20,29,.93);stroke:rgba(184,227,247,.16);stroke-width:1}.scrub-tooltip text{fill:#f8fcfd;font-variant-numeric:tabular-nums}.scrub-tooltip .scrub-label{font-size:8px;fill:rgba(230,240,245,.64)}.scrub-tooltip .scrub-value{font-size:10px;font-weight:700}
+.analytics-income-expense-card{margin-bottom:12px}.analytics-income-expense-card .analytics-chart{min-height:200px}
+.analytics-composition{display:grid;grid-template-columns:112px minmax(0,1fr);align-items:center;gap:12px}.analytics-donut{display:grid;place-items:center;min-height:118px}.donut-svg{width:112px;height:112px;overflow:visible}.donut-track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:12}.donut-slice{fill:none;stroke-width:12;transform:rotate(-90deg);transform-origin:50px 50px;cursor:pointer;transition:stroke-width .16s ease,filter .16s ease}.donut-slice:hover,.donut-slice:focus{stroke-width:15;filter:drop-shadow(0 0 5px rgba(152,212,240,.3));outline:none}.donut-hole{fill:rgba(7,20,29,.86);stroke:rgba(255,255,255,.05);stroke-width:1}.donut-total{fill:#f7fbfd;font-size:10px;font-weight:750;font-variant-numeric:tabular-nums}.donut-caption{fill:rgba(228,238,243,.52);font-size:5px;text-transform:uppercase;letter-spacing:.08em}.donut-empty{display:grid;place-items:center;gap:5px;color:rgba(228,238,243,.52)}.donut-empty span{width:82px;height:82px;border:12px solid rgba(255,255,255,.065);border-radius:50%}.donut-empty small{font-size:9px}
+@media(max-width:760px){.analytics-composition{grid-template-columns:92px minmax(0,1fr);gap:8px}.donut-svg{width:90px;height:90px}.analytics-donut{min-height:98px}}
+@media(max-width:430px){.analytics-composition{grid-template-columns:1fr}.analytics-donut{justify-content:start}.donut-svg{width:104px;height:104px}}
+@media(prefers-reduced-motion:reduce){.chart-scrubber,.donut-slice{transition:none}}
+.analytics-rank-row .rank-track i,.analytics-rank-row .rank-track.expense i{background:var(--slice-color,#75bfe7);box-shadow:0 0 11px rgba(117,191,231,.24)}
