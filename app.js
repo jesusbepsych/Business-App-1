@@ -12,7 +12,7 @@
   const defaultClientColorForIndex = (index = 0) => CLIENT_COLOR_KEYS[Math.abs(Number(index) || 0) % CLIENT_COLOR_KEYS.length];
 
   const initialData = {
-    schemaVersion: 8,
+    schemaVersion: 9,
     activeBusinessId: 'biz_play_it_forward',
     businesses: [{
       id: 'biz_play_it_forward',
@@ -35,6 +35,7 @@
     vehicles: [],
     mileageTrips: [],
     auditEvents: [],
+    evidenceSnapshots: [],
   };
 
   const deepClone = (value) => JSON.parse(JSON.stringify(value));
@@ -45,8 +46,9 @@
 
   function migrateData(parsed) {
     if (!parsed || typeof parsed !== 'object') return deepClone(initialData);
+    parsed.evidenceSnapshots ||= [];
     if (parsed.schemaVersion === 2) {
-      parsed.schemaVersion = 8;
+      parsed.schemaVersion = 9;
       parsed.invoices = [];
       parsed.payments = [];
       parsed.expenses = [];
@@ -60,7 +62,7 @@
       return parsed;
     }
     if (parsed.schemaVersion === 3) {
-      parsed.schemaVersion = 8;
+      parsed.schemaVersion = 9;
       parsed.invoices ||= [];
       parsed.payments = [];
       parsed.expenses = [];
@@ -73,7 +75,7 @@
       return parsed;
     }
     if (parsed.schemaVersion === 4 || parsed.schemaVersion === 5) {
-      parsed.schemaVersion = 8;
+      parsed.schemaVersion = 9;
       parsed.invoices ||= [];
       parsed.payments ||= [];
       parsed.expenses ||= [];
@@ -86,7 +88,7 @@
       return parsed;
     }
     if (parsed.schemaVersion === 6) {
-      parsed.schemaVersion = 8;
+      parsed.schemaVersion = 9;
       parsed.invoices ||= [];
       parsed.payments ||= [];
       parsed.expenses ||= [];
@@ -98,7 +100,7 @@
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
       return parsed;
     }
-    if (parsed.schemaVersion === 7) { parsed.schemaVersion = 8;
+    if (parsed.schemaVersion === 7) { parsed.schemaVersion = 9;
       parsed.invoices ||= []; parsed.payments ||= []; parsed.expenses ||= []; parsed.receipts ||= [];
       parsed.vehicles ||= []; parsed.mileageTrips ||= []; parsed.auditEvents ||= [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
@@ -107,8 +109,13 @@
       return parsed;
     }
     if (parsed.schemaVersion === 8) {
+      parsed.schemaVersion = 9;
+      parsed.evidenceSnapshots ||= [];
+    }
+    if (parsed.schemaVersion === 9) {
       parsed.invoices ||= []; parsed.payments ||= []; parsed.expenses ||= []; parsed.receipts ||= [];
       parsed.vehicles ||= []; parsed.mileageTrips ||= []; parsed.auditEvents ||= [];
+      parsed.evidenceSnapshots ||= [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
       parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
       parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
@@ -187,7 +194,7 @@
   const repository = new LocalRepository();
   const receiptBlobStore = new ReceiptBlobStore();
   const data = repository.load();
-  const ui = { activeView: 'home', modal: null, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null, taxTab: 'overview', taxYear: null, mileageFilter: 'all', mileagePage: 1, mileagePageSize: 7 };
+  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsRange: '6m', workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null, taxTab: 'overview', taxYear: null, mileageFilter: 'all', mileagePage: 1, mileagePageSize: 7 };
   let homeRecentRotationTimer = null;
   let homeRecentSignature = '';
   let homeRecentSwapTimer = null;
@@ -280,6 +287,32 @@
       data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType, entityType, entityId, details, occurredAt: nowIso() });
     }
     repository.save(data);
+  }
+
+  function preserveEvidenceSnapshot(entityType, record, label = '') {
+    if (!record) return;
+    data.evidenceSnapshots ||= [];
+    data.evidenceSnapshots.push({
+      id: uid('evidence'), businessId: data.activeBusinessId, entityType,
+      entityId: record.id, label, snapshot: deepClone(record), preservedAt: nowIso()
+    });
+  }
+
+  function entityAuditEvents(entityType, entityId) {
+    return (data.auditEvents || []).filter(event => event.businessId === data.activeBusinessId && event.entityType === entityType && event.entityId === entityId)
+      .slice().sort((a,b) => String(b.occurredAt || '').localeCompare(String(a.occurredAt || '')));
+  }
+
+  function evidenceTimelineHtml(entityType, entityId) {
+    const events = entityAuditEvents(entityType, entityId).slice(0, 6);
+    const rows = events.map(event => `<li><span class="evidence-event-dot"></span><div><strong>${escapeHtml(String(event.eventType || 'updated').replaceAll('_',' '))}</strong><small>${formatDateTime(event.occurredAt)}</small></div></li>`).join('');
+    return `<details class="evidence-history"><summary><span><strong>Record history</strong><small>${events.length ? `${events.length} saved ${events.length === 1 ? 'event' : 'events'}` : 'Source record retained'}</small></span><span aria-hidden="true">⌄</span></summary>${rows ? `<ol>${rows}</ol>` : '<p>No history events are available for this migrated record.</p>'}</details>`;
+  }
+
+  function formatDateTime(value) {
+    if (!value) return 'Time unavailable';
+    const date = new Date(value); if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}).format(date);
   }
 
   function activeBusiness() {
@@ -673,6 +706,140 @@
     $$('[data-invoice-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
     $$('[data-expense-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => { setView('money'); ui.moneyTab='expenses'; syncMoneyTabs(); openExpenseDetail(btn.dataset.expenseDetail); }));
     $$('[data-mileage-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => { setView('taxes'); ui.taxTab='mileage'; syncTaxTabs(); openMileageDetail(btn.dataset.mileageDetail); }));
+    renderAnalytics();
+  }
+
+  function syncHomeTabs() {
+    $$('[data-home-tab]').forEach(btn => { const active=btn.dataset.homeTab===ui.homeTab; btn.classList.toggle('active',active); btn.setAttribute('aria-selected',String(active)); });
+    $$('[data-home-panel]').forEach(panel => panel.classList.toggle('active',panel.dataset.homePanel===ui.homeTab));
+    if (ui.homeTab === 'analytics') { stopHomeRecentRotation(); renderAnalytics(); }
+    else startHomeRecentRotation();
+  }
+
+  function dateOnlyFromDate(date) {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`;
+  }
+
+  function parseDateOnlyUtc(value) {
+    const [year,month,day]=String(value||'').split('-').map(Number);
+    return new Date(Date.UTC(year||1970,(month||1)-1,day||1));
+  }
+
+  function analyticsRangeBounds(key=ui.analyticsRange) {
+    const today=businessToday(); const end=parseDateOnlyUtc(today); let start;
+    if (key==='ytd') start=new Date(Date.UTC(end.getUTCFullYear(),0,1));
+    else if (key==='all') {
+      const dates=[...businessPayments().map(x=>x.receivedDate),...businessExpenses().map(x=>x.date),...businessSessions().map(x=>x.date),...businessInvoices().map(x=>x.issueDate)].filter(Boolean).sort();
+      start=parseDateOnlyUtc(dates[0]||`${end.getUTCFullYear()}-01-01`);
+    } else {
+      const months=Number(String(key).replace('m',''))||6;
+      start=new Date(Date.UTC(end.getUTCFullYear(),end.getUTCMonth()-(months-1),1));
+    }
+    const days=Math.max(1,Math.round((end-start)/86400000)+1); let previousStart,previousEnd,comparisonLabel='vs prior period';
+    if(key==='ytd'){previousStart=new Date(Date.UTC(end.getUTCFullYear()-1,0,1));previousEnd=new Date(Date.UTC(end.getUTCFullYear()-1,end.getUTCMonth(),end.getUTCDate()));comparisonLabel='vs same period last year';}
+    else if(key==='all'){previousStart=null;previousEnd=null;comparisonLabel='all recorded activity';}
+    else {previousEnd=new Date(start.getTime()-86400000);previousStart=new Date(previousEnd.getTime()-(days-1)*86400000);}
+    return {start:dateOnlyFromDate(start),end:today,previousStart:previousStart?dateOnlyFromDate(previousStart):'',previousEnd:previousEnd?dateOnlyFromDate(previousEnd):'',comparisonLabel};
+  }
+
+  function dateInBounds(value,start,end) { return Boolean(value && value>=start && value<=end); }
+  function analyticsRangeLabel(key=ui.analyticsRange) { return ({'3m':'Last 3 months','6m':'Last 6 months','12m':'Last 12 months',ytd:'Year to date',all:'All time'})[key]||'Last 6 months'; }
+  function analyticsComparison(current,previous,{money=false,hours=false}={}) {
+    const delta=current-previous; const pct=previous ? Math.round((delta/Math.abs(previous))*100) : current ? null : 0;
+    const direction=delta>0?'up':delta<0?'down':'flat';
+    const value=pct==null?'New activity':`${Math.abs(pct)}% ${direction==='up'?'higher':direction==='down'?'lower':'unchanged'}`;
+    const detail=money?formatMoney(Math.abs(delta),activeBusiness().currency):hours?`${(Math.abs(delta)/60).toFixed(1)}h`:`${Math.abs(delta)}`;
+    return {direction,value,detail};
+  }
+
+  function analyticsMonthBuckets(bounds) {
+    const cursor=parseDateOnlyUtc(`${bounds.start.slice(0,7)}-01`); const end=parseDateOnlyUtc(`${bounds.end.slice(0,7)}-01`); const out=[]; const includeYear=bounds.start.slice(0,4)!==bounds.end.slice(0,4);
+    while(cursor<=end){const key=`${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth()+1).padStart(2,'0')}`;out.push({key,label:new Intl.DateTimeFormat('en-US',{month:'short',year:includeYear?'2-digit':undefined,timeZone:'UTC'}).format(cursor),received:0,expenses:0,hours:0,uninvoiced:0});cursor.setUTCMonth(cursor.getUTCMonth()+1);}
+    const byKey=new Map(out.map(x=>[x.key,x]));
+    businessPayments().filter(x=>dateInBounds(x.receivedDate,bounds.start,bounds.end)).forEach(x=>{const b=byKey.get(x.receivedDate.slice(0,7));if(b)b.received+=Number(x.amountCents||0)});
+    businessExpenses().filter(x=>dateInBounds(x.date,bounds.start,bounds.end)).forEach(x=>{const b=byKey.get(x.date.slice(0,7));if(b)b.expenses+=Number(x.businessCents||0)});
+    businessSessions().filter(x=>dateInBounds(x.date,bounds.start,bounds.end)).forEach(x=>{const b=byKey.get(x.date.slice(0,7));if(b){b.hours+=sessionMinutes(x);if(x.invoiceStatus==='uninvoiced')b.uninvoiced+=sessionAmountCents(x)}});
+    return out;
+  }
+
+  function analyticsLineChart(buckets) {
+    if (!buckets.length || !buckets.some(x=>x.received||x.expenses)) return '<div class="analytics-empty"><strong>No cash activity in this range</strong><small>Payments and business-use expenses will appear here.</small></div>';
+    const width=760,height=250,left=28,right=14,top=18,bottom=40,innerW=width-left-right,innerH=height-top-bottom;
+    const max=Math.max(1,...buckets.flatMap(x=>[x.received,x.expenses]));
+    const point=(value,index)=>`${left+(buckets.length===1?innerW/2:index*innerW/(buckets.length-1))},${top+innerH-(value/max)*innerH}`;
+    const received=buckets.map((x,i)=>point(x.received,i)).join(' '); const expenses=buckets.map((x,i)=>point(x.expenses,i)).join(' ');
+    const labelEvery=Math.max(1,Math.ceil(buckets.length/8));
+    return `<svg class="analytics-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Received income and business expenses by month"><g class="chart-grid">${[0,.25,.5,.75,1].map(n=>`<line x1="${left}" x2="${width-right}" y1="${top+innerH*n}" y2="${top+innerH*n}"/>`).join('')}</g><polyline class="chart-line expense" points="${expenses}"/><polyline class="chart-line income" points="${received}"/>${buckets.map((x,i)=>{const px=left+(buckets.length===1?innerW/2:i*innerW/(buckets.length-1));const label=i%labelEvery===0||i===buckets.length-1?`<text x="${px}" y="${height-10}" text-anchor="middle">${escapeHtml(x.label)}</text>`:'';return `<g class="chart-hit" tabindex="0" role="button" data-analytics-month="${x.key}" aria-label="${escapeHtml(x.label)}: ${formatMoney(x.received)} received, ${formatMoney(x.expenses)} business expenses"><rect x="${Math.max(0,px-Math.max(10,innerW/Math.max(2,buckets.length)/2))}" y="${top}" width="${Math.max(20,innerW/Math.max(1,buckets.length))}" height="${innerH}"/><circle class="income" cx="${px}" cy="${point(x.received,i).split(',')[1]}" r="4"/><circle class="expense" cx="${px}" cy="${point(x.expenses,i).split(',')[1]}" r="4"/>${label}<title>${escapeHtml(x.label)} · ${formatMoney(x.received)} received · ${formatMoney(x.expenses)} spent</title></g>`}).join('')}</svg>`;
+  }
+
+  function analyticsBarChart(buckets) {
+    if (!buckets.length || !buckets.some(x=>x.hours)) return '<div class="analytics-empty"><strong>No sessions in this range</strong><small>Logged hours will appear here.</small></div>';
+    const width=760,height=220,left=24,right=14,top=18,bottom=38,innerW=width-left-right,innerH=height-top-bottom; const max=Math.max(60,...buckets.map(x=>x.hours)); const gap=8; const barW=Math.max(5,(innerW/buckets.length)-gap); const every=Math.max(1,Math.ceil(buckets.length/8));
+    return `<svg class="analytics-svg work-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Hours logged by month"><g class="chart-grid">${[0,.5,1].map(n=>`<line x1="${left}" x2="${width-right}" y1="${top+innerH*n}" y2="${top+innerH*n}"/>`).join('')}</g>${buckets.map((x,i)=>{const xPos=left+i*(innerW/buckets.length)+(innerW/buckets.length-barW)/2;const h=(x.hours/max)*innerH;return `<g class="chart-hit" tabindex="0" role="button" data-analytics-work-month="${x.key}" aria-label="${escapeHtml(x.label)}: ${(x.hours/60).toFixed(1)} hours, ${formatMoney(x.uninvoiced)} uninvoiced"><rect class="work-bar" x="${xPos}" y="${top+innerH-h}" width="${barW}" height="${Math.max(h,2)}" rx="${Math.min(6,barW/2)}"/><rect class="hit-rect" x="${xPos-gap/2}" y="${top}" width="${barW+gap}" height="${innerH}"/>${i%every===0||i===buckets.length-1?`<text x="${xPos+barW/2}" y="${height-9}" text-anchor="middle">${escapeHtml(x.label)}</text>`:''}<title>${escapeHtml(x.label)} · ${(x.hours/60).toFixed(1)}h · ${formatMoney(x.uninvoiced)} uninvoiced</title></g>`}).join('')}</svg>`;
+  }
+
+  function analyticsPaymentClient(payment) {
+    const invoice=payment.invoiceId?invoiceById(payment.invoiceId):null; const client=payment.clientId?clientById(payment.clientId):invoice?.clientId?clientById(invoice.clientId):null;
+    return {id:client?.id||payment.clientId||invoice?.clientId||'',name:client?.displayName||payment.clientNameSnapshot||invoice?.recipientSnapshot?.displayName||payment.sourceName||'Other income'};
+  }
+
+  function renderAnalytics() {
+    const host=$('[data-home-panel="analytics"]'); if(!host)return;
+    const bounds=analyticsRangeBounds(); const inCurrent=v=>dateInBounds(v,bounds.start,bounds.end); const inPrevious=v=>Boolean(bounds.previousStart&&dateInBounds(v,bounds.previousStart,bounds.previousEnd));
+    const payments=businessPayments().filter(x=>inCurrent(x.receivedDate)); const previousPayments=businessPayments().filter(x=>inPrevious(x.receivedDate));
+    const expenses=businessExpenses().filter(x=>inCurrent(x.date)); const previousExpenses=businessExpenses().filter(x=>inPrevious(x.date));
+    const sessions=businessSessions().filter(x=>inCurrent(x.date)); const previousSessions=businessSessions().filter(x=>inPrevious(x.date));
+    const invoices=businessInvoices().filter(x=>inCurrent(x.issueDate));
+    const received=payments.reduce((n,x)=>n+Number(x.amountCents||0),0); const prevReceived=previousPayments.reduce((n,x)=>n+Number(x.amountCents||0),0);
+    const spent=expenses.reduce((n,x)=>n+Number(x.businessCents||0),0); const prevSpent=previousExpenses.reduce((n,x)=>n+Number(x.businessCents||0),0);
+    const minutes=sessions.reduce((n,x)=>n+sessionMinutes(x),0); const prevMinutes=previousSessions.reduce((n,x)=>n+sessionMinutes(x),0); const net=received-spent; const prevNet=prevReceived-prevSpent;
+    const kpis=[['received','Received',received,prevReceived,'money'],['expenses','Business-use expenses',spent,prevSpent,'money'],['net','Planning margin',net,prevNet,'money'],['hours','Hours logged',minutes,prevMinutes,'hours']];
+    $('#analyticsKpis').innerHTML=kpis.map(([kind,label,current,previous,type])=>{const comp=analyticsComparison(current,previous,{money:type==='money',hours:type==='hours'});const display=type==='hours'?`${(current/60).toFixed(current%60?1:0)}h`:formatMoney(current,activeBusiness().currency);const allTime=ui.analyticsRange==='all';return `<button class="analytics-kpi" data-analytics-evidence="${kind}"><span>${label}</span><strong>${display}</strong><small class="comparison ${allTime?'flat':comp.direction}">${allTime?'All recorded activity':comp.value}<em>${allTime?'No comparison period':`${comp.detail} ${bounds.comparisonLabel}`}</em></small></button>`}).join('');
+    $('#analyticsRangeBtn').textContent=analyticsRangeLabel();
+    const buckets=analyticsMonthBuckets(bounds); $('#analyticsCashflowChart').innerHTML=analyticsLineChart(buckets); $('#analyticsWorkChart').innerHTML=analyticsBarChart(buckets);
+    const clientMap=new Map(); payments.forEach(payment=>{const c=analyticsPaymentClient(payment);const key=c.id||`name:${c.name}`;const row=clientMap.get(key)||{key,id:c.id,name:c.name,cents:0,count:0,minutes:0,sessions:0};row.cents+=Number(payment.amountCents||0);row.count++;clientMap.set(key,row)});
+    sessions.forEach(session=>{const client=clientById(session.clientId);const name=client?.displayName||session.clientNameSnapshot||'Unassigned work';const key=client?.id||session.clientId||`name:${name}`;const row=clientMap.get(key)||{key,id:client?.id||session.clientId||'',name,cents:0,count:0,minutes:0,sessions:0};row.minutes+=sessionMinutes(session);row.sessions++;clientMap.set(key,row)});
+    const clients=[...clientMap.values()].sort((a,b)=>b.cents-a.cents||b.minutes-a.minutes); const maxClient=Math.max(1,...clients.map(x=>x.cents));
+    $('#analyticsClients').innerHTML=clients.length?clients.map(x=>`<button class="analytics-rank-row" data-analytics-client="${escapeHtml(x.key)}"><span><strong>${escapeHtml(x.name)}</strong><small>${x.count} ${x.count===1?'payment':'payments'} · ${(x.minutes/60).toFixed(x.minutes%60?1:0)}h logged</small></span><span class="rank-track"><i style="--rank:${(x.cents/maxClient)*100}%"></i></span><strong>${formatMoney(x.cents,activeBusiness().currency)}</strong></button>`).join(''):'<div class="analytics-empty"><strong>No client activity yet</strong><small>Income and workload appear from Payments and Work Sessions.</small></div>';
+    const categoryMap=new Map(); expenses.forEach(expense=>{const cents=Number(expense.businessCents||0);if(cents<=0)return;const row=categoryMap.get(expense.category)||{key:expense.category,label:expenseCategoryLabel(expense.category),cents:0,count:0};row.cents+=cents;row.count++;categoryMap.set(expense.category,row)});const categories=[...categoryMap.values()].sort((a,b)=>b.cents-a.cents);const maxCategory=Math.max(1,...categories.map(x=>x.cents));
+    $('#analyticsExpenses').innerHTML=categories.length?categories.map(x=>`<button class="analytics-rank-row" data-analytics-category="${x.key}"><span><strong>${escapeHtml(x.label)}</strong><small>${x.count} ${x.count===1?'record':'records'}</small></span><span class="rank-track expense"><i style="--rank:${(x.cents/maxCategory)*100}%"></i></span><strong>${formatMoney(x.cents,activeBusiness().currency)}</strong></button>`).join(''):'<div class="analytics-empty"><strong>No business-use expenses</strong><small>Category patterns will appear as expenses are recorded.</small></div>';
+    const openInvoices=invoices.filter(x=>x.status==='sent'&&invoiceBalanceCents(x)>0);const overdue=openInvoices.filter(x=>invoiceDisplayStatus(x)==='Overdue');const paid=invoices.filter(x=>invoiceDisplayStatus(x)==='Paid');const billed=invoices.filter(x=>x.status!=='void').reduce((n,x)=>n+invoiceTotalCents(x),0);const collected=invoices.reduce((n,x)=>n+invoicePaidCents(x),0);const rate=billed?Math.min(100,Math.round(collected/billed*100)):0;
+    $('#analyticsInvoiceBadge').textContent=`${openInvoices.length} open`;
+    $('#analyticsInvoiceHealth').innerHTML=`<button class="invoice-health-ring" data-analytics-invoices="all" style="--collection:${rate}%"><span><strong>${rate}%</strong><small>collected</small></span></button><div class="invoice-health-stats"><button data-analytics-invoices="open"><span>Outstanding</span><strong>${formatMoney(openInvoices.reduce((n,x)=>n+invoiceBalanceCents(x),0))}</strong><small>${openInvoices.length} open</small></button><button data-analytics-invoices="overdue"><span>Overdue</span><strong>${overdue.length}</strong><small>${formatMoney(overdue.reduce((n,x)=>n+invoiceBalanceCents(x),0))} due</small></button><button data-analytics-invoices="paid"><span>Paid</span><strong>${paid.length}</strong><small>${formatMoney(collected)} received</small></button></div>`;
+    bindAnalyticsInteractions(bounds);
+  }
+
+  function bindAnalyticsInteractions(bounds) {
+    $$('[data-analytics-evidence]').forEach(btn=>btn.addEventListener('click',()=>openAnalyticsEvidence(btn.dataset.analyticsEvidence,{bounds})));
+    $$('[data-analytics-month]').forEach(node=>{const run=()=>openAnalyticsEvidence('cashflow',{bounds,month:node.dataset.analyticsMonth});node.addEventListener('click',run);node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();run()}})});
+    $$('[data-analytics-work-month]').forEach(node=>{const run=()=>openAnalyticsEvidence('hours',{bounds,month:node.dataset.analyticsWorkMonth});node.addEventListener('click',run);node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();run()}})});
+    $$('[data-analytics-client]').forEach(btn=>btn.addEventListener('click',()=>openAnalyticsEvidence('client',{bounds,clientKey:btn.dataset.analyticsClient})));
+    $$('[data-analytics-category]').forEach(btn=>btn.addEventListener('click',()=>openAnalyticsEvidence('category',{bounds,category:btn.dataset.analyticsCategory})));
+    $$('[data-analytics-invoices]').forEach(btn=>btn.addEventListener('click',()=>openAnalyticsEvidence('invoices',{bounds,status:btn.dataset.analyticsInvoices})));
+  }
+
+  function openAnalyticsEvidence(kind,{bounds=analyticsRangeBounds(),month='',clientKey='',category='',status='all'}={}) {
+    const start=month?`${month}-01`:bounds.start; const monthEnd=month?dateOnlyFromDate(new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0))):bounds.end; const end=month?monthEnd:bounds.end;
+    let title='Analytics evidence'; let note='This view is derived directly from source records.'; let rows=[]; let totalLabel='TOTAL'; let total='0';
+    const payments=businessPayments().filter(x=>dateInBounds(x.receivedDate,start,end)); const expenses=businessExpenses().filter(x=>dateInBounds(x.date,start,end)); const sessions=businessSessions().filter(x=>dateInBounds(x.date,start,end)); const invoices=businessInvoices().filter(x=>dateInBounds(x.issueDate,start,end));
+    const paymentRow=p=>{const source=p.kind==='invoice'?(p.invoiceNumberSnapshot||invoiceById(p.invoiceId)?.number||'Invoice payment'):(p.sourceName||'Other income');return `<button class="evidence-record-row" data-evidence-payment="${p.id}"><span><strong>${escapeHtml(source)}</strong><small>${formatDate(p.receivedDate)} · ${escapeHtml(analyticsPaymentClient(p).name)}</small></span><strong>${formatMoney(p.amountCents||0)}</strong><span>›</span></button>`};
+    const expenseRow=e=>`<button class="evidence-record-row" data-evidence-expense="${e.id}"><span><strong>${escapeHtml(e.merchant||expenseCategoryLabel(e.category))}</strong><small>${formatDate(e.date)} · ${escapeHtml(expenseCategoryLabel(e.category))}${e.receiptId?' · Receipt':''}</small></span><strong>${formatMoney(e.businessCents||0)}</strong><span>›</span></button>`;
+    const sessionRow=s=>`<button class="evidence-record-row" data-evidence-session="${s.id}"><span><strong>${escapeHtml(clientById(s.clientId)?.displayName||s.clientNameSnapshot||'Work session')}</strong><small>${formatDate(s.date)} · ${escapeHtml(sessionTimeRangeLabel(s))}</small></span><strong>${hoursLabel(sessionMinutes(s))}</strong><span>›</span></button>`;
+    const invoiceRow=i=>`<button class="evidence-record-row" data-evidence-invoice="${i.id}"><span><strong>${escapeHtml(i.number)}</strong><small>${formatDate(i.issueDate)} · ${escapeHtml(i.recipientSnapshot?.displayName||'Client')} · ${escapeHtml(invoiceDisplayStatus(i))}</small></span><strong>${formatMoney(i.status==='void'?0:invoiceBalanceCents(i))}</strong><span>›</span></button>`;
+    if(kind==='received'){title='Received income';total=formatMoney(payments.reduce((n,x)=>n+Number(x.amountCents||0),0));rows=payments.map(paymentRow);note='Payment records are the only source of received-income totals.';}
+    else if(kind==='expenses'){title='Business expenses';total=formatMoney(expenses.reduce((n,x)=>n+Number(x.businessCents||0),0));rows=expenses.filter(x=>Number(x.businessCents||0)>0).map(expenseRow);note='Each expense contributes only its saved business-use amount.';}
+    else if(kind==='net'||kind==='cashflow'){title=month?`${new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(parseDateOnlyUtc(`${month}-01`))} business flow`:'Planning margin';const income=payments.reduce((n,x)=>n+Number(x.amountCents||0),0),spent=expenses.reduce((n,x)=>n+Number(x.businessCents||0),0);total=formatMoney(income-spent);rows=[...payments.map(paymentRow),...expenses.filter(x=>Number(x.businessCents||0)>0).map(expenseRow)];note=`${formatMoney(income)} received minus ${formatMoney(spent)} in saved business-use expense amounts. This is an operational view, not bank reconciliation or taxable profit.`;}
+    else if(kind==='hours'){title=month?'Monthly work evidence':'Hours logged';const minutes=sessions.reduce((n,x)=>n+sessionMinutes(x),0);total=hoursLabel(minutes);totalLabel='TOTAL HOURS';rows=sessions.map(sessionRow);note='Hours come from saved Work Session start and end times.';}
+    else if(kind==='client'){const matching=payments.filter(p=>{const c=analyticsPaymentClient(p);return (c.id||`name:${c.name}`)===clientKey});const matchingSessions=sessions.filter(s=>{const c=clientById(s.clientId);const name=c?.displayName||s.clientNameSnapshot||'Unassigned work';return (c?.id||s.clientId||`name:${name}`)===clientKey});const name=matching[0]?analyticsPaymentClient(matching[0]).name:matchingSessions[0]?(clientById(matchingSessions[0].clientId)?.displayName||matchingSessions[0].clientNameSnapshot):'Client';title=`${name} activity`;total=formatMoney(matching.reduce((n,x)=>n+Number(x.amountCents||0),0));rows=[...matching.map(paymentRow),...matchingSessions.map(sessionRow)];note=`Received income is attributed from Payment links or snapshots; workload comes from ${hoursLabel(matchingSessions.reduce((n,x)=>n+sessionMinutes(x),0))} of source Work Sessions.`;}
+    else if(kind==='category'){const matching=expenses.filter(x=>x.category===category&&Number(x.businessCents||0)>0);title=matching.length?expenseCategoryLabel(category):'Expense category';total=formatMoney(matching.reduce((n,x)=>n+Number(x.businessCents||0),0));rows=matching.map(expenseRow);note='This category total uses business-use amounts, not original transaction totals.';}
+    else if(kind==='invoices'){let matching=invoices;if(status==='open')matching=matching.filter(x=>x.status==='sent'&&invoiceBalanceCents(x)>0);if(status==='overdue')matching=matching.filter(x=>invoiceDisplayStatus(x)==='Overdue');if(status==='paid')matching=matching.filter(x=>invoiceDisplayStatus(x)==='Paid');title=status==='all'?'Invoice collection evidence':`${status[0].toUpperCase()+status.slice(1)} invoices`;total=status==='paid'?formatMoney(matching.reduce((n,x)=>n+invoicePaidCents(x),0)):formatMoney(matching.reduce((n,x)=>n+(x.status==='void'?0:invoiceBalanceCents(x)),0));totalLabel=status==='paid'?'COLLECTED':'BALANCE';rows=matching.map(invoiceRow);note='Invoice health uses issued invoice snapshots and linked Payment records; it never treats the invoice itself as cash.';}
+    $('#detailEyebrow').textContent='ANALYTICS · EVIDENCE'; $('#detailTitle').textContent=title;
+    $('#detailBody').innerHTML=`<div class="evidence-total-card"><small>${totalLabel}</small><strong>${total}</strong><span>${rows.length} source ${rows.length===1?'record':'records'} · ${formatDate(start,{month:'short',day:'numeric',year:'numeric'})}–${formatDate(end,{month:'short',day:'numeric',year:'numeric'})}</span></div><div class="trace-banner evidence-explanation"><span>↳</span><div><strong>How this was built</strong><small>${escapeHtml(note)}</small></div></div><div class="detail-section evidence-source-section"><div class="panel-title-row"><p class="eyebrow">SOURCE RECORDS</p><span class="quiet-badge green">Traceable</span></div><div class="evidence-record-list">${rows.join('')||'<div class="inline-empty"><small>No source records contribute to this view.</small></div>'}</div></div>`;
+    openModal($('#detailPanel'));
+    $$('[data-evidence-payment]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openPaymentDetail(btn.dataset.evidencePayment)));
+    $$('[data-evidence-expense]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openExpenseDetail(btn.dataset.evidenceExpense)));
+    $$('[data-evidence-session]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openSessionDetail(btn.dataset.evidenceSession)));
+    $$('[data-evidence-invoice]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openInvoiceDetail(btn.dataset.evidenceInvoice)));
   }
 
   function randomSample(items, count) {
@@ -754,13 +921,15 @@
   function startHomeRecentRotation() {
     clearInterval(homeRecentRotationTimer);
     homeRecentRotationTimer = setInterval(() => {
-      if (ui.activeView !== 'home' || document.hidden || ui.modal) return;
+      if (ui.activeView !== 'home' || ui.homeTab !== 'snapshot' || document.hidden || ui.modal) return;
       const recentHost = $('#recentSessions');
       if (recentHost?.matches(':hover') || recentHost?.contains(document.activeElement)) return;
       if (businessSessions().length < 2) return;
       renderRandomHomeSessions(businessSessions(), true);
     }, 9000);
   }
+
+  function stopHomeRecentRotation() { clearInterval(homeRecentRotationTimer); homeRecentRotationTimer=null; }
 
   function sessionRowCompact(s) {
     const client = clientById(s.clientId);
@@ -1251,7 +1420,7 @@
         ${invoice.senderSnapshot?.paymentInstructions ? `<div class="invoice-preview-note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}
       </div>
       ${paymentHistory}${lockNote}
-      <div class="trace-banner"><span>↳</span><div><strong>${(invoice.lineItems || []).filter(item => item.type === 'session').length} linked work ${(invoice.lineItems || []).filter(item => item.type === 'session').length === 1 ? 'session' : 'sessions'}</strong><small>The invoice stores its own client, sender, rate, and line-item snapshots. Payments are separate cash records and never make the invoice itself count as cash received twice.</small></div></div>`;
+      <div class="trace-banner"><span>↳</span><div><strong>${(invoice.lineItems || []).filter(item => item.type === 'session').length} linked work ${(invoice.lineItems || []).filter(item => item.type === 'session').length === 1 ? 'session' : 'sessions'}</strong><small>The invoice stores its own client, sender, rate, and line-item snapshots. Payments are separate cash records and never make the invoice itself count as cash received twice.</small></div></div>${evidenceTimelineHtml('Invoice', invoice.id)}`;
     openModal($('#detailPanel'));
     $('[data-edit-invoice]')?.addEventListener('click', () => openInvoiceForm({ existingId: id }));
     $('[data-print-invoice]')?.addEventListener('click', () => printInvoice(id));
@@ -1292,9 +1461,9 @@
 
   function deleteDraftInvoice(id) {
     const invoice = invoiceById(id); if (!invoice || invoice.status !== 'draft') return;
+    preserveEvidenceSnapshot('Invoice', invoice, invoice.number);
     releaseInvoiceSessions(invoice);
     data.invoices = data.invoices.filter(item => item.id !== id);
-    data.auditEvents = data.auditEvents.filter(event => event.entityId !== id);
     data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Invoice', entityId: id, details: { number: invoice.number }, occurredAt: nowIso() });
     repository.save(data); closeModal(); renderAll(); setView('money'); showToast(`${invoice.number} deleted`);
   }
@@ -1470,7 +1639,7 @@
       ${payment.reference ? `<div class="detail-section"><p class="eyebrow">REFERENCE</p><p>${escapeHtml(payment.reference)}</p></div>` : ''}
       ${payment.description && payment.kind === 'direct' ? `<div class="detail-section"><p class="eyebrow">DESCRIPTION</p><p>${escapeHtml(payment.description)}</p></div>` : ''}
       ${payment.notes ? `<div class="detail-section"><p class="eyebrow">NOTE</p><p>${escapeHtml(payment.notes)}</p></div>` : ''}
-      <div class="trace-banner"><span>↳</span><div><strong>${payment.kind === 'invoice' ? 'Linked cash record' : 'Direct income record'}</strong><small>${payment.kind === 'invoice' ? `This payment is the cash-received record for ${escapeHtml(payment.invoiceNumberSnapshot || invoice?.number || 'the invoice')}. The invoice itself remains separate and is not counted again as received income.` : 'This income did not require an invoice, so this payment record itself is the source of the received-income entry.'}</small></div></div>`;
+      <div class="trace-banner"><span>↳</span><div><strong>${payment.kind === 'invoice' ? 'Linked cash record' : 'Direct income record'}</strong><small>${payment.kind === 'invoice' ? `This payment is the cash-received record for ${escapeHtml(payment.invoiceNumberSnapshot || invoice?.number || 'the invoice')}. The invoice itself remains separate and is not counted again as received income.` : 'This income did not require an invoice, so this payment record itself is the source of the received-income entry.'}</small></div></div>${evidenceTimelineHtml('Payment', payment.id)}`;
     openModal($('#detailPanel'));
     $('[data-edit-payment]')?.addEventListener('click', () => openPaymentForm({ existingId: id }));
     $('[data-payment-invoice]')?.addEventListener('click', () => { closeModal(); setView('money'); setTimeout(() => openInvoiceDetail(invoice.id), 20); });
@@ -1487,9 +1656,9 @@
 
   function deletePayment(id) {
     const payment = paymentById(id); if (!payment) return;
+    preserveEvidenceSnapshot('Payment', payment, payment.invoiceNumberSnapshot || payment.sourceName || 'Payment');
     const invoiceId = payment.invoiceId;
     data.payments = data.payments.filter(item => item.id !== id);
-    data.auditEvents = data.auditEvents.filter(event => event.entityId !== id);
     data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Payment', entityId: id, details: { kind: payment.kind, invoiceId, amountCents: payment.amountCents }, occurredAt: nowIso() });
     repository.save(data);
     closeModal(); renderAll(); setView('money');
@@ -1641,7 +1810,7 @@
       ${expense.businessPurpose ? `<div class="detail-section"><p class="eyebrow">BUSINESS PURPOSE</p><p>${escapeHtml(expense.businessPurpose)}</p></div>` : expense.classification !== 'personal' ? `<div class="detail-section subtle-warning"><p class="eyebrow">BUSINESS PURPOSE</p><p>Not documented yet.</p></div>` : ''}
       ${clientLabel || sessionLabel ? `<div class="detail-section"><p class="eyebrow">LINKED WORK</p>${clientLabel ? `<div class="trace-row"><span>Client</span><strong>${escapeHtml(clientLabel)}</strong></div>` : ''}${sessionLabel ? `<div class="trace-row"><span>Session</span><strong>${escapeHtml(sessionLabel)}</strong></div>` : ''}</div>` : ''}
       <div class="detail-section"><div class="section-inline-title"><div><p class="eyebrow">RECEIPT</p><h3>${receipt ? 'Attached evidence' : 'No receipt attached'}</h3></div></div><div id="expenseReceiptPreview">${receipt ? '<div class="receipt-loading">Loading receipt…</div>' : '<div class="receipt-empty-detail"><span>▧</span><small>Edit this expense to attach an image or PDF.</small></div>'}</div></div>
-      <div class="trace-banner"><span>↳</span><div><strong>Expense source record</strong><small>The original total and business-use portion stay separate so later tax rules can use the evidence without rewriting what was actually spent.</small></div></div>`;
+      <div class="trace-banner"><span>↳</span><div><strong>Expense source record</strong><small>The original total and business-use portion stay separate so later tax rules can use the evidence without rewriting what was actually spent.</small></div></div>${evidenceTimelineHtml('Expense', expense.id)}`;
     openModal($('#detailPanel'));
     $('[data-edit-expense]')?.addEventListener('click',()=>openExpenseForm(id));
     $('[data-review-expense]')?.addEventListener('click',()=>markExpenseReviewed(id));
@@ -1663,7 +1832,8 @@
 
   async function deleteExpense(id) {
     const expense=expenseById(id); if (!expense) return; const receiptId=expense.receiptId;
-    data.expenses=data.expenses.filter(item=>item.id!==id); data.receipts=data.receipts.filter(item=>item.expenseId!==id && item.id!==receiptId); data.auditEvents=data.auditEvents.filter(event=>event.entityId!==id);
+    preserveEvidenceSnapshot('Expense', expense, expense.merchant || 'Expense');
+    data.expenses=data.expenses.filter(item=>item.id!==id); data.receipts=data.receipts.filter(item=>item.expenseId!==id && item.id!==receiptId);
     data.auditEvents.push({ id:uid('audit'),businessId:data.activeBusinessId,eventType:'deleted',entityType:'Expense',entityId:id,details:{ totalCents:expense.totalCents,businessCents:expense.businessCents,receiptId },occurredAt:nowIso() });
     repository.save(data); if (receiptId) await receiptBlobStore.delete(receiptId).catch(()=>{}); closeModal(); renderAll(); setView('money'); ui.moneyTab='expenses'; syncMoneyTabs(); showToast('Expense deleted');
   }
@@ -1762,6 +1932,44 @@
     return formatDate(dates[q],{month:'short',day:'numeric',year:'numeric'});
   }
 
+  function openEvidenceDetail(scope, options = {}) {
+    const year = Number(options.year || taxYear());
+    const model = taxYearModel(year);
+    let title = 'Source evidence'; let eyebrow = 'TRACEABILITY'; let records = []; let totalCents = 0; let explanation = '';
+    if (scope === 'income' || scope === 'quarter') {
+      const quarter = Number(options.quarter || 0);
+      records = quarter ? model.payments.filter(item => taxQuarterForDate(item.receivedDate) === quarter) : model.payments;
+      totalCents = records.reduce((sum,item)=>sum+Number(item.amountCents||0),0);
+      title = quarter ? `Q${quarter} received income` : `${year} received income`;
+      explanation = 'This total comes only from Payment records. Invoice totals are not counted again.';
+    } else if (scope === 'expenses') {
+      records = model.expenses.filter(item => item.category !== 'vehicle_fuel' && Number(item.businessCents || 0) > 0);
+      totalCents = records.reduce((sum,item)=>sum+Number(item.businessCents||0),0);
+      title = `${year} non-vehicle expenses`;
+      explanation = 'Each row contributes its saved business-use amount. Vehicle & fuel is excluded from this standard-mileage scenario.';
+    } else {
+      records = model.businessTrips;
+      totalCents = records.reduce((sum,item)=>sum+mileagePotentialDeductionCents(item),0);
+      title = `${year} mileage evidence`;
+      explanation = 'Each amount is derived from the trip’s original miles and the built-in rate for its date. The trip itself remains unchanged.';
+    }
+    const rowHtml = records.map(record => {
+      if (scope === 'income' || scope === 'quarter') {
+        const source = record.kind === 'invoice' ? (record.invoiceNumberSnapshot || invoiceById(record.invoiceId)?.number || 'Invoice payment') : (record.sourceName || 'Other income');
+        return `<button class="evidence-record-row" data-evidence-payment="${record.id}"><span><strong>${escapeHtml(source)}</strong><small>${formatDate(record.receivedDate)} · ${escapeHtml(paymentMethodLabel(record.method))}</small></span><strong>${formatMoney(record.amountCents||0,activeBusiness().currency)}</strong><span aria-hidden="true">›</span></button>`;
+      }
+      if (scope === 'expenses') return `<button class="evidence-record-row" data-evidence-expense="${record.id}"><span><strong>${escapeHtml(record.merchant || expenseCategoryLabel(record.category))}</strong><small>${formatDate(record.date)} · ${escapeHtml(expenseCategoryLabel(record.category))}${record.receiptId?' · Receipt attached':''}</small></span><strong>${formatMoney(record.businessCents||0,activeBusiness().currency)}</strong><span aria-hidden="true">›</span></button>`;
+      const rate = businessMileageRateCents(record.date);
+      return `<button class="evidence-record-row" data-evidence-mileage="${record.id}"><span><strong>${escapeHtml(record.purpose || 'Business mileage')}</strong><small>${formatDate(record.date)} · ${formatMiles(record.miles)} · ${rate == null ? 'Rate unavailable' : `${rate}¢/mile`}</small></span><strong>${formatMoney(mileagePotentialDeductionCents(record),activeBusiness().currency)}</strong><span aria-hidden="true">›</span></button>`;
+    }).join('');
+    $('#detailEyebrow').textContent = eyebrow; $('#detailTitle').textContent = title;
+    $('#detailBody').innerHTML = `<div class="evidence-total-card"><small>DERIVED TOTAL</small><strong>${formatMoney(totalCents,activeBusiness().currency)}</strong><span>${records.length} source ${records.length===1?'record':'records'}</span></div><div class="trace-banner evidence-explanation"><span>↳</span><div><strong>How this number was built</strong><small>${escapeHtml(explanation)}</small></div></div><div class="detail-section evidence-source-section"><div class="panel-title-row"><p class="eyebrow">SOURCE RECORDS</p><span class="quiet-badge green">Reconciled</span></div><div class="evidence-record-list">${rowHtml || '<div class="inline-empty"><small>No source records contribute to this figure.</small></div>'}</div></div>`;
+    openModal($('#detailPanel'));
+    $$('[data-evidence-payment]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openPaymentDetail(btn.dataset.evidencePayment)));
+    $$('[data-evidence-expense]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openExpenseDetail(btn.dataset.evidenceExpense)));
+    $$('[data-evidence-mileage]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openMileageDetail(btn.dataset.evidenceMileage)));
+  }
+
   function renderTaxOverview(model) {
     $('#taxYearIncome').textContent=formatMoney(model.incomeCents,activeBusiness().currency);
     $('#taxYearExpenses').textContent=formatMoney(model.businessExpenseCents,activeBusiness().currency);
@@ -1770,9 +1978,9 @@
     $('#taxYearBadge').textContent=String(model.year);
     $('#taxMileageRateCaption').textContent=model.year===2026?'72.5¢ Jan–Jun · 76¢ Jul–Dec':'Potential standard-mileage amount';
     $('#taxFlowSummary').innerHTML=`
-      <div class="tax-flow-row"><span>Received income</span><strong>${formatMoney(model.incomeCents,activeBusiness().currency)}</strong><small>${model.payments.length} source ${model.payments.length===1?'payment':'payments'}</small></div>
-      <div class="tax-flow-row"><span>Non-vehicle business expenses</span><strong>− ${formatMoney(model.nonVehicleExpenseCents,activeBusiness().currency)}</strong><small>Standard-mileage scenario excludes recorded Vehicle & fuel operating costs</small></div>
-      <div class="tax-flow-row"><span>Standard-mileage scenario</span><strong>− ${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong><small>${formatMiles(model.businessTrips.reduce((n,x)=>n+Number(x.miles||0),0))} business miles</small></div>
+      <button class="tax-flow-row evidence-source-row" data-evidence-scope="income"><span>Received income</span><strong>${formatMoney(model.incomeCents,activeBusiness().currency)}</strong><small>${model.payments.length} source ${model.payments.length===1?'payment':'payments'} · View evidence</small></button>
+      <button class="tax-flow-row evidence-source-row" data-evidence-scope="expenses"><span>Non-vehicle business expenses</span><strong>− ${formatMoney(model.nonVehicleExpenseCents,activeBusiness().currency)}</strong><small>Standard-mileage scenario excludes recorded Vehicle & fuel operating costs · View evidence</small></button>
+      <button class="tax-flow-row evidence-source-row" data-evidence-scope="mileage"><span>Standard-mileage scenario</span><strong>− ${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong><small>${formatMiles(model.businessTrips.reduce((n,x)=>n+Number(x.miles||0),0))} business miles · View evidence</small></button>
       <div class="tax-flow-row total"><span>Planning profit</span><strong>${formatMoney(model.planningProfitCents,activeBusiness().currency)}</strong><small>Uses standard mileage instead of recorded vehicle/fuel operating costs</small></div>`;
     const issues=[];
     if(model.reviewExpenses.length) issues.push(`${model.reviewExpenses.length} expense${model.reviewExpenses.length===1?'':'s'} need review`);
@@ -1782,13 +1990,16 @@
     $('#taxReadinessBadge').className=`quiet-badge ${issues.length?'':'green'}`;
     $('#taxReadinessBody').innerHTML=issues.length?`<div class="tax-readiness-list">${issues.map(x=>`<div><span>!</span><strong>${escapeHtml(x)}</strong></div>`).join('')}</div><button class="secondary-btn compact-action" data-tax-review>Review source records</button>`:`<div class="tax-ready-state"><span>✓</span><div><strong>Source records look clean</strong><small>No Needs Review items were found in ${model.year} expenses or mileage.</small></div></div>`;
     $('[data-tax-review]')?.addEventListener('click',()=>{ui.taxTab='deductions';syncTaxTabs();});
-    $('#taxQuarterGrid').innerHTML=[1,2,3,4].map(q=>{const income=model.payments.filter(x=>taxQuarterForDate(x.receivedDate)===q).reduce((n,x)=>n+Number(x.amountCents||0),0);return `<div class="tax-quarter"><span>Q${q}</span><strong>${formatMoney(income,activeBusiness().currency)}</strong><small>received income · due ${taxDueLabel(model.year,q)}*</small></div>`}).join('');
+    $('#taxQuarterGrid').innerHTML=[1,2,3,4].map(q=>{const income=model.payments.filter(x=>taxQuarterForDate(x.receivedDate)===q).reduce((n,x)=>n+Number(x.amountCents||0),0);return `<button class="tax-quarter evidence-source-row" data-evidence-scope="quarter" data-evidence-quarter="${q}"><span>Q${q}</span><strong>${formatMoney(income,activeBusiness().currency)}</strong><small>received income · due ${taxDueLabel(model.year,q)}* · View evidence</small></button>`}).join('');
+    $$('[data-evidence-scope]', $('#taxFlowSummary')).forEach(btn=>btn.addEventListener('click',()=>openEvidenceDetail(btn.dataset.evidenceScope,{year:model.year})));
+    $$('[data-evidence-scope]', $('#taxQuarterGrid')).forEach(btn=>btn.addEventListener('click',()=>openEvidenceDetail('quarter',{year:model.year,quarter:Number(btn.dataset.evidenceQuarter)})));
   }
 
   function renderTaxDeductions(model) {
     const rows=model.categories.map(cat=>`<button class="tax-deduction-row" data-tax-expense-category="${cat.key}"><span><strong>${escapeHtml(cat.label)}</strong><small>${cat.count} source ${cat.count===1?'record':'records'}</small></span><strong>${formatMoney(cat.cents,activeBusiness().currency)}</strong></button>`).join('');
-    $('#taxDeductionContainer').innerHTML=`<div class="tax-deduction-head"><span>Expense category</span><span>Business-use amount</span></div>${rows||'<div class="large-empty"><strong>No business-use expenses this year</strong><p>Expenses recorded in Money will appear here automatically.</p></div>'}<div class="tax-deduction-row mileage-deduction-row"><span><strong>Standard mileage scenario</strong><small>${model.businessTrips.length} business trips · rate applied by trip date</small></span><strong>${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong></div>`;
+    $('#taxDeductionContainer').innerHTML=`<div class="tax-deduction-head"><span>Expense category</span><span>Business-use amount</span></div>${rows||'<div class="large-empty"><strong>No business-use expenses this year</strong><p>Expenses recorded in Money will appear here automatically.</p></div>'}<button class="tax-deduction-row mileage-deduction-row evidence-source-row" data-evidence-scope="mileage"><span><strong>Standard mileage scenario</strong><small>${model.businessTrips.length} business trips · rate applied by trip date · View evidence</small></span><strong>${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong></button>`;
     $$('[data-tax-expense-category]').forEach(btn=>btn.addEventListener('click',()=>{setView('money');ui.moneyTab='expenses';ui.expenseFilter='all';syncMoneyTabs();renderMoney();showToast(`${btn.querySelector('strong').textContent} comes from Money → Expenses`);}));
+    $('[data-evidence-scope="mileage"]', $('#taxDeductionContainer'))?.addEventListener('click',()=>openEvidenceDetail('mileage',{year:model.year}));
     $('#taxVehicleMethodCard').innerHTML=`<p class="eyebrow">VEHICLE METHOD CHECK</p><h3>Standard mileage scenario</h3><div class="tax-method-stat"><span>Potential mileage amount</span><strong>${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong></div><div class="tax-method-stat"><span>Recorded vehicle & fuel</span><strong>${formatMoney(model.vehicleOperatingCents,activeBusiness().currency)}</strong></div><div class="tax-method-stat"><span>Parking & tolls on file</span><strong>${formatMoney(model.parkingTollsCents,activeBusiness().currency)}</strong></div><p>Standard mileage and actual vehicle operating costs are alternative methods; this planning view does not stack Vehicle & fuel on top of the standard-mileage amount. Business parking and tolls remain separately visible.</p><small>Eligibility and method-choice rules can depend on the vehicle and prior-year treatment.</small>`;
   }
 
@@ -1907,7 +2118,7 @@
       <div class="expense-hero-card"><div><span class="status-pill ${mileageClassificationClass(trip.classification)}">${escapeHtml(mileageClassificationLabel(trip.classification))}</span>${review?'<span class="status-pill review">Needs review</span>':'<span class="status-pill success">Ready</span>'}</div><strong>${escapeHtml([trip.startLabel,trip.endLabel].filter(Boolean).join(' → ') || 'Mileage trip')}</strong><small>${escapeHtml(trip.purpose || (trip.classification==='personal'?'Personal trip':'Business purpose not documented'))}</small></div>
       ${client || trip.clientNameSnapshot || session ? `<div class="detail-section"><p class="eyebrow">LINKED WORK</p>${client || trip.clientNameSnapshot ? `<div class="trace-row"><span>Client</span><strong>${escapeHtml(client?.displayName || trip.clientNameSnapshot)}</strong></div>`:''}${session ? `<div class="trace-row"><span>Session</span><strong>${formatDate(session.date,{month:'short',day:'numeric'})} · ${escapeHtml(sessionTimeRangeLabel(session))}</strong></div>`:''}</div>`:''}
       ${trip.notes?`<div class="detail-section"><p class="eyebrow">NOTE</p><p>${escapeHtml(trip.notes)}</p></div>`:''}
-      <div class="trace-banner"><span>↳</span><div><strong>Mileage source record</strong><small>This trip stores the driving facts separately from expenses. Later tax logic can interpret eligible mileage without rewriting the original record.</small></div></div>`;
+      <div class="trace-banner"><span>↳</span><div><strong>Mileage source record</strong><small>This trip stores the driving facts separately from expenses. Later tax logic can interpret eligible mileage without rewriting the original record.</small></div></div>${evidenceTimelineHtml('MileageTrip', trip.id)}`;
     openModal($('#detailPanel'));
     $('[data-edit-mileage]')?.addEventListener('click',()=>openMileageForm(id));
     $('[data-review-mileage]')?.addEventListener('click',()=>{ trip.reviewStatus='ready'; trip.updatedAt=nowIso(); persist('reviewed','MileageTrip',id); renderAll(); openMileageDetail(id); showToast('Mileage marked reviewed'); });
@@ -1918,7 +2129,7 @@
     const trip=mileageTripById(id); const host=$('#detailDeleteConfirm'); if(!trip||!host) return;
     host.innerHTML=`<div class="delete-confirm-card"><div><strong>Delete this ${escapeHtml(formatMiles(trip.miles))} trip?</strong><p>The mileage source record will be permanently removed from this local workspace.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-mileage-delete>Delete trip</button></div></div>`;
     $('[data-cancel-delete]',host)?.addEventListener('click',()=>host.innerHTML='');
-    $('[data-confirm-mileage-delete]',host)?.addEventListener('click',()=>{ data.mileageTrips=data.mileageTrips.filter(item=>item.id!==id); data.auditEvents.push({id:uid('audit'),businessId:data.activeBusinessId,eventType:'deleted',entityType:'MileageTrip',entityId:id,details:{miles:trip.miles,classification:trip.classification},occurredAt:nowIso()}); repository.save(data); closeModal(); renderAll(); setView('taxes'); showToast('Mileage trip deleted'); });
+    $('[data-confirm-mileage-delete]',host)?.addEventListener('click',()=>{ preserveEvidenceSnapshot('MileageTrip', trip, `${formatMiles(trip.miles)} · ${trip.date}`); data.mileageTrips=data.mileageTrips.filter(item=>item.id!==id); data.auditEvents.push({id:uid('audit'),businessId:data.activeBusinessId,eventType:'deleted',entityType:'MileageTrip',entityId:id,details:{miles:trip.miles,classification:trip.classification},occurredAt:nowIso()}); repository.save(data); closeModal(); renderAll(); setView('taxes'); showToast('Mileage trip deleted'); });
   }
 
   function openVehicleDetail(id) {
@@ -2413,7 +2624,7 @@
       <div class="detail-metrics"><div><small>Date</small><strong>${formatDate(s.date,{month:'short',day:'numeric',year:'numeric'})}</strong></div><div><small>Time</small><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong></div><div><small>Duration</small><strong>${hoursLabel(sessionMinutes(s))}</strong></div></div>
       <div class="detail-section"><div class="trace-row"><span>Session value</span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong></div><div class="trace-row"><span>Rate snapshot</span><strong>${formatMoney(s.rateCents || 0)}/hr</strong></div><div class="trace-row"><span>Invoice state</span><strong>${escapeHtml(sessionInvoiceStatusLabel(s))}${linkedInvoice ? ` · ${escapeHtml(linkedInvoice.number)}` : ''}</strong></div></div>
       <div class="detail-section"><p class="eyebrow">SESSION NOTE</p><p>${escapeHtml(s.notes || 'No session note.')}</p></div>
-      <div class="trace-banner"><span>↳</span><div><strong>${linkedInvoice ? 'Linked financial record' : 'Ready for invoicing'}</strong><small>${linkedInvoice ? `This session is linked to ${escapeHtml(linkedInvoice.number)}. Invoice snapshots protect the issued billing record from silent changes.` : 'Create an invoice from this session without re-entering the client, hours, or rate.'}</small></div></div>`;
+      <div class="trace-banner"><span>↳</span><div><strong>${linkedInvoice ? 'Linked financial record' : 'Ready for invoicing'}</strong><small>${linkedInvoice ? `This session is linked to ${escapeHtml(linkedInvoice.number)}. Invoice snapshots protect the issued billing record from silent changes.` : 'Create an invoice from this session without re-entering the client, hours, or rate.'}</small></div></div>${evidenceTimelineHtml('WorkSession', s.id)}`;
     openModal($('#detailPanel'));
     $('[data-edit-session]')?.addEventListener('click', () => openSessionForm(id));
     $('[data-create-invoice-session]')?.addEventListener('click', () => openInvoiceForm({ clientId: s.clientId, sessionId: s.id }));
@@ -2459,6 +2670,7 @@
     if (type === 'session') {
       const session = data.sessions.find(item => item.id === id);
       if (!session) return;
+      const client = clientById(session.clientId);
       const linkedInvoice = session.invoiceId ? invoiceById(session.invoiceId) : null;
       if (linkedInvoice?.status === 'sent') { showToast('Sent invoice records must be unlocked before deleting this session.'); return; }
       if (linkedInvoice?.status === 'draft') {
@@ -2466,6 +2678,7 @@
         linkedInvoice.updatedAt = nowIso();
         data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'source_session_deleted', entityType: 'Invoice', entityId: linkedInvoice.id, details: { sessionId: id }, occurredAt: nowIso() });
       }
+      preserveEvidenceSnapshot('WorkSession', session, `${client?.displayName || session.clientNameSnapshot || 'Session'} · ${session.date}`);
       data.sessions = data.sessions.filter(item => item.id !== id);
       data.expenses.filter(expense => expense.sessionId === id).forEach(expense => { expense.sessionId = null; expense.updatedAt = nowIso(); });
       data.mileageTrips.filter(trip => trip.sessionId === id).forEach(trip => {
@@ -2475,7 +2688,6 @@
         trip.sessionId = null;
         trip.updatedAt = nowIso();
       });
-      data.auditEvents = data.auditEvents.filter(event => event.entityId !== id);
       data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'WorkSession', entityId: id, details: { removedFromDraftInvoice: linkedInvoice?.number || null }, occurredAt: nowIso() });
       repository.save(data);
       closeModal(); renderAll(); showToast(linkedInvoice ? `Session deleted and removed from ${linkedInvoice.number}` : 'Work session deleted');
@@ -2487,6 +2699,8 @@
     if (businessInvoices().some(invoice => invoice.clientId === id && invoice.status !== 'void')) { showToast('Resolve this client’s active invoices before deleting the client.'); return; }
     const linkedSessionIds = data.sessions.filter(session => session.clientId === id).map(session => session.id);
     const deletedIds = new Set([id, ...linkedSessionIds]);
+    preserveEvidenceSnapshot('Client', client, client.displayName);
+    data.sessions.filter(session => session.clientId === id).forEach(session => preserveEvidenceSnapshot('WorkSession', session, `${client.displayName} · ${session.date}`));
     data.clients = data.clients.filter(item => item.id !== id);
     data.expenses.filter(expense => expense.clientId === id).forEach(expense => { expense.clientNameSnapshot ||= client.displayName; expense.clientId = null; if (linkedSessionIds.includes(expense.sessionId)) expense.sessionId = null; expense.updatedAt = nowIso(); });
     data.mileageTrips.filter(trip => trip.clientId === id || linkedSessionIds.includes(trip.sessionId)).forEach(trip => {
@@ -2501,7 +2715,6 @@
       trip.updatedAt = nowIso();
     });
     data.sessions = data.sessions.filter(session => session.clientId !== id);
-    data.auditEvents = data.auditEvents.filter(event => !deletedIds.has(event.entityId));
     data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Client', entityId: id, details: { cascadedSessionCount: linkedSessionIds.length }, occurredAt: nowIso() });
     repository.save(data);
     closeModal(); renderAll();
@@ -2542,6 +2755,10 @@
     applySidebarCollapsed(!appShell.classList.contains('sidebar-collapsed'));
   });
   navButtons.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+  $$('[data-home-tab]').forEach(btn => btn.addEventListener('click',()=>{ closeFilterMenu(); ui.homeTab=btn.dataset.homeTab; syncHomeTabs(); }));
+  $('#analyticsRangeBtn').addEventListener('click',event=>openFilterMenu(event.currentTarget,[
+    {value:'3m',label:'Last 3 months'},{value:'6m',label:'Last 6 months'},{value:'12m',label:'Last 12 months'},{value:'ytd',label:'Year to date'},{value:'all',label:'All time'}
+  ],ui.analyticsRange,value=>{ui.analyticsRange=value;renderAnalytics();}));
   $$('[data-go-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.goView)));
   $('#quickAddBtn').addEventListener('click', () => openModal($('#quickAddSheet')));
   $('#mobileAddBtn').addEventListener('click', () => openModal($('#quickAddSheet')));
@@ -2660,4 +2877,5 @@
   applyHomeAtriumState('home');
   commitAtriumMotion();
   renderAll();
+  syncHomeTabs();
 })();

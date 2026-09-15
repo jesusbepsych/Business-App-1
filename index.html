@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, records, and taxes." />
-  <title>Business Ledger — Phase 6 Tax Layer</title>
+  <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase6-home-money-depth-refinement" />
+  <link rel="stylesheet" href="styles.css?v=phase8-dashboard-analytics" />
 </head>
 <body class="home-atrium-active">
 
@@ -26,7 +26,7 @@
       <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-controls="primarySidebar" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><span aria-hidden="true">‹</span></button>
       <div class="brand-row">
         <div class="brand-mark" aria-hidden="true">B</div>
-        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 6 · Tax Layer</span></div>
+        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 8 · Analytics</span></div>
       </div>
 
       <button class="business-switcher" id="businessSwitcher" aria-haspopup="dialog">
@@ -70,7 +70,14 @@
             <button class="primary-btn" id="quickAddBtn"><span>＋</span> Add</button>
           </div>
 
-          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 6 is now active.</strong> Tax-year summaries now interpret the same income, expense, and mileage source records without duplicating them; data remains local-only until secure cloud sync is connected.</span></div>
+          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 8 is now active.</strong> Analytics interpret the same work and financial records without creating new transactions; every figure remains traceable to its source.</span></div>
+
+          <div class="segment-control home-segments" role="tablist" aria-label="Home sections">
+            <button class="segment active" data-home-tab="snapshot" role="tab" aria-selected="true">Snapshot</button>
+            <button class="segment" data-home-tab="analytics" role="tab" aria-selected="false">Analytics</button>
+          </div>
+
+          <div class="home-tab active" data-home-panel="snapshot">
 
           <div class="metric-grid">
             <article class="metric-card"><div class="metric-head"><span>Active clients</span><span class="muted-chip">Work</span></div><strong class="metric-value" id="metricClients">0</strong><span class="metric-caption">In this workspace</span></article>
@@ -93,10 +100,49 @@
           </div>
 
           <article class="panel-card roadmap-card">
-            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 6 — Tax layer</h2></div><span class="quiet-badge green">Active</span></div>
-            <div class="progress-track"><div class="progress-fill phase-five"></div></div>
-            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="done">Invoices</span><span class="done">Payments</span><span class="done">Expenses</span><span class="done">Mileage</span><span class="current">Tax layer</span></div>
+            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 8 — Dashboard & analytics</h2></div><span class="quiet-badge green">Active</span></div>
+            <div class="progress-track"><div class="progress-fill phase-eight"></div></div>
+            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="done">Money</span><span class="done">Expenses</span><span class="done">Mileage</span><span class="done">Tax layer</span><span class="done">Evidence</span><span class="current">Analytics</span></div>
           </article>
+          </div>
+
+          <div class="home-tab analytics-tab" data-home-panel="analytics">
+            <div class="analytics-toolbar">
+              <div><p class="eyebrow">BUSINESS PULSE</p><h2>Patterns behind the ledger</h2><p>Trends and comparisons derived from source records—not a second set of books.</p></div>
+              <button class="filter-pill analytics-range-btn" id="analyticsRangeBtn" type="button" aria-haspopup="menu" aria-expanded="false">Last 6 months</button>
+            </div>
+
+            <div class="analytics-kpi-grid" id="analyticsKpis"></div>
+
+            <div class="analytics-primary-grid">
+              <article class="analytics-card analytics-cashflow-card">
+                <div class="analytics-card-head"><div><p class="eyebrow">BUSINESS FLOW</p><h2>Received and business use</h2></div><div class="analytics-legend"><span class="income">Received</span><span class="expense">Business-use expenses</span></div></div>
+                <div class="analytics-chart" id="analyticsCashflowChart"></div>
+              </article>
+              <article class="analytics-card analytics-invoice-card">
+                <div class="analytics-card-head"><div><p class="eyebrow">INVOICE HEALTH</p><h2>Billing at a glance</h2></div><span class="quiet-badge" id="analyticsInvoiceBadge">0 open</span></div>
+                <div id="analyticsInvoiceHealth"></div>
+              </article>
+            </div>
+
+            <div class="analytics-secondary-grid">
+              <article class="analytics-card">
+                <div class="analytics-card-head"><div><p class="eyebrow">CLIENTS & SOURCES</p><h2>Received income by source</h2></div><span class="muted-chip">Payments</span></div>
+                <div class="analytics-ranking" id="analyticsClients"></div>
+              </article>
+              <article class="analytics-card">
+                <div class="analytics-card-head"><div><p class="eyebrow">EXPENSE MIX</p><h2>Where business money went</h2></div><span class="muted-chip">Business use</span></div>
+                <div class="analytics-ranking" id="analyticsExpenses"></div>
+              </article>
+            </div>
+
+            <article class="analytics-card analytics-work-card">
+              <div class="analytics-card-head"><div><p class="eyebrow">WORK RHYTHM</p><h2>Hours and unbilled value</h2></div><span class="muted-chip">Sessions</span></div>
+              <div class="analytics-chart" id="analyticsWorkChart"></div>
+            </article>
+
+            <div class="phase-next-note analytics-note"><span>↳</span><div><strong>Analytics explain; source records decide.</strong><small>Open any chart, metric, client, category, or invoice state to see the exact records contributing to it.</small></div></div>
+          </div>
         </div>
       </section>
 
@@ -221,7 +267,7 @@
             <div class="tax-deduction-layout"><div class="data-card" id="taxDeductionContainer"></div><aside class="tax-method-card" id="taxVehicleMethodCard"></aside></div>
           </div>
 
-          <div class="phase-next-note taxes-note"><span>↳</span><div><strong>Tax figures are interpretations, not new transactions.</strong><small>Phase 6 reads Payments, Expenses, and Mileage without rewriting those source records. Potential deductions and planning profit are bookkeeping estimates, not a filed return or tax advice.</small></div></div>
+          <div class="phase-next-note taxes-note"><span>↳</span><div><strong>Every derived figure keeps its evidence trail.</strong><small>Open a tax summary row or quarter to see the exact Payments, Expenses, or Mileage records behind it. Source transactions remain untouched.</small></div></div>
         </div>
       </section>
 
@@ -312,6 +358,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase6-home-money-depth-refinement"></script>
+  <script src="app.js?v=phase8-dashboard-analytics"></script>
 </body>
 </html>

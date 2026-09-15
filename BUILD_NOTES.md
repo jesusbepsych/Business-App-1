@@ -278,3 +278,21 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Money: kept the upper summary metrics and Invoices/Payments/Expenses switcher unchanged; changed the lower active ledger container to the deeper Taxes-style detail material. The explanatory footer uses a quieter version of the same depth family.
 - Work and Records were intentionally not changed.
 - The `atrium-lite` iPad/Safari path continues to use static frost with no live `backdrop-filter`.
+# Build Notes — Phase 7 Traceability / Evidence
+
+- Added compact drill-through from tax income, non-vehicle expense, mileage, and quarterly summaries to the exact source records behind each number.
+- Evidence views reconcile their displayed total from the same source collections used by Phase 6 and open directly into the existing Payment, Expense, or Mileage detail flow.
+- Added collapsible per-record history to Invoice, Payment, Expense, Mileage, and Work Session details without adding a permanent destination or extra everyday controls.
+- Advanced local schema to v9 with `evidenceSnapshots`. New deletions preserve a structured final snapshot and retain prior audit events instead of erasing the record trail.
+- Preserved the authoritative event model: invoices remain billed/earned, payments remain received cash, expenses remain money out, and mileage remains a source fact interpreted by tax views.
+- Motion is restrained, reduced-motion aware, and avoids new backdrop-filter layers for iPad/Safari stability.
+# Build Notes — Phase 8 Dashboard / Analytics
+
+- Expanded Home with a contextual Snapshot / Analytics switch instead of adding another permanent navigation destination.
+- Added Last 3 months, Last 6 months, Last 12 months, Year to date, and All time ranges. KPIs compare against the adjacent prior period; Year to date compares against the same elapsed period in the prior year.
+- Added four derived KPIs: received income from Payments, business-use expenses from Expenses, planning margin, and hours from Work Sessions.
+- Added monthly business-flow trends, monthly work rhythm, received-income and workload breakdowns by client/source, business-use expense categories, and invoice collection health.
+- Every metric, month, ranking row, category, and invoice state opens a reconciled evidence view linked to the exact source Payment, Expense, Work Session, or Invoice records.
+- Analytics are read-only derived views. No Phase 8 collection, schema migration, duplicated transaction, or stored aggregate was introduced.
+- Used inline, accessible SVG charts with keyboard-enabled data points and no external chart dependency.
+- Added responsive two-column-to-single-column layouts, bounded ranking lists, touch scrolling, reduced-motion behavior, and static-frost compatibility for iPad/Safari.

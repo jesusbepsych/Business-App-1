@@ -277,3 +277,33 @@ Visual stack (back to front):
 - Vehicle deletion detaches linked trips while preserving `vehicleNameSnapshot`.
 - Session/client deletion detaches mileage links while preserving client/session context snapshots.
 - Phase 6 may interpret mileage for tax purposes but should not rewrite the original trip facts.
+## Phase 7 traceability + evidence layer
+
+Phase 7 is cross-cutting and does not add a sixth navigation destination. Derived tax figures expose compact evidence drill-throughs that use the exact same year model as the visible totals. Each drill-through identifies the contributing source collection and reconciles its own displayed total before linking into the existing record detail.
+
+Schema v9 adds `evidenceSnapshots` for final structured copies of records deleted after migration. Audit history is retained rather than filtered away on deletion. These snapshots are evidence only: they never participate in active bookkeeping, invoice balances, tax totals, or dashboard calculations.
+
+Source authority remains unchanged:
+
+- Invoice = billed/earned record and immutable issued snapshot.
+- Payment = cash received and the only source for received-income totals.
+- Expense = money out, with original and business-use amounts kept distinct.
+- MileageTrip = driving fact; the tax layer derives a planning amount by trip date.
+- Receipt = optional evidence attached to an Expense; it never changes the amount.
+## Phase 8 dashboard + analytics layer
+
+Phase 8 remains inside Home as a contextual `Snapshot / Analytics` switch. This preserves the five permanent destinations and keeps the mobile navigation from becoming denser.
+
+Analytics are pure derived projections and are never persisted as transactions or cached totals:
+
+- received income reads `payments.amountCents` by `receivedDate`;
+- business spending reads `expenses.businessCents` by expense `date`;
+- planning margin is received income minus business-use spending for the same range and is not presented as reconciled bank cash or taxable profit;
+- hours and uninvoiced value read Work Session date/time/rate facts;
+- client/source income reads Payment client/invoice relationships and saved snapshots;
+- client workload reads Work Sessions independently of payment status;
+- invoice health reads issued Invoice snapshots plus linked Payment totals.
+
+Ranges include 3, 6, and 12 months, year to date, and all time. Rolling ranges compare to the immediately preceding equal-length period. Year to date compares to the same elapsed dates in the prior year. All-time totals intentionally omit a misleading comparison.
+
+Every aggregate retains a drill-through predicate and opens the Phase 7 evidence surface with the exact contributing records. Charts are inline SVG with keyboard-selectable month targets; they add no network dependency and remain static under the Safari/iPad lite profile.

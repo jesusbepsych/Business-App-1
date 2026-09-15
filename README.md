@@ -168,3 +168,9 @@ This build specifically reduces the small visual snap that can occur when iPad/i
 
 ### Phase 6 Tax Layer
 The Taxes workspace now includes Overview, Mileage, Vehicles, and Deductions. It summarizes a selected tax year from existing source records, applies date-aware standard-mileage planning rates, surfaces review gaps, and provides quarterly planning context. It does not prepare a return or calculate final federal/state tax liability.
+# Business Ledger — Phase 7 Traceability / Evidence
+
+Phase 7 adds evidence drill-through and record history to the completed Phase 6 tax layer. Derived tax figures can now be reconciled to their contributing Payments, Expenses, and Mileage records without creating a new navigation destination or altering source data. Schema v9 also preserves structured final snapshots for newly deleted records.
+# Business Ledger — Phase 8 Dashboard / Analytics
+
+Phase 8 expands Home with a calm analytics workspace. It adds selectable ranges, prior-period comparisons, monthly business-flow and work trends, client/source income and workload, expense-category patterns, invoice collection health, and full source-record drill-through. All analytics are calculated at render time from the existing Phase 7 source-of-truth model.
