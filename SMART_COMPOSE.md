@@ -12,3 +12,7 @@ Concept 6 applied to new and existing expenses; navigation and other entry forms
 Validation: `node --check app.js` and `node tests/analytics-smoke.test.js` pass. The smoke test covers analytics, remembered defaults, compose parsing, malformed input, manual overrides and mixed-use controls. It uses a fake DOM, not a browser. Browser rendering and actual iPad/Safari behavior have not been verified in this environment because the browser download timed out.
 
 Suggested device check: create a personal gas purchase; reopen to check remembered use/category; edit the amount; create a mixed-use purchase with a business portion; attach and replace a receipt; open another entry form to confirm its original styling. Check both portrait and landscape and with the keyboard open.
+
+## Atrium recovery
+
+The packaged `styles.css` had been truncated at an exact byte boundary before the Corporate Atrium rules completed. The intact Atrium and Phase 5–6 visual layers are restored in `atrium-recovery.css`, linked after the core stylesheet. Its scene uses the bundled `assets/atrium-primary.jpg` instead of a very large inline data URL, reducing Safari parsing and packaging risk while retaining the existing lite profile.

@@ -1,0 +1,2378 @@
+/* ========================================================================== */
+/* Corporate Atrium Home — rebuild                                              */
+/* Home only. Work/Money/Records and all sheets keep the Phase 4 visual system. */
+/* ========================================================================== */
+:root {
+  --atrium-scene-image: url("./assets/atrium-primary.jpg");
+  --atrium-px: 0;
+  --atrium-py: 0;
+  --atrium-scroll: 0;
+  --atrium-light-x: 52%;
+  --atrium-light-y: 28%;
+}
+
+.home-atrium-scene {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: auto;
+  bottom: auto;
+  width: 100vw;
+  height: var(--app-stable-viewport-h);
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  background: #0a1116;
+  contain: paint;
+  transition: opacity .36s var(--ease);
+}
+body.home-atrium-active .home-atrium-scene { opacity: 1; }
+
+.atrium-layer { position:absolute; inset:-4%; transform-origin:center; will-change:transform,opacity; backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:translateZ(0); }
+.atrium-photo {
+  background-repeat:no-repeat;
+  /* Parent height is locked to lvh, so cover is calculated once against a stable
+     canvas instead of re-cropping when Safari collapses/expands its toolbar. */
+  background-size:cover;
+  background-position:center 50%;
+}
+.atrium-photo-primary {
+  /* Bundled local plate so Home does not depend on third-party image hosts. */
+  background-image:var(--atrium-scene-image);
+  background-position:center 52%;
+  opacity:.99;
+  filter:saturate(.98) contrast(1.025) brightness(.94);
+  transform: translate3d(calc(var(--atrium-px) * -6px), calc(var(--atrium-py) * -4px),0) scale(1.045);
+}
+.atrium-photo-secondary {
+  background-image:var(--atrium-scene-image);
+  background-position:center 44%;
+  opacity:.13;
+  mix-blend-mode:screen;
+  -webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,.92) 0%,rgba(0,0,0,.24) 30%,rgba(0,0,0,.05) 48%,rgba(0,0,0,.16) 70%,rgba(0,0,0,.78) 100%),linear-gradient(180deg,rgba(0,0,0,.78) 0%,rgba(0,0,0,.18) 56%,rgba(0,0,0,.70) 100%);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,rgba(0,0,0,.92) 0%,rgba(0,0,0,.24) 30%,rgba(0,0,0,.05) 48%,rgba(0,0,0,.16) 70%,rgba(0,0,0,.78) 100%);
+  transform: translate3d(calc(var(--atrium-px) * -10px), calc(var(--atrium-py) * -6px),0) scale(1.075);
+}
+
+/* Warm structural rails — part of the physical scene, not a global color wash. */
+.atrium-architectural-light {
+  inset:-2%;
+  opacity:.18;
+  mix-blend-mode:screen;
+  background:
+    linear-gradient(90deg,transparent 7%,rgba(255,203,128,.04) 8.1%,rgba(255,225,171,.78) 8.55%,rgba(255,187,103,.06) 9.05%,transparent 10.1%),
+    linear-gradient(90deg,transparent 31%,rgba(255,203,128,.03) 31.8%,rgba(255,220,157,.56) 32.2%,rgba(255,179,87,.05) 32.75%,transparent 33.5%),
+    linear-gradient(90deg,transparent 63%,rgba(255,203,128,.03) 63.8%,rgba(255,218,151,.50) 64.15%,rgba(255,179,87,.05) 64.7%,transparent 65.5%),
+    linear-gradient(90deg,transparent 88%,rgba(255,203,128,.04) 88.7%,rgba(255,224,166,.66) 89.05%,rgba(255,179,87,.05) 89.55%,transparent 90.4%);
+  filter:blur(.35px);
+  transform:translate3d(calc(var(--atrium-px) * -3px),calc(var(--atrium-py) * -2px),0);
+}
+.atrium-floor-light {
+  top:54%;
+  background:
+    linear-gradient(180deg,transparent 0%,rgba(6,12,16,.05) 32%,rgba(4,8,11,.26) 100%),
+    repeating-linear-gradient(90deg,transparent 0 11.8%,rgba(255,220,164,.11) 12%,transparent 12.35% 24%);
+  opacity:.66;
+  mix-blend-mode:screen;
+  transform:perspective(900px) rotateX(56deg) translate3d(calc(var(--atrium-px) * 2px),calc(var(--atrium-py) * 1px),0) scale(1.18);
+  transform-origin:50% 100%;
+}
+.atrium-atmosphere {
+  inset:0;
+  background:
+    radial-gradient(ellipse at var(--atrium-light-x) var(--atrium-light-y),rgba(219,239,249,.13),transparent 24%),
+    radial-gradient(ellipse at 18% 62%,rgba(255,189,101,.09),transparent 18%),
+    radial-gradient(ellipse at 84% 52%,rgba(255,199,124,.08),transparent 20%),
+    radial-gradient(ellipse at 50% 43%,transparent 34%,rgba(3,8,12,.06) 68%,rgba(3,7,10,.20) 100%),
+    linear-gradient(180deg,rgba(4,10,15,.06) 0%,rgba(4,10,15,.015) 38%,rgba(4,9,13,.08) 100%);
+}
+
+.atrium-motto {
+  position:fixed;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  color:rgba(236,242,245,.45);
+  font-size:10px;
+  font-weight:760;
+  letter-spacing:.21em;
+  line-height:1.25;
+  text-shadow:0 1px 12px rgba(0,0,0,.42);
+  opacity:0;
+  transition:opacity .3s var(--ease);
+}
+body.home-atrium-active .atrium-motto { opacity:.82; }
+.atrium-motto-right { right:25px; top:31%; }
+.atrium-motto-left { left:28px; bottom:28px; }
+
+
+/* Subtle autonomous lighting: keep the scene stable while the architectural glow breathes. */
+@keyframes atriumArchitecturalPulse {
+  0%,100% { opacity:.18; background-position:0% 0%,0% 0%,0% 0%,0% 0%; }
+  50% { opacity:.24; background-position:.35% 0%, -.25% 0%, .2% 0%, -.18% 0%; }
+}
+@keyframes atriumFloorGlow {
+  0%,100% { opacity:.64; }
+  50% { opacity:.74; }
+}
+@keyframes atriumAtmosphereBreathe {
+  0%,100% { opacity:1; }
+  50% { opacity:.93; }
+}
+.atrium-architectural-light {
+  animation:atriumArchitecturalPulse 18s ease-in-out infinite;
+}
+.atrium-floor-light {
+  animation:atriumFloorGlow 14s ease-in-out infinite;
+}
+.atrium-atmosphere {
+  animation:atriumAtmosphereBreathe 20s ease-in-out infinite;
+}
+
+/* Keep the entire application above the physical scene. */
+body.home-atrium-active .app-shell { position:relative; z-index:2; }
+body.home-atrium-active .main-panel { background:transparent; }
+body.home-atrium-active .home-atrium-view { position:relative; isolation:isolate; min-height:calc(var(--app-content-viewport-h) - 72px); }
+body.home-atrium-active .home-atrium-content {
+  position:relative;
+  z-index:2;
+  max-width:1320px;
+  padding-top:30px;
+}
+
+/* Home-only typography: same information, more architectural/editorial hierarchy. */
+body.home-atrium-active .home-atrium-view .page-heading { margin-bottom:20px; }
+body.home-atrium-active .home-atrium-view .page-heading > div:first-child { position:relative; isolation:isolate; }
+body.home-atrium-active .home-atrium-view .page-heading > div:first-child::before {
+  content:""; position:absolute; z-index:-1; inset:-26px -78px -28px -34px; pointer-events:none;
+  background:
+    radial-gradient(ellipse at 24% 50%,rgba(4,11,16,.56) 0%,rgba(4,11,16,.34) 40%,rgba(4,11,16,.08) 68%,transparent 82%),
+    linear-gradient(90deg,rgba(4,11,16,.22),transparent 72%);
+  filter:blur(10px);
+}
+
+body.home-atrium-active .home-atrium-view .page-heading h1 {
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-weight:560;
+  letter-spacing:-.052em;
+  font-size:clamp(40px,4.6vw,65px);
+  color:#fbfdff;
+  text-shadow:0 6px 32px rgba(2,8,12,.48), 0 1px 0 rgba(255,255,255,.05);
+}
+body.home-atrium-active .home-atrium-view .eyebrow { color:rgba(241,246,249,.86); text-shadow:0 2px 14px rgba(0,0,0,.36); }
+body.home-atrium-active .home-atrium-view .subtitle { color:rgba(243,247,250,.90); font-size:16px; text-shadow:0 3px 20px rgba(0,0,0,.42); }
+
+/* Top controls become suspended glass while Home is active. */
+body.home-atrium-active .topbar { background:transparent; }
+body.home-atrium-active .topbar::before {
+  bottom:-10px;
+  background:linear-gradient(180deg,rgba(5,12,17,.34) 0%,rgba(5,12,17,.13) 46%,rgba(5,12,17,0) 100%);
+}
+body.home-atrium-active .search-trigger,
+body.home-atrium-active .icon-btn,
+body.home-atrium-active .avatar-btn {
+  color:#eef6fa;
+  background:rgba(8,18,25,.40);
+  border-color:rgba(231,244,250,.19);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 12px 32px rgba(0,0,0,.14);
+  backdrop-filter:blur(14px) saturate(1.08);
+  -webkit-backdrop-filter:blur(14px) saturate(1.08);
+}
+body.home-atrium-active .search-trigger:hover,
+body.home-atrium-active .icon-btn:hover,
+body.home-atrium-active .avatar-btn:hover { background:rgba(13,27,36,.53); }
+body.home-atrium-active .search-trigger kbd { color:#dfeaf0; background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.16); }
+
+/* When expanded on Home, the sidebar reads as a tall smoked-glass partition. */
+body.home-atrium-active .sidebar {
+  background:linear-gradient(180deg,rgba(6,14,20,.67),rgba(6,14,20,.53));
+  border-right-color:rgba(236,246,251,.15);
+  backdrop-filter:blur(18px) saturate(1.06);
+  -webkit-backdrop-filter:blur(18px) saturate(1.06);
+  box-shadow:inset -1px 0 rgba(255,255,255,.04),10px 0 40px rgba(0,0,0,.10);
+}
+body.home-atrium-active .sidebar .brand-copy strong,
+body.home-atrium-active .sidebar .business-text strong,
+body.home-atrium-active .sidebar .profile-chip strong { color:#f4f8fa; }
+body.home-atrium-active .sidebar .brand-copy span,
+body.home-atrium-active .sidebar .business-text small,
+body.home-atrium-active .sidebar .profile-chip span { color:rgba(228,237,242,.58); }
+body.home-atrium-active .sidebar .business-switcher,
+body.home-atrium-active .sidebar .sync-chip { background:rgba(255,255,255,.055); border-color:rgba(255,255,255,.10); }
+body.home-atrium-active .sidebar .nav-item { color:rgba(234,242,247,.72); }
+body.home-atrium-active .sidebar .nav-item:hover { background:rgba(255,255,255,.075); color:#fff; }
+body.home-atrium-active .sidebar .nav-item.active { color:#fff; background:linear-gradient(90deg,rgba(136,198,230,.28),rgba(255,255,255,.12)); box-shadow:inset 2px 0 rgba(145,220,255,.72),0 10px 28px rgba(0,0,0,.12); }
+
+/* Main glass material. Sharp environment outside the cards; localized blur only through glass. */
+body.home-atrium-active .home-atrium-view .status-strip,
+body.home-atrium-active .home-atrium-view .metric-card,
+body.home-atrium-active .home-atrium-view .panel-card {
+  position:relative;
+  overflow:hidden;
+  color:#f5f8fa;
+  border:1px solid rgba(240,248,252,.22);
+  background:
+    linear-gradient(145deg,rgba(10,21,28,.52),rgba(7,15,20,.38) 52%,rgba(18,29,35,.42));
+  backdrop-filter:blur(15px) saturate(1.11) contrast(1.02);
+  -webkit-backdrop-filter:blur(15px) saturate(1.11) contrast(1.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -1px 0 rgba(255,255,255,.03),
+    0 24px 52px rgba(0,0,0,.18);
+}
+body.home-atrium-active .home-atrium-view .status-strip::before,
+body.home-atrium-active .home-atrium-view .metric-card::before,
+body.home-atrium-active .home-atrium-view .panel-card::before {
+  content:"";
+  position:absolute;
+  inset:-42%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,245,221,.18),transparent 20%),
+    linear-gradient(110deg,transparent 28%,rgba(255,255,255,.07) 41%,rgba(255,255,255,.15) 49%,rgba(255,255,255,.05) 58%,transparent 70%);
+  opacity:.54;
+  transform:translate3d(calc(var(--atrium-px) * 5px),calc(var(--atrium-py) * 4px),0);
+  transition:opacity .25s var(--ease);
+}
+body.home-atrium-active .home-atrium-view .metric-card::after,
+body.home-atrium-active .home-atrium-view .panel-card::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background:linear-gradient(135deg,rgba(255,255,255,.075),transparent 19%,transparent 72%,rgba(255,224,181,.035));
+  opacity:.78;
+}
+body.home-atrium-active .home-atrium-view .status-strip > *,
+body.home-atrium-active .home-atrium-view .metric-card > *,
+body.home-atrium-active .home-atrium-view .panel-card > * { position:relative; z-index:2; }
+
+body.home-atrium-active .home-atrium-view .metric-card {
+  min-height:145px;
+  padding:19px 19px 18px;
+}
+body.home-atrium-active .home-atrium-view .metric-card:hover,
+body.home-atrium-active .home-atrium-view .panel-card:hover {
+  transform:translateY(-2px);
+  border-color:rgba(241,250,253,.30);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 28px 56px rgba(0,0,0,.20);
+}
+body.home-atrium-active .home-atrium-view .metric-card:hover::before,
+body.home-atrium-active .home-atrium-view .panel-card:hover::before { opacity:.70; }
+
+/* Small state colors cast into the glass rather than turning the whole card opaque. */
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(1) { background:linear-gradient(145deg,rgba(14,27,35,.43),rgba(8,18,24,.30)); }
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(2) { background:linear-gradient(145deg,rgba(12,28,30,.43),rgba(7,19,22,.30)); }
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(3) { background:linear-gradient(145deg,rgba(48,39,21,.42),rgba(13,20,23,.31)); border-color:rgba(240,194,118,.18); }
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(4) { background:linear-gradient(145deg,rgba(14,43,34,.43),rgba(8,21,21,.31)); border-color:rgba(116,214,173,.18); }
+
+body.home-atrium-active .home-atrium-view .metric-head { color:rgba(242,247,249,.84); }
+body.home-atrium-active .home-atrium-view .metric-value { color:#ffffff; font-weight:790; text-shadow:0 3px 18px rgba(0,0,0,.34); }
+body.home-atrium-active .home-atrium-view .metric-caption,
+body.home-atrium-active .home-atrium-view .panel-copy { color:rgba(234,241,245,.80); }
+body.home-atrium-active .home-atrium-view .muted-chip,
+body.home-atrium-active .home-atrium-view .quiet-badge { color:rgba(246,249,251,.86); background:rgba(255,255,255,.085); border:1px solid rgba(255,255,255,.085); }
+body.home-atrium-active .home-atrium-view .metric-label-uninvoiced { color:#f2c980; }
+body.home-atrium-active .home-atrium-view .metric-label-paid { color:#84e3b7; }
+body.home-atrium-active .home-atrium-view h2 { color:#fbfdff; text-shadow:0 2px 16px rgba(0,0,0,.26); }
+body.home-atrium-active .home-atrium-view .text-btn { color:#b7e6ff; }
+body.home-atrium-active .home-atrium-view .empty-illustration .line { background:rgba(219,235,242,.09); }
+body.home-atrium-active .home-atrium-view .empty-illustration .check { background:rgba(72,187,135,.14); color:#86e0b7; box-shadow:0 0 36px rgba(81,207,153,.12); }
+
+body.home-atrium-active .home-atrium-view .status-strip {
+  color:rgba(233,250,242,.94);
+  background:linear-gradient(90deg,rgba(20,75,61,.46),rgba(8,31,30,.38));
+  border-color:rgba(105,211,166,.25);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 36px rgba(0,0,0,.12);
+}
+body.home-atrium-active .home-atrium-view .status-dot { background:#65dca7; box-shadow:0 0 0 4px rgba(101,220,167,.08),0 0 16px rgba(101,220,167,.32); }
+
+/* Recent rows become part of the glass rather than white/gray dividers. */
+body.home-atrium-active .home-atrium-view .recent-row { border-color:rgba(234,244,248,.10); color:#fbfdff; }
+body.home-atrium-active .home-atrium-view .recent-row:hover { background:rgba(255,255,255,.05); }
+body.home-atrium-active .home-atrium-view .recent-row strong,
+body.home-atrium-active .home-atrium-view .recent-amount { text-shadow:0 2px 14px rgba(0,0,0,.24); }
+body.home-atrium-active .home-atrium-view .recent-main small,
+body.home-atrium-active .home-atrium-view .recent-date small { color:rgba(232,240,244,.74); }
+body.home-atrium-active .home-atrium-view .recent-date { background:rgba(255,255,255,.085); border:1px solid rgba(255,255,255,.065); }
+
+/* The roadmap remains in place, but visually recedes so the atrium keeps breathing room. */
+body.home-atrium-active .home-atrium-view .roadmap-card { margin-top:18px; background:rgba(7,16,22,.30); }
+body.home-atrium-active .home-atrium-view .progress-track { background:rgba(255,255,255,.08); }
+body.home-atrium-active .home-atrium-view .roadmap-steps { color:rgba(226,235,239,.50); }
+
+/* The add action echoes the warm atrium lighting instead of bright SaaS blue. */
+body.home-atrium-active .home-atrium-view .page-heading .primary-btn {
+  color:#172027;
+  background:linear-gradient(180deg,#f6ead0,#e9c98b);
+  border:1px solid rgba(255,255,255,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 14px 34px rgba(79,49,13,.20);
+}
+body.home-atrium-active .home-atrium-view .page-heading .primary-btn:hover { box-shadow:inset 0 1px 0 rgba(255,255,255,.80),0 18px 38px rgba(79,49,13,.28); }
+
+/* Keep collapsed sidebar behavior intact; the scene now truly occupies the recovered width. */
+body.home-atrium-active .app-shell.sidebar-collapsed .sidebar,
+html.sidebar-collapsed-preload body.home-atrium-active .sidebar { background:transparent; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
+
+@media (max-width: 1180px) and (min-width: 921px) {
+  .atrium-photo-primary {
+    background-image:var(--atrium-scene-image);
+    background-position:48% 47%;
+    transform:translate3d(calc(var(--atrium-px) * -7px),calc(var(--atrium-py) * -4px + var(--atrium-scroll) * -.015px),0) scale(1.075);
+  }
+  .atrium-photo-secondary { opacity:.13; background-position:58% 50%; }
+  body.home-atrium-active .home-atrium-content { max-width:1160px; padding-left:34px; padding-right:34px; }
+  body.home-atrium-active .home-atrium-view .page-heading h1 { font-size:clamp(41px,5vw,58px); }
+  .atrium-motto { display:none; }
+}
+
+@media (max-width: 920px) {
+  .home-atrium-scene { height:calc(var(--app-stable-viewport-h) - 72px); }
+  .atrium-photo-primary {
+    background-image:var(--atrium-scene-image);
+    background-position:52% 44%;
+    filter:saturate(.9) contrast(1.02) brightness(.82);
+    transform:translate3d(calc(var(--atrium-px) * -5px),calc(var(--atrium-py) * -3px),0) scale(1.10);
+  }
+  .atrium-photo-secondary { display:none; }
+  .atrium-motto { display:none; }
+  body.home-atrium-active .home-atrium-content { padding-top:22px; }
+  body.home-atrium-active .home-atrium-view .page-heading h1 { font-size:clamp(37px,9vw,52.5px); }
+  body.home-atrium-active .home-atrium-view .metric-card,
+  body.home-atrium-active .home-atrium-view .panel-card { backdrop-filter:blur(15px) saturate(1.1); -webkit-backdrop-filter:blur(15px) saturate(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atrium-photo-primary,.atrium-photo-secondary,.atrium-architectural-light,.atrium-floor-light,
+  body.home-atrium-active .home-atrium-view .status-strip::before,
+  body.home-atrium-active .home-atrium-view .metric-card::before,
+  body.home-atrium-active .home-atrium-view .panel-card::before { transform:none !important; transition:none !important; animation:none !important; }
+  .atrium-atmosphere { animation:none !important; }
+}
+
+
+/* ===== Stability pass: Safari/iPad-friendly profile ======================= */
+html.atrium-lite .atrium-layer { will-change:auto; }
+html.atrium-lite .atrium-photo-primary {
+  background-position:center 52%;
+  transform:none;
+  opacity:1;
+  filter:saturate(.98) contrast(1.025) brightness(.96);
+}
+html.atrium-lite .atrium-photo-secondary,
+html.atrium-lite .atrium-floor-light,
+html.atrium-lite .atrium-motto { display:none; }
+html.atrium-lite .atrium-architectural-light {
+  opacity:.12;
+  mix-blend-mode:screen;
+  filter:none;
+  transform:none;
+}
+html.atrium-lite .atrium-atmosphere {
+  background:
+    radial-gradient(ellipse at 54% 24%,rgba(218,236,247,.12),transparent 24%),
+    radial-gradient(ellipse at 84% 50%,rgba(255,196,118,.08),transparent 18%),
+    linear-gradient(180deg,rgba(4,9,13,.10) 0%,rgba(4,9,13,.05) 34%,rgba(4,9,13,.18) 100%);
+  animation:atriumAtmosphereBreathe 22s ease-in-out infinite;
+}
+html.atrium-lite .atrium-architectural-light {
+  animation:atriumArchitecturalPulse 20s ease-in-out infinite;
+  background-position:0 0 !important;
+}
+html.atrium-lite .atrium-floor-light {
+  animation:none;
+}
+html.atrium-lite body.home-atrium-active .sidebar {
+  background:linear-gradient(180deg,rgba(6,14,20,.60),rgba(6,14,20,.48));
+  backdrop-filter:blur(12px) saturate(1.02);
+  -webkit-backdrop-filter:blur(12px) saturate(1.02);
+}
+html.atrium-lite body.home-atrium-active .search-trigger,
+html.atrium-lite body.home-atrium-active .icon-btn,
+html.atrium-lite body.home-atrium-active .avatar-btn {
+  backdrop-filter:blur(10px) saturate(1.03);
+  -webkit-backdrop-filter:blur(10px) saturate(1.03);
+}
+html.atrium-lite body.home-atrium-active .home-atrium-view .status-strip,
+html.atrium-lite body.home-atrium-active .home-atrium-view .metric-card,
+html.atrium-lite body.home-atrium-active .home-atrium-view .panel-card {
+  backdrop-filter:blur(10px) saturate(1.03);
+  -webkit-backdrop-filter:blur(10px) saturate(1.03);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 40px rgba(0,0,0,.14);
+}
+html.atrium-lite body.home-atrium-active .home-atrium-view .status-strip::before,
+html.atrium-lite body.home-atrium-active .home-atrium-view .metric-card::before,
+html.atrium-lite body.home-atrium-active .home-atrium-view .panel-card::before {
+  inset:0;
+  opacity:.28;
+  transform:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.05),transparent 26%,transparent 72%,rgba(255,236,201,.04));
+}
+html.atrium-lite body.home-atrium-active .home-atrium-view .metric-card:hover,
+html.atrium-lite body.home-atrium-active .home-atrium-view .panel-card:hover { transform:none; }
+
+@media (hover:none), (pointer:coarse), (max-width: 1180px) {
+  body.home-atrium-active .home-atrium-view .status-strip::before,
+  body.home-atrium-active .home-atrium-view .metric-card::before,
+  body.home-atrium-active .home-atrium-view .panel-card::before { transform:none; }
+}
+
+/* Embedded atrium fidelity fix: the photographic plate is inlined into this CSS so GitHub Pages/file-copy workflows cannot drop the environment asset. */
+body.home-atrium-active .atrium-motto { display:none; }
+
+
+/* ========================================================================== */
+/* Corporate Atrium — lighting refinement                                     */
+/* More visible than the first pulse, but still background-only and Safari-safe.
+   Important: only opacity animates on the large lighting overlays; the photo,
+   crop, transforms, blur, and scroll position stay fixed. */
+/* ========================================================================== */
+
+@keyframes atriumLightPairA {
+  0%, 100% { opacity:.13; }
+  38%      { opacity:.32; }
+  68%      { opacity:.20; }
+}
+@keyframes atriumLightPairB {
+  0%, 100% { opacity:.10; }
+  46%      { opacity:.28; }
+  74%      { opacity:.16; }
+}
+@keyframes atriumAmbientSparkle {
+  0%, 100% { opacity:.06; }
+  52%      { opacity:.18; }
+}
+
+/* The original architectural light remains a restrained base tint. */
+.atrium-architectural-light {
+  opacity:.18;
+  animation:none;
+  overflow:hidden;
+}
+
+/* Two independently timed pairs make the real light bars feel alive without
+   moving the photograph or causing the scroll-linked repainting seen earlier. */
+.atrium-architectural-light::before,
+.atrium-architectural-light::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background-repeat:no-repeat;
+  will-change:opacity;
+}
+.atrium-architectural-light::before {
+  background:
+    linear-gradient(90deg,
+      transparent 6.7%,
+      rgba(255,211,139,.025) 7.45%,
+      rgba(255,229,180,.105) 8.05%,
+      rgba(255,244,218,.31) 8.52%,
+      rgba(255,216,145,.085) 9.05%,
+      transparent 9.85%),
+    linear-gradient(90deg,
+      transparent 62.35%,
+      rgba(255,211,139,.025) 63.05%,
+      rgba(255,229,180,.095) 63.62%,
+      rgba(255,244,218,.28) 64.08%,
+      rgba(255,216,145,.075) 64.62%,
+      transparent 65.40%);
+  opacity:.13;
+  animation:atriumLightPairA 8.4s ease-in-out infinite;
+}
+.atrium-architectural-light::after {
+  background:
+    linear-gradient(90deg,
+      transparent 30.15%,
+      rgba(255,210,137,.02) 30.92%,
+      rgba(255,227,174,.085) 31.58%,
+      rgba(255,241,208,.25) 32.16%,
+      rgba(255,213,143,.07) 32.70%,
+      transparent 33.50%),
+    linear-gradient(90deg,
+      transparent 87.0%,
+      rgba(255,210,137,.022) 87.70%,
+      rgba(255,229,179,.095) 88.38%,
+      rgba(255,243,214,.28) 89.02%,
+      rgba(255,215,146,.075) 89.62%,
+      transparent 90.45%),
+    radial-gradient(ellipse at 73% 27%,rgba(226,241,249,.12),transparent 17%);
+  opacity:.10;
+  animation:atriumLightPairB 10.6s ease-in-out -2.2s infinite;
+}
+
+/* A very faint daylight shine, intentionally slower than the gold bars. */
+.atrium-atmosphere::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at 71% 22%,rgba(226,244,253,.18),transparent 20%),
+    radial-gradient(ellipse at 43% 31%,rgba(255,236,203,.075),transparent 16%);
+  opacity:.06;
+  will-change:opacity;
+  animation:atriumAmbientSparkle 13.5s ease-in-out -4s infinite;
+}
+
+/* Keep the iPad/Safari stability profile: the effect remains visible there,
+   but only opacity is animated. No transforms, masks, filters, or position shifts. */
+html.atrium-lite .atrium-architectural-light {
+  opacity:.14;
+  animation:none;
+  background-position:0 0 !important;
+}
+html.atrium-lite .atrium-architectural-light::before {
+  animation-duration:9.2s;
+}
+html.atrium-lite .atrium-architectural-light::after {
+  animation-duration:11.4s;
+}
+html.atrium-lite .atrium-atmosphere::after {
+  animation-duration:14.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atrium-architectural-light::before,
+  .atrium-architectural-light::after,
+  .atrium-atmosphere::after {
+    animation:none !important;
+    opacity:.11;
+  }
+}
+
+/* ========================================================================== */
+/* Corporate Atrium — Work tab                                                */
+/* Mirrors the proven Home treatment while preserving Work layout + behavior. */
+/* ========================================================================== */
+body.work-atrium-active .work-atrium-view {
+  position:relative;
+  isolation:isolate;
+  min-height:calc(var(--app-content-viewport-h) - 72px);
+}
+body.work-atrium-active .work-atrium-content {
+  position:relative;
+  z-index:2;
+  max-width:1320px;
+  padding-top:30px;
+}
+
+/* Editorial heading with a localized readability shadow, never a global wash. */
+body.work-atrium-active .work-atrium-view .page-heading {
+  margin-bottom:18px;
+}
+body.work-atrium-active .work-atrium-view .page-heading > div:first-child {
+  position:relative;
+  isolation:isolate;
+}
+body.work-atrium-active .work-atrium-view .page-heading > div:first-child::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-26px -80px -28px -34px;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at 23% 50%,rgba(4,11,16,.56) 0%,rgba(4,11,16,.34) 40%,rgba(4,11,16,.08) 68%,transparent 82%),
+    linear-gradient(90deg,rgba(4,11,16,.22),transparent 72%);
+  filter:blur(10px);
+}
+body.work-atrium-active .work-atrium-view .page-heading h1 {
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-weight:560;
+  letter-spacing:-.052em;
+  font-size:clamp(40px,4.6vw,65px);
+  color:#fbfdff;
+  text-shadow:0 6px 32px rgba(2,8,12,.48),0 1px 0 rgba(255,255,255,.05);
+}
+body.work-atrium-active .work-atrium-view .eyebrow {
+  color:rgba(241,246,249,.86);
+  text-shadow:0 2px 14px rgba(0,0,0,.36);
+}
+body.work-atrium-active .work-atrium-view .subtitle {
+  color:rgba(243,247,250,.90);
+  font-size:16px;
+  text-shadow:0 3px 20px rgba(0,0,0,.42);
+}
+
+/* Work actions use the same suspended-glass + warm-primary language as Home. */
+body.work-atrium-active .work-atrium-view .heading-actions .secondary-btn {
+  color:#f3f8fb;
+  background:rgba(8,18,25,.48);
+  border-color:rgba(231,244,250,.19);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 12px 28px rgba(0,0,0,.14);
+  backdrop-filter:blur(12px) saturate(1.07);
+  -webkit-backdrop-filter:blur(12px) saturate(1.07);
+}
+body.work-atrium-active .work-atrium-view .heading-actions .primary-btn {
+  color:#172027;
+  background:linear-gradient(180deg,#f6ead0,#e9c98b);
+  border:1px solid rgba(255,255,255,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 14px 34px rgba(79,49,13,.20);
+}
+body.work-atrium-active .work-atrium-view .heading-actions .primary-btn:hover {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.80),0 18px 38px rgba(79,49,13,.28);
+}
+
+/* Segmented navigation becomes a small smoked-glass control. */
+body.work-atrium-active .work-atrium-view .segment-control {
+  border-color:rgba(239,248,252,.16);
+  background:rgba(7,17,23,.46);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 14px 30px rgba(0,0,0,.12);
+  backdrop-filter:blur(12px) saturate(1.06);
+  -webkit-backdrop-filter:blur(12px) saturate(1.06);
+}
+body.work-atrium-active .work-atrium-view .segment {
+  color:rgba(232,240,244,.70);
+}
+body.work-atrium-active .work-atrium-view .segment span {
+  color:rgba(244,248,250,.84);
+  background:rgba(255,255,255,.085);
+}
+body.work-atrium-active .work-atrium-view .segment.active {
+  color:#fbfdff;
+  background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(120,178,207,.12));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 18px rgba(0,0,0,.14);
+}
+
+/* Search + filter are translucent, with stronger text contrast than the old flat UI. */
+body.work-atrium-active .work-atrium-view .mini-search,
+body.work-atrium-active .work-atrium-view .filter-pill {
+  color:#f4f8fa;
+  border-color:rgba(235,247,252,.17);
+  background:rgba(7,17,23,.50);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 28px rgba(0,0,0,.11);
+  backdrop-filter:blur(11px) saturate(1.05);
+  -webkit-backdrop-filter:blur(11px) saturate(1.05);
+}
+body.work-atrium-active .work-atrium-view .mini-search span,
+body.work-atrium-active .work-atrium-view .filter-pill::after {
+  color:rgba(226,237,242,.70);
+}
+body.work-atrium-active .work-atrium-view .mini-search input {
+  color:#f9fbfc;
+  font-weight:620;
+}
+body.work-atrium-active .work-atrium-view .mini-search input::placeholder {
+  color:rgba(224,235,240,.56);
+}
+body.work-atrium-active .work-atrium-view .filter-pill:hover {
+  color:#fff;
+  background:rgba(15,29,37,.62);
+}
+
+/* Large list surface: slightly denser than Home cards for stable scrolling on iPad. */
+body.work-atrium-active .work-atrium-view .data-card {
+  position:relative;
+  overflow:hidden;
+  color:#f6f9fb;
+  border-color:rgba(239,248,252,.20);
+  background:linear-gradient(145deg,rgba(7,17,23,.62),rgba(5,14,19,.50) 52%,rgba(14,26,32,.55));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 24px 54px rgba(0,0,0,.19);
+  backdrop-filter:blur(11px) saturate(1.06) contrast(1.01);
+  -webkit-backdrop-filter:blur(11px) saturate(1.06) contrast(1.01);
+}
+body.work-atrium-active .work-atrium-view .data-card::before {
+  content:"";
+  position:absolute;
+  inset:-30%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,245,221,.10),transparent 20%),
+    linear-gradient(112deg,transparent 31%,rgba(255,255,255,.035) 45%,rgba(255,255,255,.075) 51%,rgba(255,255,255,.02) 58%,transparent 69%);
+  opacity:.42;
+  transform:translate3d(calc(var(--atrium-px) * 3px),calc(var(--atrium-py) * 2px),0);
+  transition:opacity .25s var(--ease);
+}
+body.work-atrium-active .work-atrium-view .data-card > * {
+  position:relative;
+  z-index:1;
+}
+body.work-atrium-active .work-atrium-view .table-head {
+  color:rgba(233,241,245,.68);
+  border-bottom-color:rgba(236,246,250,.10);
+  background:rgba(255,255,255,.018);
+}
+body.work-atrium-active .work-atrium-view .table-row {
+  color:#f8fbfc;
+  border-bottom-color:rgba(236,246,250,.095);
+  text-shadow:0 1px 12px rgba(0,0,0,.16);
+}
+body.work-atrium-active .work-atrium-view .table-row:hover {
+  background:rgba(255,255,255,.045);
+}
+body.work-atrium-active .work-atrium-view .table-row strong {
+  font-weight:760;
+}
+body.work-atrium-active .work-atrium-view .table-row small {
+  color:rgba(229,238,242,.67);
+}
+body.work-atrium-active .work-atrium-view .status-pill {
+  border:1px solid rgba(255,255,255,.04);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+/* Pagination remains visually compact, but now belongs to the glass surface. */
+body.work-atrium-active .work-atrium-view .session-pagination {
+  border-top-color:rgba(236,246,250,.10);
+  background:rgba(5,14,19,.30);
+}
+body.work-atrium-active .work-atrium-view .pagination-arrow {
+  color:#f6fafc;
+  border-color:rgba(235,247,252,.16);
+  background:rgba(255,255,255,.075);
+}
+body.work-atrium-active .work-atrium-view .pagination-arrow:hover:not(:disabled) {
+  background:rgba(255,255,255,.12);
+}
+body.work-atrium-active .work-atrium-view .pagination-copy strong { color:#f8fbfc; }
+body.work-atrium-active .work-atrium-view .pagination-copy small { color:rgba(229,238,242,.62); }
+
+/* Client cards use the same smoked-glass material while preserving client colors. */
+body.work-atrium-active .work-atrium-view .client-card {
+  position:relative;
+  overflow:hidden;
+  color:#f7fafc;
+  border-color:rgba(239,248,252,.19);
+  background:linear-gradient(145deg,rgba(9,20,27,.58),rgba(6,15,20,.46) 52%,rgba(15,27,33,.50));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 20px 44px rgba(0,0,0,.15);
+  backdrop-filter:blur(10px) saturate(1.05);
+  -webkit-backdrop-filter:blur(10px) saturate(1.05);
+}
+body.work-atrium-active .work-atrium-view .client-card::before {
+  content:"";
+  position:absolute;
+  inset:-38%;
+  pointer-events:none;
+  background:linear-gradient(112deg,transparent 32%,rgba(255,255,255,.035) 46%,rgba(255,255,255,.075) 51%,rgba(255,255,255,.02) 58%,transparent 69%);
+  opacity:.38;
+  transform:translate3d(calc(var(--atrium-px) * 3px),calc(var(--atrium-py) * 2px),0);
+}
+body.work-atrium-active .work-atrium-view .client-card > * { position:relative; z-index:1; }
+body.work-atrium-active .work-atrium-view .client-card:hover {
+  transform:translateY(-2px);
+  background:linear-gradient(145deg,rgba(13,25,32,.66),rgba(8,18,24,.52));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 26px 52px rgba(0,0,0,.20);
+}
+body.work-atrium-active .work-atrium-view .client-card > strong {
+  color:#fbfdff;
+  text-shadow:0 2px 14px rgba(0,0,0,.20);
+}
+body.work-atrium-active .work-atrium-view .client-card > small,
+body.work-atrium-active .work-atrium-view .client-meta small {
+  color:rgba(230,239,243,.68);
+}
+body.work-atrium-active .work-atrium-view .client-meta {
+  border-top-color:rgba(236,246,250,.10);
+}
+body.work-atrium-active .work-atrium-view .client-meta b { color:#fbfdff; }
+
+/* Empty state stays legible if a fresh workspace has no sessions/clients yet. */
+body.work-atrium-active .work-atrium-view .large-empty {
+  color:#f7fafc;
+}
+body.work-atrium-active .work-atrium-view .large-empty p {
+  color:rgba(231,239,243,.72);
+}
+body.work-atrium-active .work-atrium-view .large-empty .secondary-btn {
+  color:#f3f8fb;
+  background:rgba(255,255,255,.075);
+  border-color:rgba(235,247,252,.15);
+}
+
+/* Safari/iPad: preserve the proven stable scene and reduce large-surface blur. */
+html.atrium-lite body.work-atrium-active .work-atrium-view .segment-control,
+html.atrium-lite body.work-atrium-active .work-atrium-view .mini-search,
+html.atrium-lite body.work-atrium-active .work-atrium-view .filter-pill,
+html.atrium-lite body.work-atrium-active .work-atrium-view .heading-actions .secondary-btn,
+html.atrium-lite body.work-atrium-active .work-atrium-view .client-card {
+  backdrop-filter:blur(8px) saturate(1.02);
+  -webkit-backdrop-filter:blur(8px) saturate(1.02);
+}
+html.atrium-lite body.work-atrium-active .work-atrium-view .data-card {
+  backdrop-filter:blur(7px) saturate(1.02);
+  -webkit-backdrop-filter:blur(7px) saturate(1.02);
+  background:linear-gradient(145deg,rgba(7,17,23,.70),rgba(5,14,19,.60) 52%,rgba(14,26,32,.62));
+}
+html.atrium-lite body.work-atrium-active .work-atrium-view .data-card::before,
+html.atrium-lite body.work-atrium-active .work-atrium-view .client-card::before {
+  transform:none;
+  opacity:.22;
+}
+html.atrium-lite body.work-atrium-active .work-atrium-view .client-card:hover { transform:none; }
+
+@media (max-width:920px) {
+  body.work-atrium-active .work-atrium-content { padding-top:22px; }
+  body.work-atrium-active .work-atrium-view .page-heading h1 { font-size:clamp(37px,9vw,52.5px); }
+  body.work-atrium-active .work-atrium-view .table-row.session-grid,
+  body.work-atrium-active .work-atrium-view .session-pagination {
+    background:rgba(7,17,23,.68);
+    border-color:rgba(239,248,252,.16);
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  body.work-atrium-active .work-atrium-view .data-card::before,
+  body.work-atrium-active .work-atrium-view .client-card::before {
+    transform:none !important;
+    transition:none !important;
+  }
+}
+
+/* ========================================================================== */
+/* Corporate Atrium — Money tab                                               */
+/* Reuses the proven Home/Work environment with Money-specific glass surfaces.*/
+/* ========================================================================== */
+body.money-atrium-active .money-atrium-view {
+  position:relative;
+  isolation:isolate;
+  min-height:calc(var(--app-content-viewport-h) - 72px);
+}
+body.money-atrium-active .money-atrium-content {
+  position:relative;
+  z-index:2;
+  max-width:1320px;
+  padding-top:30px;
+}
+
+/* Editorial heading + localized readability shadow only around copy. */
+body.money-atrium-active .money-atrium-view .page-heading { margin-bottom:18px; }
+body.money-atrium-active .money-atrium-view .page-heading > div:first-child {
+  position:relative;
+  isolation:isolate;
+}
+body.money-atrium-active .money-atrium-view .page-heading > div:first-child::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-26px -82px -30px -34px;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at 23% 50%,rgba(4,11,16,.58) 0%,rgba(4,11,16,.35) 40%,rgba(4,11,16,.08) 68%,transparent 82%),
+    linear-gradient(90deg,rgba(4,11,16,.23),transparent 72%);
+  filter:blur(10px);
+}
+body.money-atrium-active .money-atrium-view .page-heading h1 {
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-weight:560;
+  letter-spacing:-.052em;
+  font-size:clamp(40px,4.6vw,65px);
+  color:#fbfdff;
+  text-shadow:0 6px 32px rgba(2,8,12,.48),0 1px 0 rgba(255,255,255,.05);
+}
+body.money-atrium-active .money-atrium-view .eyebrow {
+  color:rgba(241,246,249,.86);
+  text-shadow:0 2px 14px rgba(0,0,0,.36);
+}
+body.money-atrium-active .money-atrium-view .subtitle {
+  color:rgba(243,247,250,.90);
+  font-size:16px;
+  text-shadow:0 3px 20px rgba(0,0,0,.42);
+}
+
+/* Money actions: secondary glass, invoice primary echoes the warm atrium rails. */
+body.money-atrium-active .money-atrium-view .money-actions .utility-text-btn,
+body.money-atrium-active .money-atrium-view .money-actions .secondary-btn {
+  color:#f3f8fb;
+  background:rgba(8,18,25,.48);
+  border:1px solid rgba(231,244,250,.19);
+  border-radius:12px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 12px 28px rgba(0,0,0,.14);
+  backdrop-filter:blur(12px) saturate(1.07);
+  -webkit-backdrop-filter:blur(12px) saturate(1.07);
+}
+body.money-atrium-active .money-atrium-view .money-actions .utility-text-btn {
+  padding:0 13px;
+  min-height:38px;
+}
+body.money-atrium-active .money-atrium-view .money-actions .utility-text-btn:hover,
+body.money-atrium-active .money-atrium-view .money-actions .secondary-btn:hover {
+  color:#fff;
+  background:rgba(15,29,37,.62);
+}
+body.money-atrium-active .money-atrium-view .money-actions .primary-btn,
+body.money-atrium-active .money-atrium-view .expense-head-actions .primary-btn {
+  color:#172027;
+  background:linear-gradient(180deg,#f6ead0,#e9c98b);
+  border:1px solid rgba(255,255,255,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 14px 34px rgba(79,49,13,.20);
+}
+body.money-atrium-active .money-atrium-view .money-actions .primary-btn:hover,
+body.money-atrium-active .money-atrium-view .expense-head-actions .primary-btn:hover {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.80),0 18px 38px rgba(79,49,13,.28);
+}
+
+/* Money metrics use the same smoked glass as Home with restrained semantic casts. */
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card {
+  position:relative;
+  overflow:hidden;
+  color:#f5f8fa;
+  border:1px solid rgba(240,248,252,.21);
+  background:linear-gradient(145deg,rgba(10,21,28,.54),rgba(7,15,20,.40) 52%,rgba(18,29,35,.44));
+  backdrop-filter:blur(14px) saturate(1.09) contrast(1.02);
+  -webkit-backdrop-filter:blur(14px) saturate(1.09) contrast(1.02);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.11),inset 0 -1px 0 rgba(255,255,255,.025),0 22px 48px rgba(0,0,0,.17);
+}
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card::before {
+  content:"";
+  position:absolute;
+  inset:-42%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,245,221,.16),transparent 20%),
+    linear-gradient(110deg,transparent 28%,rgba(255,255,255,.055) 42%,rgba(255,255,255,.12) 49%,rgba(255,255,255,.035) 58%,transparent 70%);
+  opacity:.48;
+  transform:translate3d(calc(var(--atrium-px) * 4px),calc(var(--atrium-py) * 3px),0);
+}
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card > * { position:relative; z-index:1; }
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(1) {
+  background:linear-gradient(145deg,rgba(12,48,37,.49),rgba(7,20,20,.38));
+  border-color:rgba(112,219,171,.20);
+}
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(2) {
+  background:linear-gradient(145deg,rgba(50,39,19,.47),rgba(16,20,21,.38));
+  border-color:rgba(239,191,108,.20);
+}
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(3) {
+  background:linear-gradient(145deg,rgba(48,24,25,.43),rgba(14,18,21,.38));
+  border-color:rgba(226,119,124,.16);
+}
+body.money-atrium-active .money-atrium-view .metric-head { color:rgba(242,247,249,.84); }
+body.money-atrium-active .money-atrium-view .metric-value {
+  color:#fff;
+  font-weight:790;
+  text-shadow:0 3px 18px rgba(0,0,0,.34);
+}
+body.money-atrium-active .money-atrium-view .metric-caption { color:rgba(234,241,245,.79); }
+body.money-atrium-active .money-atrium-view .muted-chip {
+  color:rgba(246,249,251,.86);
+  background:rgba(255,255,255,.085);
+  border:1px solid rgba(255,255,255,.085);
+}
+/* Preserve the existing cash/invoice semantic labels, just lift their contrast. */
+body.money-atrium-active .money-atrium-view .money-chip-cash {
+  color:#8be6ba !important;
+  background:rgba(39,128,91,.24) !important;
+  border-color:rgba(125,226,181,.17) !important;
+}
+body.money-atrium-active .money-atrium-view .money-chip-invoices {
+  color:#f2ca7d !important;
+  background:rgba(142,97,28,.23) !important;
+  border-color:rgba(242,199,119,.16) !important;
+}
+
+/* Three-way Money switch becomes a compact floating glass control. */
+body.money-atrium-active .money-atrium-view .money-segments {
+  border-color:rgba(239,248,252,.16);
+  background:rgba(7,17,23,.49);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 14px 30px rgba(0,0,0,.12);
+  backdrop-filter:blur(12px) saturate(1.06);
+  -webkit-backdrop-filter:blur(12px) saturate(1.06);
+}
+body.money-atrium-active .money-atrium-view .money-segments .segment { color:rgba(232,240,244,.70); }
+body.money-atrium-active .money-atrium-view .money-segments .segment span {
+  color:rgba(244,248,250,.84);
+  background:rgba(255,255,255,.085);
+}
+body.money-atrium-active .money-atrium-view .money-segments .segment.active {
+  color:#fbfdff;
+  background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(120,178,207,.12));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 18px rgba(0,0,0,.14);
+}
+
+/* Section headers + filters float above the atrium rather than becoming opaque bars. */
+body.money-atrium-active .money-atrium-view .money-list-head h2 {
+  color:#fbfdff;
+  text-shadow:0 2px 18px rgba(0,0,0,.30);
+}
+body.money-atrium-active .money-atrium-view .money-list-head .eyebrow { color:rgba(239,245,248,.78); }
+body.money-atrium-active .money-atrium-view .filter-pill {
+  color:#f4f8fa;
+  border-color:rgba(235,247,252,.17);
+  background:rgba(7,17,23,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 28px rgba(0,0,0,.11);
+  backdrop-filter:blur(11px) saturate(1.05);
+  -webkit-backdrop-filter:blur(11px) saturate(1.05);
+}
+body.money-atrium-active .money-atrium-view .filter-pill:hover {
+  color:#fff;
+  background:rgba(15,29,37,.64);
+}
+body.money-atrium-active .money-atrium-view .expense-summary-line span {
+  color:rgba(236,243,247,.76);
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.055);
+}
+body.money-atrium-active .money-atrium-view .expense-summary-line span:last-child {
+  color:#8be6ba;
+  background:rgba(39,128,91,.20);
+  border-color:rgba(125,226,181,.12);
+}
+
+/* Invoice/payment/expense ledgers: dense smoked glass for stable long-list scrolling. */
+body.money-atrium-active .money-atrium-view .data-card {
+  position:relative;
+  overflow:hidden;
+  color:#f6f9fb;
+  border-color:rgba(239,248,252,.20);
+  background:linear-gradient(145deg,rgba(7,17,23,.65),rgba(5,14,19,.53) 52%,rgba(14,26,32,.58));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 24px 54px rgba(0,0,0,.19);
+  backdrop-filter:blur(10px) saturate(1.05) contrast(1.01);
+  -webkit-backdrop-filter:blur(10px) saturate(1.05) contrast(1.01);
+}
+body.money-atrium-active .money-atrium-view .data-card::before {
+  content:"";
+  position:absolute;
+  inset:-30%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,245,221,.09),transparent 20%),
+    linear-gradient(112deg,transparent 31%,rgba(255,255,255,.03) 45%,rgba(255,255,255,.065) 51%,rgba(255,255,255,.018) 58%,transparent 69%);
+  opacity:.38;
+  transform:translate3d(calc(var(--atrium-px) * 3px),calc(var(--atrium-py) * 2px),0);
+}
+body.money-atrium-active .money-atrium-view .data-card > * { position:relative; z-index:1; }
+body.money-atrium-active .money-atrium-view .table-head {
+  color:rgba(233,241,245,.70);
+  border-bottom-color:rgba(236,246,250,.10);
+  background:rgba(255,255,255,.018);
+}
+body.money-atrium-active .money-atrium-view .table-row {
+  color:#f8fbfc;
+  border-bottom-color:rgba(236,246,250,.095);
+  text-shadow:0 1px 12px rgba(0,0,0,.16);
+}
+body.money-atrium-active .money-atrium-view .table-row:hover { background:rgba(255,255,255,.045); }
+body.money-atrium-active .money-atrium-view .table-row strong { font-weight:760; }
+body.money-atrium-active .money-atrium-view .table-row small { color:rgba(229,238,242,.68); }
+body.money-atrium-active .money-atrium-view .status-pill {
+  border:1px solid rgba(255,255,255,.04);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+body.money-atrium-active .money-atrium-view .receipt-mini { color:rgba(231,239,243,.68); }
+body.money-atrium-active .money-atrium-view .receipt-mini.has-receipt { color:#a9ddff; }
+body.money-atrium-active .money-atrium-view .review-inline { color:#f3c983; }
+
+/* Pagination is the same compact glass footer already proven on Work. */
+body.money-atrium-active .money-atrium-view .session-pagination {
+  border-top-color:rgba(236,246,250,.10);
+  background:rgba(5,14,19,.30);
+}
+body.money-atrium-active .money-atrium-view .pagination-arrow {
+  color:#f6fafc;
+  border-color:rgba(235,247,252,.16);
+  background:rgba(255,255,255,.075);
+}
+body.money-atrium-active .money-atrium-view .pagination-arrow:hover:not(:disabled) { background:rgba(255,255,255,.12); }
+body.money-atrium-active .money-atrium-view .pagination-copy strong { color:#f8fbfc; }
+body.money-atrium-active .money-atrium-view .pagination-copy small { color:rgba(229,238,242,.62); }
+
+/* Empty and explanatory surfaces stay readable without covering the environment. */
+body.money-atrium-active .money-atrium-view .large-empty { color:#f7fafc; }
+body.money-atrium-active .money-atrium-view .large-empty p { color:rgba(231,239,243,.72); }
+body.money-atrium-active .money-atrium-view .large-empty .secondary-btn {
+  color:#f3f8fb;
+  background:rgba(255,255,255,.075);
+  border-color:rgba(235,247,252,.15);
+}
+body.money-atrium-active .money-atrium-view .phase-next-note {
+  color:rgba(235,242,246,.80);
+  border-color:rgba(239,248,252,.14);
+  background:rgba(7,17,23,.40);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 14px 34px rgba(0,0,0,.10);
+  backdrop-filter:blur(9px) saturate(1.03);
+  -webkit-backdrop-filter:blur(9px) saturate(1.03);
+}
+body.money-atrium-active .money-atrium-view .phase-next-note strong { color:#f7fafc; }
+body.money-atrium-active .money-atrium-view .phase-next-note small { color:rgba(229,238,242,.66); }
+
+/* Safari/iPad: retain the stable lighting scene and lower the large blur workload. */
+html.atrium-lite body.money-atrium-active .money-atrium-view .money-actions .utility-text-btn,
+html.atrium-lite body.money-atrium-active .money-atrium-view .money-actions .secondary-btn,
+html.atrium-lite body.money-atrium-active .money-atrium-view .money-segments,
+html.atrium-lite body.money-atrium-active .money-atrium-view .filter-pill,
+html.atrium-lite body.money-atrium-active .money-atrium-view .phase-next-note {
+  backdrop-filter:blur(8px) saturate(1.02);
+  -webkit-backdrop-filter:blur(8px) saturate(1.02);
+}
+html.atrium-lite body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card {
+  backdrop-filter:blur(9px) saturate(1.02);
+  -webkit-backdrop-filter:blur(9px) saturate(1.02);
+}
+html.atrium-lite body.money-atrium-active .money-atrium-view .data-card {
+  backdrop-filter:blur(7px) saturate(1.02);
+  -webkit-backdrop-filter:blur(7px) saturate(1.02);
+  background:linear-gradient(145deg,rgba(7,17,23,.72),rgba(5,14,19,.62) 52%,rgba(14,26,32,.64));
+}
+html.atrium-lite body.money-atrium-active .money-atrium-view .data-card::before,
+html.atrium-lite body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card::before {
+  transform:none;
+  opacity:.20;
+}
+
+@media (max-width:920px) {
+  body.money-atrium-active .money-atrium-content { padding-top:22px; }
+  body.money-atrium-active .money-atrium-view .page-heading h1 { font-size:clamp(37px,9vw,52.5px); }
+  body.money-atrium-active .money-atrium-view .table-row.invoice-grid,
+  body.money-atrium-active .money-atrium-view .table-row.payment-grid,
+  body.money-atrium-active .money-atrium-view .table-row.expense-grid,
+  body.money-atrium-active .money-atrium-view .session-pagination {
+    background:rgba(7,17,23,.68);
+    border-color:rgba(239,248,252,.16);
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  body.money-atrium-active .money-atrium-view .data-card::before,
+  body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card::before {
+    transform:none !important;
+    transition:none !important;
+  }
+}
+
+/* ========================================================================== */
+/* Corporate Atrium — Records tab                                             */
+/* Extends the proven Home/Work/Money scene to the receipt evidence workspace.*/
+/* ========================================================================== */
+body.records-atrium-active .records-atrium-view {
+  position:relative;
+  isolation:isolate;
+  min-height:calc(var(--app-content-viewport-h) - 72px);
+}
+body.records-atrium-active .records-atrium-content {
+  position:relative;
+  z-index:2;
+  max-width:1320px;
+  padding-top:30px;
+}
+
+/* Same editorial heading language with local contrast rather than a page wash. */
+body.records-atrium-active .records-atrium-view .page-heading { margin-bottom:18px; }
+body.records-atrium-active .records-atrium-view .page-heading > div:first-child {
+  position:relative;
+  isolation:isolate;
+}
+body.records-atrium-active .records-atrium-view .page-heading > div:first-child::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-26px -84px -30px -34px;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at 23% 50%,rgba(4,11,16,.58) 0%,rgba(4,11,16,.35) 40%,rgba(4,11,16,.08) 68%,transparent 82%),
+    linear-gradient(90deg,rgba(4,11,16,.23),transparent 72%);
+  filter:blur(10px);
+}
+body.records-atrium-active .records-atrium-view .page-heading h1 {
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-weight:560;
+  letter-spacing:-.052em;
+  font-size:clamp(40px,4.6vw,65px);
+  color:#fbfdff;
+  text-shadow:0 6px 32px rgba(2,8,12,.48),0 1px 0 rgba(255,255,255,.05);
+}
+body.records-atrium-active .records-atrium-view .eyebrow {
+  color:rgba(241,246,249,.86);
+  text-shadow:0 2px 14px rgba(0,0,0,.36);
+}
+body.records-atrium-active .records-atrium-view .subtitle {
+  color:rgba(243,247,250,.90);
+  font-size:16px;
+  text-shadow:0 3px 20px rgba(0,0,0,.42);
+}
+
+/* Export remains secondary: suspended smoked glass rather than a bright CTA. */
+body.records-atrium-active .records-atrium-view .records-heading .secondary-btn {
+  color:#f4f8fb;
+  background:rgba(8,18,25,.50);
+  border-color:rgba(231,244,250,.19);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 12px 28px rgba(0,0,0,.14);
+  backdrop-filter:blur(12px) saturate(1.07);
+  -webkit-backdrop-filter:blur(12px) saturate(1.07);
+}
+body.records-atrium-active .records-atrium-view .records-heading .secondary-btn:hover {
+  color:#fff;
+  background:rgba(15,29,37,.62);
+}
+
+/* Receipt search + count share the compact glass controls from Work/Money. */
+body.records-atrium-active .records-atrium-view .records-toolbar .mini-search,
+body.records-atrium-active .records-atrium-view .records-toolbar .quiet-badge {
+  color:#f4f8fa;
+  border-color:rgba(235,247,252,.17);
+  background:rgba(7,17,23,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 28px rgba(0,0,0,.11);
+  backdrop-filter:blur(11px) saturate(1.05);
+  -webkit-backdrop-filter:blur(11px) saturate(1.05);
+}
+body.records-atrium-active .records-atrium-view .records-toolbar .mini-search span {
+  color:rgba(226,237,242,.72);
+}
+body.records-atrium-active .records-atrium-view .records-toolbar .mini-search input {
+  color:#f9fbfc;
+  font-weight:620;
+}
+body.records-atrium-active .records-atrium-view .records-toolbar .mini-search input::placeholder {
+  color:rgba(224,235,240,.57);
+}
+body.records-atrium-active .records-atrium-view .records-toolbar .quiet-badge {
+  color:rgba(246,249,251,.86);
+  min-height:34px;
+  display:inline-flex;
+  align-items:center;
+}
+
+/* Receipt evidence cards float individually so the physical atrium remains visible. */
+body.records-atrium-active .records-atrium-view .receipt-vault-card {
+  position:relative;
+  overflow:hidden;
+  color:#f7fafc;
+  border-color:rgba(239,248,252,.20);
+  background:linear-gradient(145deg,rgba(7,17,23,.64),rgba(5,14,19,.52) 52%,rgba(14,26,32,.57));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 22px 48px rgba(0,0,0,.18);
+  backdrop-filter:blur(10px) saturate(1.05) contrast(1.01);
+  -webkit-backdrop-filter:blur(10px) saturate(1.05) contrast(1.01);
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-card::before {
+  content:"";
+  position:absolute;
+  inset:-36%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,245,221,.10),transparent 20%),
+    linear-gradient(112deg,transparent 31%,rgba(255,255,255,.035) 45%,rgba(255,255,255,.075) 51%,rgba(255,255,255,.02) 58%,transparent 69%);
+  opacity:.40;
+  transform:translate3d(calc(var(--atrium-px) * 3px),calc(var(--atrium-py) * 2px),0);
+  transition:opacity .25s var(--ease);
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-card > * {
+  position:relative;
+  z-index:1;
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-card:hover {
+  transform:translateY(-2px);
+  border-color:rgba(241,250,253,.30);
+  background:linear-gradient(145deg,rgba(11,23,30,.70),rgba(7,17,22,.57));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 28px 54px rgba(0,0,0,.21);
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-card:hover::before { opacity:.58; }
+body.records-atrium-active .records-atrium-view .receipt-vault-icon {
+  color:#b7e6ff;
+  background:rgba(102,178,220,.16);
+  border:1px solid rgba(160,218,248,.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-main strong,
+body.records-atrium-active .records-atrium-view .receipt-vault-meta strong {
+  color:#fbfdff;
+  font-weight:760;
+  text-shadow:0 2px 14px rgba(0,0,0,.20);
+}
+body.records-atrium-active .records-atrium-view .receipt-vault-main small,
+body.records-atrium-active .records-atrium-view .receipt-vault-meta small {
+  color:rgba(230,239,243,.70);
+}
+body.records-atrium-active .records-atrium-view .receipt-review-dot {
+  background:#f1c674;
+  box-shadow:0 0 0 3px rgba(241,198,116,.10),0 0 14px rgba(241,198,116,.26);
+}
+
+/* The local-storage explanation becomes a quiet glass footnote, not a solid box. */
+body.records-atrium-active .records-atrium-view .records-local-note {
+  color:rgba(232,240,244,.76);
+  border-color:rgba(239,248,252,.14);
+  background:rgba(7,17,23,.42);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 14px 34px rgba(0,0,0,.10);
+  backdrop-filter:blur(9px) saturate(1.03);
+  -webkit-backdrop-filter:blur(9px) saturate(1.03);
+}
+body.records-atrium-active .records-atrium-view .records-local-note > span {
+  color:#b7e6ff;
+  background:rgba(102,178,220,.16);
+  border:1px solid rgba(160,218,248,.08);
+}
+body.records-atrium-active .records-atrium-view .records-local-note p {
+  color:rgba(232,240,244,.72);
+}
+
+/* Fresh-workspace empty state remains legible without masking the office scene. */
+body.records-atrium-active .records-atrium-view .large-empty {
+  color:#f7fafc;
+  border-color:rgba(239,248,252,.18);
+  background:rgba(7,17,23,.50);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 22px 48px rgba(0,0,0,.15);
+  backdrop-filter:blur(9px) saturate(1.03);
+  -webkit-backdrop-filter:blur(9px) saturate(1.03);
+}
+body.records-atrium-active .records-atrium-view .large-empty p { color:rgba(231,239,243,.72); }
+body.records-atrium-active .records-atrium-view .large-empty .secondary-btn {
+  color:#f3f8fb;
+  background:rgba(255,255,255,.075);
+  border-color:rgba(235,247,252,.15);
+}
+body.records-atrium-active .records-atrium-view .placeholder-icon {
+  color:#b7e6ff;
+  background:rgba(102,178,220,.14);
+}
+
+/* Safari/iPad: preserve the same stable lighting profile used by the other tabs. */
+html.atrium-lite body.records-atrium-active .records-atrium-view .records-heading .secondary-btn,
+html.atrium-lite body.records-atrium-active .records-atrium-view .records-toolbar .mini-search,
+html.atrium-lite body.records-atrium-active .records-atrium-view .records-toolbar .quiet-badge,
+html.atrium-lite body.records-atrium-active .records-atrium-view .records-local-note,
+html.atrium-lite body.records-atrium-active .records-atrium-view .large-empty {
+  backdrop-filter:blur(8px) saturate(1.02);
+  -webkit-backdrop-filter:blur(8px) saturate(1.02);
+}
+html.atrium-lite body.records-atrium-active .records-atrium-view .receipt-vault-card {
+  backdrop-filter:blur(7px) saturate(1.02);
+  -webkit-backdrop-filter:blur(7px) saturate(1.02);
+  background:linear-gradient(145deg,rgba(7,17,23,.72),rgba(5,14,19,.62) 52%,rgba(14,26,32,.64));
+}
+html.atrium-lite body.records-atrium-active .records-atrium-view .receipt-vault-card::before {
+  transform:none;
+  opacity:.20;
+}
+html.atrium-lite body.records-atrium-active .records-atrium-view .receipt-vault-card:hover { transform:none; }
+
+@media (max-width:920px) {
+  body.records-atrium-active .records-atrium-content { padding-top:22px; }
+  body.records-atrium-active .records-atrium-view .page-heading h1 { font-size:clamp(37px,9vw,52.5px); }
+  body.records-atrium-active .records-atrium-view .receipt-vault-card {
+    background:rgba(7,17,23,.68);
+    border-color:rgba(239,248,252,.16);
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  body.records-atrium-active .records-atrium-view .receipt-vault-card::before {
+    transform:none !important;
+    transition:none !important;
+  }
+}
+
+/* ========================================================================== */
+/* Corporate Atrium — Frosted Window Bays                                    */
+/* Selected material direction: embedded architectural panes, not dark cards. */
+/* ========================================================================== */
+:root {
+  --bay-bg: rgba(118, 148, 164, .26);
+  --bay-bg-strong: rgba(92, 121, 138, .34);
+  --bay-bg-dense: rgba(58, 83, 98, .48);
+  --bay-border: rgba(232, 246, 252, .34);
+  --bay-border-soft: rgba(232, 246, 252, .22);
+  --bay-highlight: rgba(255,255,255,.16);
+  --bay-shadow: 0 20px 44px rgba(0,0,0,.16);
+  --bay-blur: 19px;
+}
+
+/* Shared bay material: the atrium remains visible, but locally softened. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card,.segment-control,.money-segments,.mini-search,.filter-pill,.records-local-note,.large-empty) {
+  border-color: var(--bay-border) !important;
+  background:
+    linear-gradient(145deg, rgba(180,205,217,.23), rgba(103,136,153,.20) 48%, rgba(70,100,116,.27)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.18),
+    inset 0 -1px 0 rgba(255,255,255,.035),
+    var(--bay-shadow) !important;
+  backdrop-filter: blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+  -webkit-backdrop-filter: blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+}
+
+/* Keep long ledgers slightly denser for scanability while preserving the bay look. */
+body.work-atrium-active .work-atrium-view .data-card,
+body.money-atrium-active .money-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(92,121,138,.38),rgba(58,84,99,.35) 52%,rgba(43,68,83,.42)) !important;
+}
+
+/* Bay highlight behaves like light washing across a frosted office window. */
+body.home-atrium-active .home-atrium-view .status-strip::before,
+body.home-atrium-active .home-atrium-view .metric-card::before,
+body.home-atrium-active .home-atrium-view .panel-card::before,
+body.work-atrium-active .work-atrium-view .data-card::before,
+body.work-atrium-active .work-atrium-view .client-card::before,
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card::before,
+body.money-atrium-active .money-atrium-view .data-card::before,
+body.records-atrium-active .records-atrium-view .receipt-vault-card::before {
+  inset:0 !important;
+  opacity:.54 !important;
+  transform:none !important;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 28%,transparent 54%,rgba(205,232,244,.055) 100%) !important;
+}
+
+/* Remove the old per-card color washes; semantic color now lives in typography/chips. */
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(1),
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(2),
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(3),
+body.home-atrium-active .home-atrium-view .metric-card:nth-child(4),
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(1),
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(2),
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(3) {
+  background:linear-gradient(145deg,rgba(177,203,216,.24),rgba(101,134,151,.21) 48%,rgba(67,97,113,.28)) !important;
+  border-color:var(--bay-border) !important;
+}
+
+/* Home: green status remains semantic, but becomes a frosted pane rather than a solid strip. */
+body.home-atrium-active .home-atrium-view .status-strip {
+  background:linear-gradient(100deg,rgba(69,137,116,.31),rgba(96,144,151,.22) 54%,rgba(71,108,124,.25)) !important;
+  border-color:rgba(145,229,195,.34) !important;
+  color:rgba(241,252,247,.96) !important;
+  backdrop-filter:blur(16px) saturate(1.08) !important;
+  -webkit-backdrop-filter:blur(16px) saturate(1.08) !important;
+}
+body.home-atrium-active .home-atrium-view .roadmap-card {
+  background:linear-gradient(145deg,rgba(150,180,194,.19),rgba(70,100,116,.24)) !important;
+  border-color:var(--bay-border-soft) !important;
+}
+
+/* Typography: slightly cleaner against the lighter frost. */
+body.home-atrium-active .home-atrium-view .metric-head,
+body.money-atrium-active .money-atrium-view .metric-head { color:rgba(247,250,252,.91) !important; }
+body.home-atrium-active .home-atrium-view .metric-caption,
+body.home-atrium-active .home-atrium-view .panel-copy,
+body.work-atrium-active .work-atrium-view .table-row small,
+body.work-atrium-active .work-atrium-view .client-card > small,
+body.work-atrium-active .work-atrium-view .client-meta small,
+body.money-atrium-active .money-atrium-view .metric-caption,
+body.money-atrium-active .money-atrium-view .table-row small,
+body.records-atrium-active .records-atrium-view .receipt-vault-main small,
+body.records-atrium-active .records-atrium-view .receipt-vault-meta small,
+body.records-atrium-active .records-atrium-view .records-local-note p {
+  color:rgba(240,246,249,.82) !important;
+}
+body.home-atrium-active .home-atrium-view .metric-value,
+body.money-atrium-active .money-atrium-view .metric-value,
+body.work-atrium-active .work-atrium-view .table-row,
+body.records-atrium-active .records-atrium-view .receipt-vault-main strong,
+body.records-atrium-active .records-atrium-view .receipt-vault-meta strong {
+  text-shadow:0 2px 15px rgba(0,0,0,.28) !important;
+}
+
+/* Internal rules read like window mullions rather than dark table chrome. */
+body.work-atrium-active .work-atrium-view .table-head,
+body.money-atrium-active .money-atrium-view .table-head {
+  background:rgba(255,255,255,.035) !important;
+  border-bottom-color:rgba(239,248,252,.16) !important;
+}
+body.work-atrium-active .work-atrium-view .table-row,
+body.money-atrium-active .money-atrium-view .table-row,
+body.home-atrium-active .home-atrium-view .recent-row {
+  border-bottom-color:rgba(239,248,252,.13) !important;
+}
+body.work-atrium-active .work-atrium-view .table-row:hover,
+body.money-atrium-active .money-atrium-view .table-row:hover,
+body.home-atrium-active .home-atrium-view .recent-row:hover {
+  background:rgba(255,255,255,.065) !important;
+}
+
+/* Compact controls become smaller frosted panes within the larger bays. */
+body.work-atrium-active .work-atrium-view .heading-actions .secondary-btn,
+body.money-atrium-active .money-atrium-view .money-actions .utility-text-btn,
+body.money-atrium-active .money-atrium-view .money-actions .secondary-btn,
+body.records-atrium-active .records-atrium-view .records-heading .secondary-btn,
+body.records-atrium-active .records-atrium-view .records-toolbar .quiet-badge {
+  color:#f8fbfc !important;
+  background:rgba(116,148,165,.26) !important;
+  border-color:rgba(234,247,252,.30) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 28px rgba(0,0,0,.12) !important;
+  backdrop-filter:blur(14px) saturate(1.06) !important;
+  -webkit-backdrop-filter:blur(14px) saturate(1.06) !important;
+}
+
+/* Segmented controls: active state is a brighter inner pane, not a dark pill. */
+body.work-atrium-active .work-atrium-view .segment.active,
+body.money-atrium-active .money-atrium-view .money-segments .segment.active {
+  background:linear-gradient(135deg,rgba(225,239,246,.18),rgba(152,192,211,.16)) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 7px 16px rgba(0,0,0,.10) !important;
+}
+
+/* Records: receipt cards feel like individual panes cut from the same window wall. */
+body.records-atrium-active .records-atrium-view .receipt-vault-card:hover,
+body.work-atrium-active .work-atrium-view .client-card:hover {
+  background:linear-gradient(145deg,rgba(197,218,228,.28),rgba(112,145,161,.25) 48%,rgba(75,105,121,.31)) !important;
+  border-color:rgba(241,251,255,.43) !important;
+}
+
+/* iPad/Safari stability: retain the proven no-motion profile, reduce blur cost, and
+   slightly increase opacity so the frost still reads without expensive compositing. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card,.segment-control,.money-segments,.mini-search,.filter-pill,.records-local-note,.large-empty) {
+  background:linear-gradient(145deg,rgba(133,163,178,.35),rgba(83,116,133,.32) 50%,rgba(56,88,104,.38)) !important;
+  backdrop-filter:blur(10px) saturate(1.03) !important;
+  -webkit-backdrop-filter:blur(10px) saturate(1.03) !important;
+}
+html.atrium-lite body.work-atrium-active .work-atrium-view .data-card,
+html.atrium-lite body.money-atrium-active .money-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(95,127,143,.48),rgba(57,89,106,.45) 52%,rgba(42,73,90,.50)) !important;
+  backdrop-filter:blur(8px) saturate(1.02) !important;
+  -webkit-backdrop-filter:blur(8px) saturate(1.02) !important;
+}
+html.atrium-lite body.home-atrium-active .home-atrium-view .status-strip {
+  background:linear-gradient(100deg,rgba(61,126,105,.40),rgba(82,129,137,.32) 55%,rgba(57,96,113,.34)) !important;
+  backdrop-filter:blur(9px) saturate(1.03) !important;
+  -webkit-backdrop-filter:blur(9px) saturate(1.03) !important;
+}
+
+@media (max-width:920px) {
+  body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+  :is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+  :is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card) {
+    border-color:rgba(235,248,253,.27) !important;
+  }
+}
+
+
+/* ========================================================================== */
+/* Safari/iPad pane compositing stability — no-flash pass                     */
+/* ========================================================================== */
+/*
+   iPad Safari can briefly re-rasterize backdrop-filter layers when a hidden
+   view becomes visible. The result looks like a one-frame "load flash" even
+   though the data is already present. On the lite profile we therefore keep
+   the Frosted Window Bays look with pre-tinted translucent materials and
+   static highlights, but remove live backdrop sampling from the large bays.
+*/
+html.atrium-lite .view,
+html.atrium-lite .view.active,
+html.atrium-lite .work-tab,
+html.atrium-lite .work-tab.active,
+html.atrium-lite .money-tab,
+html.atrium-lite .money-tab.active {
+  animation:none !important;
+  transition:none !important;
+  transform:none !important;
+}
+html.atrium-lite .view.active,
+html.atrium-lite .work-tab.active,
+html.atrium-lite .money-tab.active {
+  opacity:1 !important;
+}
+
+/* Large panes: static frost instead of live backdrop recomposition. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card,.segment-control,.money-segments,.mini-search,.filter-pill,.records-local-note,.large-empty) {
+  background:
+    linear-gradient(145deg,rgba(139,169,184,.49),rgba(86,119,136,.47) 49%,rgba(58,89,105,.53)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.17),
+    inset 0 -1px 0 rgba(255,255,255,.035),
+    0 18px 38px rgba(0,0,0,.15) !important;
+  contain:paint;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+/* Preserve denser ledger readability without asking Safari to blur underneath. */
+html.atrium-lite body.work-atrium-active .work-atrium-view .data-card,
+html.atrium-lite body.money-atrium-active .money-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(94,126,143,.63),rgba(56,88,105,.60) 52%,rgba(40,70,87,.64)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+html.atrium-lite body.home-atrium-active .home-atrium-view .status-strip {
+  background:linear-gradient(100deg,rgba(63,127,107,.56),rgba(84,132,140,.48) 55%,rgba(58,97,114,.50)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* Small glass controls use the same stable material on Safari/iPad. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.search-trigger,.icon-btn,.avatar-btn,.secondary-btn,.utility-text-btn,.quiet-badge) {
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* Do not animate pane pseudo-highlights during page/tab changes. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card)::before,
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card)::after {
+  transition:none !important;
+  animation:none !important;
+  transform:none !important;
+}
+
+/* Promote only the scene itself, not every frosted bay, to avoid a burst of
+   new compositor layers when switching views. */
+html.atrium-lite :is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card) {
+  will-change:auto !important;
+}
+
+/* ===== Status/category pill visibility refinement ==========================
+   Stronger semantic pills for the frosted atrium treatment. The colors stay
+   restrained, but now have enough local opacity, border contrast and shadow
+   to remain legible over bright plants, windows and architectural highlights. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill {
+  border:1px solid rgba(255,255,255,.18) !important;
+  background:rgba(20,31,39,.74) !important;
+  color:#f7fbfd !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    0 5px 14px rgba(0,0,0,.22) !important;
+  text-shadow:0 1px 7px rgba(0,0,0,.38);
+  backdrop-filter:blur(7px) saturate(1.04);
+  -webkit-backdrop-filter:blur(7px) saturate(1.04);
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.success {
+  color:#8ff0bb !important;
+  background:rgba(24,92,65,.78) !important;
+  border-color:rgba(126,238,177,.46) !important;
+  box-shadow:inset 0 1px 0 rgba(199,255,222,.14),0 5px 15px rgba(0,0,0,.22),0 0 12px rgba(83,215,145,.11) !important;
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.sent {
+  color:#9dc7ff !important;
+  background:rgba(31,76,132,.80) !important;
+  border-color:rgba(130,184,255,.48) !important;
+  box-shadow:inset 0 1px 0 rgba(205,226,255,.13),0 5px 15px rgba(0,0,0,.22),0 0 12px rgba(95,157,238,.10) !important;
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.void {
+  color:#d7a7ff !important;
+  background:rgba(87,49,118,.82) !important;
+  border-color:rgba(206,148,255,.48) !important;
+  box-shadow:inset 0 1px 0 rgba(235,208,255,.13),0 5px 15px rgba(0,0,0,.22),0 0 12px rgba(182,108,239,.10) !important;
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.accent {
+  color:#a9c4ff !important;
+  background:rgba(44,69,128,.80) !important;
+  border-color:rgba(142,173,255,.48) !important;
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.danger {
+  color:#ffb0b8 !important;
+  background:rgba(122,42,51,.82) !important;
+  border-color:rgba(255,145,156,.48) !important;
+  box-shadow:inset 0 1px 0 rgba(255,215,219,.12),0 5px 15px rgba(0,0,0,.22),0 0 12px rgba(236,85,101,.10) !important;
+}
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill.review {
+  color:#ffd08a !important;
+  background:rgba(119,77,23,.82) !important;
+  border-color:rgba(255,196,111,.50) !important;
+  box-shadow:inset 0 1px 0 rgba(255,234,196,.12),0 5px 15px rgba(0,0,0,.22),0 0 12px rgba(235,165,68,.10) !important;
+}
+
+/* Keep filter/category selectors visually distinct from semantic statuses. */
+body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .filter-pill {
+  color:#f6fafc !important;
+  background:linear-gradient(145deg,rgba(80,112,129,.64),rgba(50,78,94,.70)) !important;
+  border-color:rgba(238,249,253,.34) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 7px 18px rgba(0,0,0,.18) !important;
+  text-shadow:0 1px 7px rgba(0,0,0,.34);
+}
+body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .filter-pill::after {
+  color:rgba(242,249,252,.78) !important;
+}
+
+/* On the Safari/iPad lite profile, avoid live blur while preserving the same
+   color strength so the pills do not fade back into the environment. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .status-pill,
+html.atrium-lite body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .filter-pill {
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+
+/* ===== Comprehensive pill visibility pass =================================
+   Extends the semantic/status treatment to the smaller category/context pills
+   that live in metric headers, attention counts, Records controls, and Money
+   summary cards. These use opaque-enough local surfaces so the atrium cannot
+   wash them out, while keeping the same soft rounded language. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.muted-chip,.quiet-badge) {
+  color:#f6fafc !important;
+  background:rgba(31,47,58,.78) !important;
+  border:1px solid rgba(232,246,252,.28) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.13),
+    0 4px 12px rgba(0,0,0,.20) !important;
+  text-shadow:0 1px 6px rgba(0,0,0,.35);
+}
+
+/* Home metric context chips: neutral but clearly separated from the pane. */
+body.home-atrium-active .home-atrium-view .metric-card .muted-chip {
+  background:rgba(32,48,59,.80) !important;
+  border-color:rgba(235,247,252,.30) !important;
+}
+
+/* Money summary category pills retain semantic color with much stronger fill. */
+body.money-atrium-active .money-atrium-view .money-chip-cash {
+  color:#9af3c2 !important;
+  background:rgba(24,101,70,.84) !important;
+  border-color:rgba(133,241,184,.48) !important;
+  box-shadow:inset 0 1px 0 rgba(207,255,228,.14),0 5px 14px rgba(0,0,0,.22),0 0 12px rgba(83,215,145,.10) !important;
+}
+body.money-atrium-active .money-atrium-view .money-chip-invoices {
+  color:#ffd58c !important;
+  background:rgba(122,82,24,.86) !important;
+  border-color:rgba(255,204,119,.50) !important;
+  box-shadow:inset 0 1px 0 rgba(255,238,202,.13),0 5px 14px rgba(0,0,0,.22),0 0 12px rgba(235,165,68,.10) !important;
+}
+/* The unlabeled semantic pill on Overdue is intentionally warning/red. */
+body.money-atrium-active .money-atrium-view .money-metric-grid .metric-card:nth-child(3) .muted-chip {
+  color:#ffb5bc !important;
+  background:rgba(118,42,49,.84) !important;
+  border-color:rgba(255,149,158,.48) !important;
+  box-shadow:inset 0 1px 0 rgba(255,216,220,.12),0 5px 14px rgba(0,0,0,.22),0 0 12px rgba(236,85,101,.09) !important;
+}
+
+/* Existing green quiet badges (paid totals / ready states) get the same lift. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active) .quiet-badge.green {
+  color:#9af3c2 !important;
+  background:rgba(24,101,70,.84) !important;
+  border-color:rgba(133,241,184,.48) !important;
+}
+
+/* Counts inside segmented controls are also tiny pills; strengthen them so
+   Invoices / Payments / Expenses counts do not disappear over the scene. */
+body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .segment > span {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:18px;
+  min-height:18px;
+  padding:0 5px;
+  margin-left:4px;
+  border-radius:999px;
+  color:rgba(247,251,253,.92) !important;
+  background:rgba(28,43,53,.76) !important;
+  border:1px solid rgba(235,247,252,.22) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+}
+body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .segment.active > span {
+  background:rgba(86,123,143,.74) !important;
+  border-color:rgba(239,249,253,.34) !important;
+  color:#fff !important;
+}
+
+/* Safari/iPad: preserve the richer colors without adding another live blur. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.muted-chip,.quiet-badge),
+html.atrium-lite body:is(.work-atrium-active,.money-atrium-active,.records-atrium-active) .segment > span {
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* ========================================================================== */
+/* Phase 5 — Taxes / Mileage + Vehicle Tracking                               */
+/* ========================================================================== */
+
+/* Fifth permanent destination keeps the same Corporate Atrium foundation. */
+body.taxes-atrium-active .taxes-atrium-view {
+  color:#f5f9fb;
+  position:relative;
+  isolation:isolate;
+  min-height:calc(100svh - 72px);
+}
+body.taxes-atrium-active .taxes-atrium-content {
+  position:relative;
+  z-index:2;
+  max-width:1320px;
+  padding-top:30px;
+}
+body.taxes-atrium-active .taxes-atrium-view .page-heading {
+  margin-bottom:18px;
+}
+body.taxes-atrium-active .taxes-atrium-view .page-heading > div:first-child {
+  position:relative;
+  isolation:isolate;
+}
+body.taxes-atrium-active .taxes-atrium-view .page-heading > div:first-child::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-26px -78px -28px -34px;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at 24% 50%,rgba(4,11,16,.56) 0%,rgba(4,11,16,.34) 40%,rgba(4,11,16,.08) 68%,transparent 82%),
+    linear-gradient(90deg,rgba(4,11,16,.22),transparent 72%);
+  filter:blur(10px);
+}
+body.taxes-atrium-active .taxes-atrium-view .page-heading h1 {
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-weight:560;
+  letter-spacing:-.052em;
+  font-size:clamp(40px,4.6vw,65px);
+  color:#fbfdff;
+  text-shadow:0 6px 32px rgba(2,8,12,.48),0 1px 0 rgba(255,255,255,.05);
+}
+body.taxes-atrium-active .taxes-atrium-view .eyebrow {
+  color:rgba(241,246,249,.86);
+  text-shadow:0 2px 14px rgba(0,0,0,.36);
+}
+body.taxes-atrium-active .taxes-atrium-view .subtitle {
+  color:rgba(243,247,250,.90);
+  font-size:16px;
+  text-shadow:0 3px 20px rgba(0,0,0,.42);
+}
+body.taxes-atrium-active .taxes-actions {
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+body.taxes-atrium-active .taxes-actions .secondary-btn,
+body.taxes-atrium-active .tax-head-actions .filter-pill,
+body.taxes-atrium-active .tax-head-actions .secondary-btn {
+  color:#f5fafc;
+  background:linear-gradient(145deg,rgba(91,124,141,.53),rgba(49,78,94,.60));
+  border:1px solid rgba(238,249,253,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 10px 24px rgba(0,0,0,.15);
+  backdrop-filter:blur(10px) saturate(1.04);
+  -webkit-backdrop-filter:blur(10px) saturate(1.04);
+}
+body.taxes-atrium-active .taxes-actions .primary-btn,
+body.taxes-atrium-active .tax-head-actions .primary-btn {
+  color:#172027;
+  background:linear-gradient(180deg,#f6ead0,#e9c98b);
+  border:1px solid rgba(255,255,255,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 14px 34px rgba(79,49,13,.20);
+}
+
+/* Frosted Window Bays for tax summary metrics. */
+.tax-metric-grid {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+  margin-bottom:14px;
+}
+body.taxes-atrium-active .tax-metric-grid .metric-card {
+  position:relative;
+  overflow:hidden;
+  min-height:142px;
+  padding:18px 19px;
+  color:#f5f8fa;
+  border:1px solid rgba(240,248,252,.25);
+  background:linear-gradient(145deg,rgba(121,151,167,.39),rgba(77,108,125,.36) 50%,rgba(48,79,95,.43));
+  backdrop-filter:blur(15px) saturate(1.08) contrast(1.01);
+  -webkit-backdrop-filter:blur(15px) saturate(1.08) contrast(1.01);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(255,255,255,.03),0 22px 48px rgba(0,0,0,.17);
+}
+body.taxes-atrium-active .tax-metric-grid .metric-card::before {
+  content:"";
+  position:absolute;
+  inset:-40%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,245,221,.15),transparent 21%),
+    linear-gradient(110deg,transparent 30%,rgba(255,255,255,.055) 43%,rgba(255,255,255,.11) 50%,rgba(255,255,255,.035) 58%,transparent 69%);
+  opacity:.38;
+}
+body.taxes-atrium-active .tax-metric-grid .metric-card > * { position:relative; z-index:1; }
+body.taxes-atrium-active .taxes-atrium-view .metric-head { color:rgba(244,248,250,.88); }
+body.taxes-atrium-active .taxes-atrium-view .metric-value {
+  color:#fff;
+  font-weight:790;
+  text-shadow:0 3px 18px rgba(0,0,0,.34);
+}
+body.taxes-atrium-active .taxes-atrium-view .metric-caption { color:rgba(234,241,245,.80); }
+body.taxes-atrium-active .tax-vehicle-value {
+  font-size:clamp(20.5px,2.15vw,28.5px);
+  line-height:1.08;
+  overflow-wrap:anywhere;
+}
+body.taxes-atrium-active .tax-chip-month {
+  color:#cbe8ff !important;
+  background:rgba(35,76,105,.80) !important;
+  border-color:rgba(142,203,245,.42) !important;
+}
+body.taxes-atrium-active .tax-chip-vehicle {
+  color:#f5dca7 !important;
+  background:rgba(103,77,34,.82) !important;
+  border-color:rgba(236,194,117,.43) !important;
+}
+body.taxes-atrium-active .tax-chip-review {
+  color:#ffd08a !important;
+  background:rgba(119,77,23,.84) !important;
+  border-color:rgba(255,196,111,.48) !important;
+}
+
+/* Mileage / Vehicles section switcher. */
+body.taxes-atrium-active .taxes-segments {
+  width:max-content;
+  max-width:100%;
+  margin:0 0 22px;
+  padding:4px;
+  border:1px solid rgba(239,249,253,.24);
+  background:linear-gradient(145deg,rgba(118,149,166,.38),rgba(61,94,111,.39));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 12px 28px rgba(0,0,0,.13);
+  backdrop-filter:blur(12px) saturate(1.05);
+  -webkit-backdrop-filter:blur(12px) saturate(1.05);
+}
+body.taxes-atrium-active .taxes-segments .segment { color:rgba(237,244,247,.75); }
+body.taxes-atrium-active .taxes-segments .segment.active {
+  color:#fff;
+  background:rgba(221,236,244,.17);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 5px 13px rgba(0,0,0,.12);
+}
+.tax-tab { display:none; }
+.tax-tab.active { display:block; }
+.tax-list-head {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
+  margin:0 0 12px;
+}
+.tax-list-head h2 { color:#f9fcfd; font-size:25.5px; text-shadow:0 2px 14px rgba(0,0,0,.24); }
+.tax-summary-line {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 18px;
+  margin-top:6px;
+  color:rgba(231,239,243,.72);
+  font-size:11px;
+}
+.tax-summary-line span:last-child { color:rgba(199,228,240,.82); }
+.tax-head-actions { display:flex; gap:8px; align-items:center; }
+
+/* Mileage ledger. */
+body.taxes-atrium-active .taxes-atrium-view .data-card {
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(240,248,252,.25);
+  background:linear-gradient(145deg,rgba(100,132,149,.47),rgba(55,87,104,.45) 52%,rgba(39,70,87,.52));
+  backdrop-filter:blur(14px) saturate(1.06);
+  -webkit-backdrop-filter:blur(14px) saturate(1.06);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 22px 50px rgba(0,0,0,.16);
+}
+body.taxes-atrium-active .taxes-atrium-view .data-card::before {
+  content:"";
+  position:absolute;
+  inset:-38%;
+  pointer-events:none;
+  background:linear-gradient(108deg,transparent 35%,rgba(255,255,255,.055) 47%,rgba(255,255,255,.09) 52%,transparent 65%);
+  opacity:.32;
+}
+body.taxes-atrium-active .taxes-atrium-view .data-card > * { position:relative; z-index:1; }
+.mileage-grid {
+  display:grid;
+  grid-template-columns:.76fr 1.28fr .62fr 1.3fr .64fr;
+  gap:14px;
+  align-items:center;
+}
+body.taxes-atrium-active .taxes-atrium-view .table-head {
+  color:rgba(231,239,243,.68);
+  border-color:rgba(237,247,252,.10);
+}
+body.taxes-atrium-active .taxes-atrium-view .table-row {
+  color:#f7fafc;
+  border-color:rgba(237,247,252,.10);
+}
+body.taxes-atrium-active .taxes-atrium-view .table-row:hover { background:rgba(255,255,255,.045); }
+body.taxes-atrium-active .taxes-atrium-view .table-row strong { font-weight:760; }
+body.taxes-atrium-active .taxes-atrium-view .table-row small { color:rgba(229,238,242,.70); }
+body.taxes-atrium-active .taxes-atrium-view .session-pagination {
+  border-color:rgba(238,248,252,.10);
+  background:rgba(9,22,29,.18);
+}
+body.taxes-atrium-active .taxes-atrium-view .pagination-arrow {
+  color:#f7fafc;
+  background:rgba(255,255,255,.07);
+  border-color:rgba(240,248,252,.14);
+}
+body.taxes-atrium-active .taxes-atrium-view .pagination-copy strong { color:#f8fbfc; }
+body.taxes-atrium-active .taxes-atrium-view .pagination-copy small { color:rgba(229,238,242,.63); }
+
+/* Vehicle profiles are source records, not decorative cards. */
+.vehicle-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+}
+.vehicle-card {
+  appearance:none;
+  text-align:left;
+  font:inherit;
+  min-width:0;
+}
+body.taxes-atrium-active .vehicle-card {
+  position:relative;
+  overflow:hidden;
+  min-height:218px;
+  padding:18px;
+  border-radius:18px;
+  color:#f7fafc;
+  border:1px solid rgba(239,248,252,.23);
+  background:linear-gradient(145deg,rgba(121,151,167,.40),rgba(70,102,119,.37) 52%,rgba(46,76,92,.44));
+  backdrop-filter:blur(14px) saturate(1.07);
+  -webkit-backdrop-filter:blur(14px) saturate(1.07);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 20px 44px rgba(0,0,0,.16);
+  cursor:pointer;
+  transition:transform .16s var(--ease),border-color .16s var(--ease),box-shadow .16s var(--ease);
+}
+body.taxes-atrium-active .vehicle-card::before {
+  content:"";
+  position:absolute;
+  inset:-38%;
+  pointer-events:none;
+  background:radial-gradient(circle at var(--atrium-light-x) var(--atrium-light-y),rgba(255,243,218,.12),transparent 23%);
+  opacity:.46;
+}
+body.taxes-atrium-active .vehicle-card > * { position:relative; z-index:1; }
+body.taxes-atrium-active .vehicle-card:hover {
+  transform:translateY(-2px);
+  border-color:rgba(242,250,253,.34);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 26px 50px rgba(0,0,0,.20);
+}
+body.taxes-atrium-active .vehicle-card.primary-vehicle {
+  border-color:rgba(238,198,127,.40);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 22px 46px rgba(0,0,0,.17),0 0 20px rgba(234,185,105,.06);
+}
+.vehicle-card-top {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:20px;
+}
+.vehicle-icon {
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  color:#f5dca7;
+  background:rgba(91,68,32,.44);
+  border:1px solid rgba(234,196,125,.24);
+  font-size:21.5px;
+}
+.vehicle-card > strong {
+  display:block;
+  font-size:19.5px;
+  letter-spacing:-.025em;
+  overflow-wrap:anywhere;
+}
+.vehicle-card > small {
+  display:block;
+  margin-top:5px;
+  color:rgba(230,239,243,.69);
+}
+.vehicle-meta {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-top:24px;
+  padding-top:15px;
+  border-top:1px solid rgba(238,248,252,.10);
+}
+.vehicle-meta span { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.vehicle-meta b { color:#fff; font-size:16px; overflow-wrap:anywhere; }
+.vehicle-meta small { color:rgba(228,237,241,.59); font-size:10px; }
+
+body.taxes-atrium-active .taxes-atrium-view .large-empty {
+  color:#f7fafc;
+  background:linear-gradient(145deg,rgba(114,145,161,.37),rgba(58,89,106,.40));
+  border-color:rgba(238,248,252,.22);
+}
+body.taxes-atrium-active .taxes-atrium-view .large-empty p { color:rgba(231,239,243,.72); }
+body.taxes-atrium-active .taxes-atrium-view .large-empty .secondary-btn {
+  color:#f5fafc;
+  background:rgba(54,84,100,.66);
+  border-color:rgba(238,248,252,.25);
+}
+body.taxes-atrium-active .taxes-note {
+  margin-top:18px;
+  color:rgba(235,243,247,.78);
+  border:1px solid rgba(238,248,252,.19);
+  background:linear-gradient(145deg,rgba(100,130,146,.34),rgba(49,79,95,.38));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 15px 34px rgba(0,0,0,.12);
+  backdrop-filter:blur(11px) saturate(1.04);
+  -webkit-backdrop-filter:blur(11px) saturate(1.04);
+}
+body.taxes-atrium-active .taxes-note strong { color:#f8fbfc; }
+body.taxes-atrium-active .taxes-note small { color:rgba(229,238,242,.67); }
+
+/* Mileage form classification chooser. */
+.mileage-type-switch {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+}
+.mileage-type-switch .expense-type-option { min-height:78px; }
+.mileage-type-switch .expense-type-option.active {
+  border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent),0 10px 26px rgba(40,84,220,.08);
+}
+
+/* Semantic mileage/vehicle pills join the existing visibility system. */
+body.taxes-atrium-active .status-pill,
+body.taxes-atrium-active .muted-chip,
+body.taxes-atrium-active .quiet-badge {
+  border:1px solid rgba(255,255,255,.18) !important;
+  background:rgba(20,31,39,.78) !important;
+  color:#f7fbfd !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 5px 14px rgba(0,0,0,.22) !important;
+  text-shadow:0 1px 7px rgba(0,0,0,.38);
+}
+body.taxes-atrium-active .status-pill.success {
+  color:#8ff0bb !important;
+  background:rgba(24,92,65,.82) !important;
+  border-color:rgba(126,238,177,.46) !important;
+}
+body.taxes-atrium-active .status-pill.void {
+  color:#d7a7ff !important;
+  background:rgba(87,49,118,.84) !important;
+  border-color:rgba(206,148,255,.48) !important;
+}
+body.taxes-atrium-active .status-pill.review {
+  color:#ffd08a !important;
+  background:rgba(119,77,23,.84) !important;
+  border-color:rgba(255,196,111,.50) !important;
+}
+body.taxes-atrium-active .status-pill.accent {
+  color:#b6d0ff !important;
+  background:rgba(44,69,128,.83) !important;
+  border-color:rgba(142,173,255,.48) !important;
+}
+body.taxes-atrium-active .taxes-segments .segment > span {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:18px;
+  min-height:18px;
+  padding:0 5px;
+  margin-left:4px;
+  border-radius:999px;
+  color:rgba(247,251,253,.93);
+  background:rgba(28,43,53,.78);
+  border:1px solid rgba(235,247,252,.24);
+}
+
+/* Safari/iPad: same pre-tinted frosted material, no live backdrop sampling. */
+html.atrium-lite .tax-tab,
+html.atrium-lite .tax-tab.active {
+  animation:none !important;
+  transition:none !important;
+  transform:none !important;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view
+:is(.metric-card,.data-card,.vehicle-card,.taxes-segments,.filter-pill,.taxes-note) {
+  background:linear-gradient(145deg,rgba(139,169,184,.51),rgba(86,119,136,.49) 49%,rgba(58,89,105,.55)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.17),inset 0 -1px 0 rgba(255,255,255,.035),0 18px 38px rgba(0,0,0,.15) !important;
+  contain:paint;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(94,126,143,.65),rgba(56,88,105,.62) 52%,rgba(40,70,87,.66)) !important;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view
+:is(.metric-card,.data-card,.vehicle-card)::before {
+  transition:none !important;
+  animation:none !important;
+  transform:none !important;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view
+:is(.status-pill,.muted-chip,.quiet-badge,.filter-pill) {
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+html.atrium-lite body.taxes-atrium-active .vehicle-card:hover { transform:none; }
+
+/* Navigation now supports five permanent destinations. */
+@media (max-width:920px) {
+  .mobile-nav {
+    grid-template-columns:repeat(2,minmax(0,1fr)) 56px repeat(3,minmax(0,1fr));
+    padding-left:max(4px,env(safe-area-inset-left));
+    padding-right:max(4px,env(safe-area-inset-right));
+  }
+  .mobile-nav-item { min-width:0; }
+  .mobile-nav-item small { font-size:9px; }
+  body.taxes-atrium-active .taxes-atrium-view .page-heading h1 { font-size:clamp(37px,9vw,52.5px); }
+  .tax-metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .vehicle-grid { grid-template-columns:1fr; }
+  .tax-list-head { align-items:flex-start; flex-direction:column; }
+  .mileage-grid.table-head { display:none; }
+  .table-row.mileage-grid {
+    grid-template-columns:1fr 1fr;
+    gap:10px 14px;
+  }
+  .table-row.mileage-grid > span:last-child { grid-column:2; justify-self:end; }
+}
+
+@media (max-width:620px) {
+  .tax-metric-grid { grid-template-columns:1fr; }
+  .taxes-actions { width:100%; justify-content:stretch; }
+  .taxes-actions .secondary-btn,.taxes-actions .primary-btn { flex:1; justify-content:center; }
+  .table-row.mileage-grid { grid-template-columns:1fr; }
+  .table-row.mileage-grid > span:last-child { grid-column:auto; justify-self:start; }
+  .vehicle-meta { gap:5px; }
+}
+
+
+/* ===== Phase 5 typography scale refinement ===============================
+   Slight, hierarchy-preserving type increase. Existing component geometry
+   remains intact; only compact text-bearing controls receive extra breathing
+   room where the larger type could otherwise feel tight. */
+.search-trigger, .icon-btn, .avatar-btn { min-height:40px; }
+.nav-item { min-height:44px; }
+.segmented button, .filter-button, .compact-action, .text-button, .primary-button, .secondary-button { line-height:1.25; }
+input, select, textarea, button { line-height:1.25; }
+.table-row, .session-row, .invoice-row, .payment-row, .expense-row, .mileage-row { line-height:1.35; }
+@media (max-width: 760px) {
+  .mobile-nav-item { min-height:48px; }
+}
+
+/* ===== Phase 5 surface readability refinement =============================
+   Slightly denser frosted containers across all five primary destinations.
+   This is intentionally a small opacity lift: the atrium remains visible,
+   while text and numeric values sit on a calmer local surface. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card,.segment-control,.money-segments,.mini-search,.filter-pill,.records-local-note,.large-empty) {
+  background:linear-gradient(145deg,rgba(180,205,217,.30),rgba(103,136,153,.27) 48%,rgba(70,100,116,.34)) !important;
+}
+body.work-atrium-active .work-atrium-view .data-card,
+body.money-atrium-active .money-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(92,121,138,.45),rgba(58,84,99,.42) 52%,rgba(43,68,83,.49)) !important;
+}
+body.home-atrium-active .home-atrium-view .status-strip {
+  background:linear-gradient(100deg,rgba(69,137,116,.37),rgba(96,144,151,.29) 54%,rgba(71,108,124,.32)) !important;
+}
+body.home-atrium-active .home-atrium-view .roadmap-card {
+  background:linear-gradient(145deg,rgba(150,180,194,.26),rgba(70,100,116,.31)) !important;
+}
+
+/* Taxes joined the navigation after the original four-tab material pass. */
+body.taxes-atrium-active .taxes-atrium-view
+:is(.metric-card,.data-card,.vehicle-card,.taxes-segments,.filter-pill,.taxes-note,.large-empty) {
+  background:linear-gradient(145deg,rgba(139,169,184,.47),rgba(86,119,136,.45) 49%,rgba(58,89,105,.51)) !important;
+}
+body.taxes-atrium-active .taxes-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(94,126,143,.59),rgba(56,88,105,.56) 52%,rgba(40,70,87,.61)) !important;
+}
+
+/* Small text-bearing controls get the same modest readability lift. */
+body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active,.taxes-atrium-active)
+:is(.search-trigger,.icon-btn,.avatar-btn,.secondary-btn,.utility-text-btn,.quiet-badge,.filter-pill) {
+  background-color:rgba(73,103,119,.42) !important;
+}
+
+/* Safari/iPad: preserve the no-flash static frost while making it a touch
+   more opaque. No backdrop-filter is reintroduced. */
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active)
+:is(.home-atrium-view,.work-atrium-view,.money-atrium-view,.records-atrium-view)
+:is(.metric-card,.panel-card,.data-card,.client-card,.receipt-vault-card,.segment-control,.money-segments,.mini-search,.filter-pill,.records-local-note,.large-empty) {
+  background:linear-gradient(145deg,rgba(139,169,184,.56),rgba(86,119,136,.54) 49%,rgba(58,89,105,.60)) !important;
+}
+html.atrium-lite body.work-atrium-active .work-atrium-view .data-card,
+html.atrium-lite body.money-atrium-active .money-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(94,126,143,.69),rgba(56,88,105,.66) 52%,rgba(40,70,87,.70)) !important;
+}
+html.atrium-lite body.home-atrium-active .home-atrium-view .status-strip {
+  background:linear-gradient(100deg,rgba(63,127,107,.62),rgba(84,132,140,.54) 55%,rgba(58,97,114,.56)) !important;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view
+:is(.metric-card,.data-card,.vehicle-card,.taxes-segments,.filter-pill,.taxes-note,.large-empty) {
+  background:linear-gradient(145deg,rgba(139,169,184,.58),rgba(86,119,136,.56) 49%,rgba(58,89,105,.62)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+html.atrium-lite body.taxes-atrium-active .taxes-atrium-view .data-card {
+  background:linear-gradient(145deg,rgba(94,126,143,.70),rgba(56,88,105,.67) 52%,rgba(40,70,87,.71)) !important;
+}
+html.atrium-lite body:is(.home-atrium-active,.work-atrium-active,.money-atrium-active,.records-atrium-active,.taxes-atrium-active)
+:is(.search-trigger,.icon-btn,.avatar-btn,.secondary-btn,.utility-text-btn,.quiet-badge,.filter-pill) {
+  background-color:rgba(70,101,117,.51) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* Phase 6 — Tax Layer */
+.tax-year-control{display:flex;align-items:center;gap:8px;padding:7px 9px 7px 12px;border:1px solid rgba(210,232,240,.24);border-radius:13px;background:linear-gradient(145deg,rgba(31,48,58,.88),rgba(20,34,43,.9));box-shadow:0 9px 24px rgba(0,0,0,.15)}
+.tax-year-control span{font-size:12.5px;font-weight:700;letter-spacing:.04em;color:rgba(225,238,243,.72);text-transform:uppercase}
+.tax-year-control select{appearance:none;border:0;background:transparent;color:#fff;font:700 15px/1.2 inherit;padding:2px 19px 2px 2px;outline:0;cursor:pointer}
+.tax-year-control{position:relative}.tax-year-control::after{content:'⌄';position:absolute;right:10px;top:50%;transform:translateY(-54%);color:rgba(231,243,247,.72);pointer-events:none}
+.tax-chip-income{color:#bff5d7!important;background:rgba(20,84,58,.72)!important;border-color:rgba(90,220,157,.35)!important}.tax-chip-expense{color:#ffe0ae!important;background:rgba(104,68,22,.7)!important;border-color:rgba(235,174,79,.34)!important}.tax-chip-mileage{color:#cfe8ff!important;background:rgba(34,70,105,.72)!important;border-color:rgba(96,167,229,.35)!important}.tax-chip-profit{color:#ddd8ff!important;background:rgba(66,56,111,.72)!important;border-color:rgba(151,139,226,.34)!important}
+.tax-overview-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(290px,.75fr);gap:14px;margin:14px 0}.tax-insight-card,.tax-method-card{border:1px solid rgba(215,233,239,.2);border-radius:20px;background:linear-gradient(145deg,rgba(47,63,72,.88),rgba(29,45,54,.9));box-shadow:0 18px 45px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.06);padding:18px;color:#f6fbfd}.tax-insight-card h2{font-size:24px;margin-top:2px}.tax-flow-list{display:grid;gap:2px;margin-top:15px}.tax-flow-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:12px 4px;border-bottom:1px solid rgba(220,238,244,.1)}.tax-flow-row>span{font-size:14px;color:rgba(230,241,245,.78)}.tax-flow-row>strong{font-size:18px;color:#fff}.tax-flow-row>small{grid-column:1/-1;font-size:12.5px;color:rgba(203,222,229,.6)}.tax-flow-row.total{margin-top:4px;padding-top:15px;border-bottom:0}.tax-flow-row.total>span,.tax-flow-row.total>strong{font-size:19px;font-weight:800}.tax-readiness-list{display:grid;gap:8px;margin:16px 0}.tax-readiness-list div{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:12px;background:rgba(92,60,25,.48);border:1px solid rgba(229,173,91,.2)}.tax-readiness-list div span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(239,174,75,.16);color:#ffd69a;font-weight:900}.tax-readiness-list strong{font-size:13.5px}.tax-ready-state{display:flex;align-items:center;gap:12px;margin-top:17px;padding:15px;border-radius:14px;background:rgba(27,81,60,.4);border:1px solid rgba(99,218,161,.18)}.tax-ready-state>span{font-size:21px;color:#a8f0ca}.tax-ready-state div{display:grid;gap:3px}.tax-ready-state strong{font-size:15px}.tax-ready-state small{color:rgba(209,232,220,.7)}
+.tax-quarter-card{margin:0 0 14px}.tax-quarter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:15px}.tax-quarter{display:grid;gap:4px;padding:13px;border-radius:14px;background:rgba(15,28,35,.42);border:1px solid rgba(215,234,241,.13)}.tax-quarter>span{font-size:12px;font-weight:800;letter-spacing:.08em;color:rgba(203,224,232,.65)}.tax-quarter>strong{font-size:19px}.tax-quarter>small{font-size:11.5px;line-height:1.35;color:rgba(204,222,228,.62)}.tax-disclaimer{margin:13px 1px 0;font-size:12px;line-height:1.5;color:rgba(202,220,227,.62)}
+.tax-mileage-rate-strip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px;padding:10px 13px;border:1px solid rgba(198,224,235,.15);border-radius:13px;background:rgba(30,48,58,.72);color:rgba(226,240,245,.75)}.tax-mileage-rate-strip strong{font-size:13px;color:#f6fbfd}.tax-mileage-rate-strip span{font-size:12.5px}.tax-mileage-rate-strip span+span{padding-left:12px;border-left:1px solid rgba(214,234,241,.15)}
+.tax-deduction-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:14px}.tax-deduction-head,.tax-deduction-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px}.tax-deduction-head{padding:12px 16px 8px;color:rgba(202,220,228,.62);font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.tax-deduction-row{width:100%;padding:13px 16px;border:0;border-top:1px solid rgba(215,234,241,.1);background:transparent;color:#f7fbfd;text-align:left}.tax-deduction-row button{font:inherit}.tax-deduction-row[data-tax-expense-category]{cursor:pointer}.tax-deduction-row[data-tax-expense-category]:hover{background:rgba(224,241,247,.05)}.tax-deduction-row>span{display:grid;gap:3px}.tax-deduction-row>span strong{font-size:14.5px}.tax-deduction-row>span small{font-size:12px;color:rgba(203,221,228,.62)}.tax-deduction-row>strong{font-size:16px}.mileage-deduction-row{background:rgba(40,76,102,.24)}.tax-method-card{align-self:start}.tax-method-card h3{font-size:20px;margin:3px 0 15px}.tax-method-stat{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid rgba(215,234,241,.1)}.tax-method-stat span{font-size:13px;color:rgba(215,231,237,.72)}.tax-method-stat strong{font-size:15px}.tax-method-card p{font-size:12.5px;line-height:1.55;color:rgba(216,231,237,.73);margin:14px 0 8px}.tax-method-card>small{font-size:11.5px;line-height:1.45;color:rgba(197,215,222,.55)}
+html.atrium-lite .tax-insight-card,html.atrium-lite .tax-method-card{backdrop-filter:none;-webkit-backdrop-filter:none;background:linear-gradient(145deg,rgba(53,69,78,.94),rgba(31,47,56,.95))}
+@media(max-width:1050px){.taxes-actions{flex-wrap:wrap}.tax-overview-grid,.tax-deduction-layout{grid-template-columns:1fr}.tax-quarter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.tax-year-control{order:-1}.tax-quarter-grid{grid-template-columns:1fr 1fr}.tax-overview-metrics{grid-template-columns:1fr!important}.taxes-segments{overflow-x:auto;justify-content:flex-start}.taxes-segments .segment{flex:0 0 auto}.tax-flow-row.total>span,.tax-flow-row.total>strong{font-size:17px}}
+
+/* ===== Phase 6 — Home + Money depth hierarchy refinement ================
+   Match the visual hierarchy established by the Taxes Overview: lighter,
+   more transparent summary/header bays above; deeper charcoal-blue frosted
+   surfaces for the detailed content below. Work and Records remain untouched. */
+
+/* HOME — keep status + metric summary bays unchanged; deepen only the
+   detailed lower information surfaces (Attention, Recent Work, Roadmap). */
+body.home-atrium-active .home-atrium-view .two-column > .panel-card,
+body.home-atrium-active .home-atrium-view .roadmap-card {
+  background:linear-gradient(145deg,rgba(47,63,72,.88),rgba(29,45,54,.90)) !important;
+  border-color:rgba(215,233,239,.20) !important;
+  box-shadow:0 18px 45px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.06) !important;
+}
+
+/* MONEY — metrics + section switcher stay on the lighter frosted material;
+   the active ledger itself gets the same deeper material as Taxes detail. */
+body.money-atrium-active .money-atrium-view .money-tab .data-card {
+  background:linear-gradient(145deg,rgba(47,63,72,.88),rgba(29,45,54,.90)) !important;
+  border-color:rgba(215,233,239,.20) !important;
+  box-shadow:0 18px 45px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.06) !important;
+}
+
+/* The explanatory footer belongs to the detail region visually, but remains
+   intentionally quieter than the ledger/card above it. */
+body.money-atrium-active .money-atrium-view .phase-next-note {
+  background:linear-gradient(145deg,rgba(42,57,66,.82),rgba(25,39,48,.84)) !important;
+  border-color:rgba(215,233,239,.16) !important;
+}
+
+/* iPad/Safari no-flash profile: use denser static frost, matching the Taxes
+   detail cards without restoring live backdrop sampling/compositor churn. */
+html.atrium-lite body.home-atrium-active .home-atrium-view .two-column > .panel-card,
+html.atrium-lite body.home-atrium-active .home-atrium-view .roadmap-card,
+html.atrium-lite body.money-atrium-active .money-atrium-view .money-tab .data-card {
+  background:linear-gradient(145deg,rgba(53,69,78,.94),rgba(31,47,56,.95)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+html.atrium-lite body.money-atrium-active .money-atrium-view .phase-next-note {
+  background:linear-gradient(145deg,rgba(49,64,73,.92),rgba(29,44,53,.93)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+/* Phase 7 — Traceability / Evidence */
+.evidence-source-row{cursor:pointer;text-align:left;color:inherit;font:inherit;width:100%;border:0}
+.evidence-source-row:hover{background:rgba(142,207,255,.08);transform:translateY(-1px)}
+.evidence-source-row:focus-visible,.evidence-record-row:focus-visible,.evidence-history summary:focus-visible{outline:2px solid rgba(123,205,255,.85);outline-offset:2px}
+.evidence-total-card{display:grid;gap:4px;padding:22px;border:1px solid rgba(157,211,255,.16);border-radius:20px;background:linear-gradient(145deg,rgba(32,58,76,.86),rgba(16,29,43,.9));box-shadow:inset 0 1px rgba(255,255,255,.08),0 18px 48px rgba(0,0,0,.18)}
+.evidence-total-card small{font-size:10px;letter-spacing:.13em;color:var(--muted)}
+.evidence-total-card strong{font-size:clamp(28px,5vw,42px);letter-spacing:-.04em}
+.evidence-total-card span{color:var(--muted);font-size:13px}
+.evidence-explanation{margin-top:14px}
+.evidence-source-section{margin-top:14px}
+.evidence-record-list{display:grid;gap:7px;margin-top:12px}
+.evidence-record-row{display:grid;grid-template-columns:minmax(0,1fr) auto 12px;align-items:center;gap:12px;width:100%;padding:13px 14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(5,16,27,.26);color:inherit;text-align:left;transition:transform .18s ease,border-color .18s ease,background .18s ease}
+.evidence-record-row:hover{transform:translateX(2px);border-color:rgba(142,207,255,.24);background:rgba(42,84,112,.2)}
+.evidence-record-row>span:first-child{display:grid;gap:3px;min-width:0}
+.evidence-record-row small{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evidence-record-row>span:last-child{color:rgba(197,225,244,.68);font-size:20px}
+.evidence-history{margin-top:14px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(5,14,24,.2);overflow:hidden}
+.evidence-history summary{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 16px;cursor:pointer;list-style:none}
+.evidence-history summary::-webkit-details-marker{display:none}
+.evidence-history summary>span:first-child{display:grid;gap:2px}.evidence-history summary small{color:var(--muted)}
+.evidence-history ol{list-style:none;margin:0;padding:0 16px 15px;display:grid;gap:0}
+.evidence-history li{position:relative;display:flex;gap:12px;padding:9px 0;color:var(--text)}
+.evidence-history li:not(:last-child):before{content:"";position:absolute;left:4px;top:18px;bottom:-9px;width:1px;background:rgba(146,202,235,.16)}
+.evidence-event-dot{width:9px;height:9px;margin-top:5px;border-radius:50%;background:#83c9ec;box-shadow:0 0 0 4px rgba(83,169,215,.1);flex:none}
+.evidence-history li div{display:grid;gap:2px}.evidence-history li strong{text-transform:capitalize;font-size:13px}.evidence-history li small{color:var(--muted);font-size:11px}
+@media(max-width:640px){.evidence-record-row{grid-template-columns:minmax(0,1fr) auto 10px;padding:12px}.evidence-record-row>strong{font-size:13px}.evidence-total-card{padding:18px}}
+@media(prefers-reduced-motion:reduce){.evidence-source-row,.evidence-record-row{transition:none}.evidence-source-row:hover,.evidence-record-row:hover{transform:none}}
+
