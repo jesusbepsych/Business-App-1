@@ -13,6 +13,6 @@ Validation: `node --check app.js` and `node tests/analytics-smoke.test.js` pass.
 
 Suggested device check: create a personal gas purchase; reopen to check remembered use/category; edit the amount; create a mixed-use purchase with a business portion; attach and replace a receipt; open another entry form to confirm its original styling. Check both portrait and landscape and with the keyboard open.
 
-## Atrium recovery
+## Atrium and Analytics recovery
 
-The packaged `styles.css` had been truncated at an exact byte boundary before the Corporate Atrium rules completed. The intact Atrium and Phase 5–6 visual layers are restored in `atrium-recovery.css`, linked after the core stylesheet. Its scene uses the bundled `assets/atrium-primary.jpg` instead of a very large inline data URL, reducing Safari parsing and packaging risk while retaining the existing lite profile.
+The packaged `styles.css` had been truncated at an exact byte boundary before the Corporate Atrium rules completed. It has been rebuilt from the complete, previously working Phase 8 chart-refinement stylesheet, then the Smart Compose rules were applied as an isolated addition. This restores the original embedded photographic scene, all Atrium/Safari profiles, the Home tab visibility rules, and the complete chart/pie/scrubber styling without depending on a separate recovery layer.
