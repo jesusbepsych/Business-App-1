@@ -639,7 +639,9 @@
 
   function openModal(modal) {
     closeModal(false);
-    $('#formSheet').classList.toggle('expense-compose-sheet', modal === $('#formSheet') && ui.formMode === 'expense');
+    const isFormSheet = modal === $('#formSheet');
+    $('#formSheet').classList.toggle('expense-compose-sheet', isFormSheet && ui.formMode === 'expense');
+    $('#formSheet').classList.toggle('payment-compose-sheet', isFormSheet && ui.formMode === 'payment');
     ui.modal = modal;
     overlay.hidden = false;
     modal.hidden = false;
@@ -1624,46 +1626,57 @@
     const rememberedMethod = remembered.method || recentPayment?.method;
     const defaultMethod = existing?.method || (paymentMethods.has(rememberedMethod) ? rememberedMethod : 'zelle');
     $('#formFields').innerHTML = `
-      <div class="payment-type-switch" role="group" aria-label="Payment source">
-        <button type="button" class="payment-type-option ${defaultKind === 'invoice' ? 'active' : ''}" data-payment-kind="invoice"><span>Invoice payment</span><small>Apply money to a sent invoice</small></button>
-        <button type="button" class="payment-type-option ${defaultKind === 'direct' ? 'active' : ''}" data-payment-kind="direct"><span>Other income</span><small>Money received without an invoice</small></button>
-      </div>
+      <label class="compose-prompt"><span>Quick entry <em>optional</em></span><input id="paymentCompose" autocomplete="off" maxlength="180" placeholder="$750 from Jordan via Zelle" aria-describedby="paymentComposeHint" /></label>
+      <p class="compose-hint" id="paymentComposeHint">Describe the amount, payer, and optional method. Type and invoice linkage stay explicit.</p>
       <input type="hidden" name="kind" id="paymentKind" value="${defaultKind}" />
-      <div id="paymentInvoiceFields" ${defaultKind === 'invoice' ? '' : 'hidden'}>
-        <label class="field"><span>Invoice</span><select name="invoiceId" id="paymentInvoice">${invoices.length ? `<option value="">Choose invoice</option>${invoices.map(invoice => `<option value="${invoice.id}" ${invoice.id === selectedInvoiceId ? 'selected' : ''}>${escapeHtml(invoice.number)} · ${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(paymentRemainingBeforeCurrent(invoice, existing), activeBusiness().currency)} remaining</option>`).join('')}` : '<option value="">No unpaid sent invoices</option>'}</select><small id="paymentInvoiceHint">${selectedInvoice ? `${formatMoney(paymentRemainingBeforeCurrent(selectedInvoice, existing), activeBusiness().currency)} can be applied to this invoice.` : 'Only sent invoices with an outstanding balance appear.'}</small></label>
+      <div class="compose-details-heading"><span>Interpreted details</span><small>Edit if needed</small></div>
+      <div class="compose-chips payment-compose-chips">
+        <label class="field"><span>Type</span><select id="paymentKindSelect" aria-label="Payment type"><option value="direct" ${defaultKind === 'direct' ? 'selected' : ''}>Other income</option><option value="invoice" ${defaultKind === 'invoice' ? 'selected' : ''}>Invoice payment</option></select></label>
+        <label class="field" id="paymentDirectChip" ${defaultKind === 'direct' ? '' : 'hidden'}><span>Payer / source</span><input name="sourceName" id="paymentSourceName" maxlength="120" placeholder="Who paid you?" value="${escapeHtml(existing?.sourceName || '')}" /></label>
+        <label class="field" id="paymentInvoiceChip" ${defaultKind === 'invoice' ? '' : 'hidden'}><span>Invoice</span><select name="invoiceId" id="paymentInvoice">${invoices.length ? `<option value="">Choose invoice</option>${invoices.map(invoice => `<option value="${invoice.id}" ${invoice.id === selectedInvoiceId ? 'selected' : ''}>${escapeHtml(invoice.number)} · ${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(paymentRemainingBeforeCurrent(invoice, existing), activeBusiness().currency)} left</option>`).join('')}` : '<option value="">No unpaid sent invoices</option>'}</select></label>
+        <label class="field"><span>Amount · USD</span><input name="amount" id="paymentAmount" required inputmode="decimal" min="0.01" step="0.01" type="number" value="${startingAmountCents ? (startingAmountCents/100).toFixed(2) : ''}" placeholder="0.00" /></label>
+        <label class="field"><span>Method</span><select name="method" id="paymentMethod"><option value="zelle" ${defaultMethod === 'zelle' ? 'selected' : ''}>Zelle</option><option value="venmo" ${defaultMethod === 'venmo' ? 'selected' : ''}>Venmo</option><option value="ach" ${defaultMethod === 'ach' ? 'selected' : ''}>ACH</option><option value="direct_deposit" ${defaultMethod === 'direct_deposit' ? 'selected' : ''}>Direct deposit</option><option value="cash" ${defaultMethod === 'cash' ? 'selected' : ''}>Cash</option><option value="check" ${defaultMethod === 'check' ? 'selected' : ''}>Check</option><option value="card" ${defaultMethod === 'card' ? 'selected' : ''}>Card</option><option value="other" ${defaultMethod === 'other' ? 'selected' : ''}>Other</option></select></label>
+        <label class="field"><span>Date</span><input name="receivedDate" id="paymentReceivedDate" type="date" required value="${escapeHtml(existing?.receivedDate || today)}" /></label>
       </div>
-      <div id="paymentDirectFields" ${defaultKind === 'direct' ? '' : 'hidden'}>
-        <div class="field-row"><label class="field"><span>Source / payer</span><input name="sourceName" id="paymentSourceName" maxlength="120" placeholder="e.g. Client, platform, cash job" value="${escapeHtml(existing?.sourceName || '')}" /></label><label class="field"><span>Client <em>optional</em></span><select name="directClientId" id="paymentDirectClient"><option value="">No linked client</option>${clients.map(client => `<option value="${client.id}" ${client.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}</select></label></div>
-        <label class="field"><span>Description <em>optional</em></span><input name="description" maxlength="180" placeholder="What was this income for?" value="${escapeHtml(existing?.description || '')}" /></label>
-      </div>
-      <div class="field-row payment-core-row"><label class="field"><span>Amount received</span><div class="money-input"><span>$</span><input name="amount" id="paymentAmount" required inputmode="decimal" min="0.01" step="0.01" type="number" value="${startingAmountCents ? (startingAmountCents/100).toFixed(2) : ''}" placeholder="0.00" /></div></label><label class="field"><span>Date received</span><input name="receivedDate" type="date" required value="${escapeHtml(existing?.receivedDate || today)}" /></label></div>
-      <div class="field-row"><label class="field"><span>Method</span><select name="method"><option value="zelle" ${defaultMethod === 'zelle' ? 'selected' : ''}>Zelle</option><option value="venmo" ${defaultMethod === 'venmo' ? 'selected' : ''}>Venmo</option><option value="ach" ${defaultMethod === 'ach' ? 'selected' : ''}>ACH</option><option value="direct_deposit" ${defaultMethod === 'direct_deposit' ? 'selected' : ''}>Direct deposit</option><option value="cash" ${defaultMethod === 'cash' ? 'selected' : ''}>Cash</option><option value="check" ${defaultMethod === 'check' ? 'selected' : ''}>Check</option><option value="card" ${defaultMethod === 'card' ? 'selected' : ''}>Card</option><option value="other" ${defaultMethod === 'other' ? 'selected' : ''}>Other</option></select></label><label class="field"><span>Reference <em>optional</em></span><input name="reference" maxlength="100" placeholder="Confirmation, check #, memo…" value="${escapeHtml(existing?.reference || '')}" /></label></div>
-      <label class="field"><span>Note <em>optional</em></span><textarea name="notes" rows="2" maxlength="500" placeholder="Anything useful about this payment…">${escapeHtml(existing?.notes || '')}</textarea></label>
-      <div class="form-info-note payment-trace-note"><strong>Received-money rule:</strong> this payment becomes money received. A linked invoice remains the billing record and is not counted again as a second cash entry.</div>`;
+      <details class="compose-details payment-compose-details" ${existing?.clientId || existing?.description || existing?.reference || existing?.notes ? 'open' : ''}><summary>Link invoice or add details <span aria-hidden="true">⌄</span></summary><div class="compose-details-body">
+        <p class="payment-invoice-hint" id="paymentInvoiceHint">${selectedInvoice ? `${formatMoney(paymentRemainingBeforeCurrent(selectedInvoice, existing), activeBusiness().currency)} can be applied to this invoice.` : 'Invoice payments require an explicit invoice selection.'}</p>
+        <div id="paymentDirectDetails" ${defaultKind === 'direct' ? '' : 'hidden'}><div class="field-row"><label class="field"><span>Client <em>optional</em></span><select name="directClientId" id="paymentDirectClient"><option value="">No linked client</option>${clients.map(client => `<option value="${client.id}" ${client.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}</select></label><label class="field"><span>Description <em>optional</em></span><input name="description" maxlength="180" placeholder="What was this income for?" value="${escapeHtml(existing?.description || '')}" /></label></div></div>
+        <div class="field-row"><label class="field"><span>Reference <em>optional</em></span><input name="reference" maxlength="100" placeholder="Confirmation, check #, memo…" value="${escapeHtml(existing?.reference || '')}" /></label><label class="field"><span>Note <em>optional</em></span><input name="notes" maxlength="500" placeholder="Anything useful about this payment…" value="${escapeHtml(existing?.notes || '')}" /></label></div>
+        <div class="form-info-note payment-trace-note"><strong>Received-money rule:</strong> this payment becomes money received. A linked invoice remains the billing record and is not counted again as a second cash entry.</div>
+      </div></details>`;
     openModal($('#formSheet'));
-    setupPaymentFormInteractions(existing);
+    setupPaymentFormInteractions(existing, defaultKind);
   }
 
-  function setupPaymentFormInteractions(existing = null) {
+  function setupPaymentFormInteractions(existing = null, initialKind = 'direct') {
     const kindInput = $('#paymentKind');
-    const invoiceFields = $('#paymentInvoiceFields');
-    const directFields = $('#paymentDirectFields');
+    const kindSelect = $('#paymentKindSelect');
+    const invoiceChip = $('#paymentInvoiceChip');
+    const directChip = $('#paymentDirectChip');
+    const directDetails = $('#paymentDirectDetails');
     const invoiceSelect = $('#paymentInvoice');
     const amountInput = $('#paymentAmount');
+    const methodSelect = $('#paymentMethod');
+    const sourceInput = $('#paymentSourceName');
+    const compose = $('#paymentCompose');
+    const composeHint = $('#paymentComposeHint');
     const hint = $('#paymentInvoiceHint');
 
     function setKind(kind) {
       kindInput.value = kind;
-      $$('[data-payment-kind]', $('#formFields')).forEach(btn => btn.classList.toggle('active', btn.dataset.paymentKind === kind));
-      invoiceFields.hidden = kind !== 'invoice';
-      directFields.hidden = kind !== 'direct';
+      kindSelect.value = kind;
+      invoiceChip.hidden = kind !== 'invoice';
+      directChip.hidden = kind !== 'direct';
+      directDetails.hidden = kind !== 'direct';
+      hint.hidden = kind !== 'invoice';
       if (kind === 'invoice') refreshInvoice(false);
+      if (compose.value.trim()) applyCompose();
     }
 
     function refreshInvoice(forceAmount = true) {
       const invoice = invoiceById(invoiceSelect?.value);
       if (!invoice) {
-        if (hint) hint.textContent = 'Only sent invoices with an outstanding balance appear.';
+        if (hint) hint.textContent = 'Invoice payments require an explicit unpaid sent invoice.';
         return;
       }
       const remaining = paymentRemainingBeforeCurrent(invoice, existing);
@@ -1671,9 +1684,58 @@
       if (forceAmount && amountInput) amountInput.value = remaining ? (remaining/100).toFixed(2) : '';
     }
 
-    $$('[data-payment-kind]', $('#formFields')).forEach(btn => btn.addEventListener('click', () => setKind(btn.dataset.paymentKind)));
-    invoiceSelect?.addEventListener('change', () => refreshInvoice(true));
-    setKind(kindInput.value);
+    function applyCompose() {
+      const parsed = parsePaymentCompose(compose.value);
+      compose.setCustomValidity(parsed.error || '');
+      if (parsed.error) { composeHint.textContent = parsed.error; return; }
+      if (!parsed.amount) {
+        composeHint.textContent = 'Describe the amount, payer, and optional method. Type and invoice linkage stay explicit.';
+        return;
+      }
+      amountInput.value = parsed.amount;
+      if (parsed.method) methodSelect.value = parsed.method;
+      if (kindInput.value === 'direct') {
+        sourceInput.value = parsed.source;
+        composeHint.textContent = 'Amount, payer, and recognized method filled in. Review, then record payment.';
+      } else {
+        composeHint.textContent = 'Amount and recognized method filled in. Choose the invoice explicitly, then record payment.';
+      }
+    }
+
+    function clearComposeAfterEdit() {
+      if (!compose.value) return;
+      compose.value = '';
+      compose.setCustomValidity('');
+      composeHint.textContent = 'Using your edited fields. Type and invoice linkage stay explicit.';
+    }
+
+    compose.addEventListener('input', applyCompose);
+    [amountInput, sourceInput].forEach(input => input?.addEventListener('input', clearComposeAfterEdit));
+    methodSelect.addEventListener('change', clearComposeAfterEdit);
+    kindSelect.addEventListener('change', event => setKind(event.target.value));
+    invoiceSelect?.addEventListener('change', () => { clearComposeAfterEdit(); refreshInvoice(true); });
+    setKind(kindInput.value || initialKind);
+  }
+
+  // Deliberately narrow and local: it never guesses payment type or invoice linkage.
+  function parsePaymentCompose(text) {
+    if (!text.trim()) return {};
+    const match = text.trim().match(/^\$?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s+from\s+(.+)$/i);
+    const invalid = 'Use “750 from Jordan via Zelle” with a positive amount and payer, or clear quick entry and edit the fields.';
+    if (!match) return { error: invalid };
+    const numericAmount = Number(match[1].replace(/,/g, ''));
+    let source = match[2].trim();
+    let method = '';
+    const viaIndex = source.toLowerCase().lastIndexOf(' via ');
+    if (viaIndex >= 0) {
+      const methodText = source.slice(viaIndex + 5).trim().toLowerCase().replace(/[._-]+/g, ' ').replace(/\s+/g, ' ');
+      source = source.slice(0, viaIndex).trim();
+      const methodAliases = { zelle:'zelle', venmo:'venmo', ach:'ach', 'direct deposit':'direct_deposit', cash:'cash', check:'check', cheque:'check', card:'card', other:'other' };
+      method = methodAliases[methodText] || '';
+      if (!method) return { error: 'Method not recognized. Try Zelle, Venmo, ACH, direct deposit, cash, check, card, or omit “via”.' };
+    }
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0 || !source || source.length > 120) return { error: invalid };
+    return { amount: numericAmount.toFixed(2), source, method };
   }
 
   function savePayment(form) {

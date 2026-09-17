@@ -364,6 +364,26 @@ h2 { font-size:21.5px; margin:0; letter-spacing:-.035em; }
 .utility-text-btn:hover { background:var(--accent-soft); }
 
 .segment-control { display:inline-flex; padding:4px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.52); margin-bottom:18px; }
+.gold-segment-bar { position:relative; isolation:isolate; }
+.gold-segment-bar::after {
+  content:"";
+  position:absolute;
+  z-index:2;
+  inset:-1px;
+  padding:1.25px;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(112deg,rgba(217,167,73,.28) 0%,rgba(255,231,157,.82) 18%,rgba(191,129,39,.36) 39%,rgba(255,241,186,.92) 55%,rgba(202,145,49,.3) 76%,rgba(255,221,130,.7) 100%);
+  background-size:240% 100%;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+  animation:goldSegmentShimmer 7s ease-in-out infinite;
+  filter:drop-shadow(0 0 3px rgba(228,178,72,.13));
+}
+@keyframes goldSegmentShimmer { 0%,18%{background-position:100% 50%} 58%,100%{background-position:0 50%} }
+@media(prefers-reduced-motion:reduce){.gold-segment-bar::after{animation:none;background-position:50% 50%}}
 .segment { min-height:36px; border:0; border-radius:10px; background:transparent; padding:0 14px; color:var(--muted); font-weight:700; font-size:13px; cursor:pointer; }
 .segment span { display:inline-grid; place-items:center; min-width:18px; height:18px; margin-left:5px; padding:0 5px; border-radius:999px; background:var(--surface-2); font-size:10px; }
 .segment.active { color:var(--text); background:var(--surface-solid); box-shadow:0 4px 14px rgba(19,29,52,.07); }
@@ -465,7 +485,7 @@ h2 { font-size:21.5px; margin:0; letter-spacing:-.035em; }
 .roadmap-steps .current { color:var(--accent); font-weight:800; }
 
 .form-sheet { width:min(650px,calc(100vw - 32px)); max-height:min(88vh,820px); overflow:auto; }
-.form-sheet.expense-compose-sheet {
+.form-sheet.expense-compose-sheet,.form-sheet.payment-compose-sheet {
   width:min(960px,calc(100vw - 40px));
   background:linear-gradient(135deg,rgba(69,82,89,.97),rgba(28,39,48,.98));
   border:1px solid rgba(206,233,226,.3);
@@ -473,35 +493,44 @@ h2 { font-size:21.5px; margin:0; letter-spacing:-.035em; }
   color:#edf5f2;
   backdrop-filter:none;
 }
-.expense-compose-sheet .compose-prompt { display:grid; gap:10px; }
+.expense-compose-sheet .compose-prompt,.payment-compose-sheet .compose-prompt { display:grid; gap:10px; }
 .compose-prompt > span { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#ccdcd7; }
 .compose-prompt em { font-style:normal; opacity:.7; letter-spacing:0; text-transform:none; }
-.expense-compose-sheet .compose-prompt input { width:100%; min-height:88px; padding:18px 24px; font:inherit; font-size:clamp(25px,4vw,38px); color:#f4fbf8; background:#ffffff06; border:1px solid #cbddd64d; border-radius:18px; }
-.expense-compose-sheet input::placeholder { color:#bfcec7; opacity:.75; }
+.expense-compose-sheet .compose-prompt input,.payment-compose-sheet .compose-prompt input { width:100%; min-height:88px; padding:18px 24px; font:inherit; font-size:clamp(25px,4vw,38px); color:#f4fbf8; background:#ffffff06; border:1px solid #cbddd64d; border-radius:18px; }
+.expense-compose-sheet input::placeholder,.payment-compose-sheet input::placeholder { color:#bfcec7; opacity:.75; }
 .compose-hint { font-size:12px; line-height:1.5; color:#b8ccc5; margin:10px 2px 20px; }
 .compose-chips { display:grid; grid-template-columns:1fr 1.3fr .9fr 1.2fr 1.2fr; gap:10px; }
-.expense-compose-sheet .field { min-width:0; }
-.expense-compose-sheet .field > span { color:#c6d9d2; }
-.expense-compose-sheet .field input,.expense-compose-sheet .field select { width:100%; min-width:0; min-height:48px; background:#18292a55; color:#f0f8f5; border:1px solid #a1d9c46b; border-radius:14px; color-scheme:dark; }
-.expense-compose-sheet .field select option { background:#24363d; color:#f0f8f5; }
-.expense-compose-sheet input:focus-visible,.expense-compose-sheet select:focus-visible,.expense-compose-sheet summary:focus-visible { outline:2px solid #a6e4cc; outline-offset:3px; }
+.expense-compose-sheet .field,.payment-compose-sheet .field { min-width:0; }
+.expense-compose-sheet .field > span,.payment-compose-sheet .field > span { color:#c6d9d2; }
+.expense-compose-sheet .field input,.expense-compose-sheet .field select,.payment-compose-sheet .field input,.payment-compose-sheet .field select { width:100%; min-width:0; min-height:48px; background:#18292a55; color:#f0f8f5; border:1px solid #a1d9c46b; border-radius:14px; color-scheme:dark; }
+.expense-compose-sheet .field select option,.payment-compose-sheet .field select option { background:#24363d; color:#f0f8f5; }
+.expense-compose-sheet input:focus-visible,.expense-compose-sheet select:focus-visible,.expense-compose-sheet summary:focus-visible,.payment-compose-sheet input:focus-visible,.payment-compose-sheet select:focus-visible,.payment-compose-sheet summary:focus-visible { outline:2px solid #a6e4cc; outline-offset:3px; }
 .expense-compose-sheet #expenseAmountRow { margin-top:12px; }
 .compose-details { margin-top:20px; border:1px solid #ccded52e; border-radius:16px; background:#ffffff04; }
 .compose-details > summary { cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; padding:19px 20px; min-height:56px; color:#d3e2dc; }
 .compose-details > summary::-webkit-details-marker { display:none; }
 .compose-details[open] > summary > span { transform:rotate(180deg); }
 .compose-details-body { padding:0 18px 18px; display:grid; gap:15px; }
-.expense-compose-sheet .primary-btn { background:linear-gradient(120deg,#a6e0c7,#86cbb3); color:#12362b; min-width:180px; min-height:52px; border-radius:15px; box-shadow:0 4px 22px #98dbc31a; }
-.expense-compose-sheet .form-actions { border:0; margin-top:18px; padding-top:0; }
-.expense-compose-sheet .sheet-head h2 { color:#edf5f2; }
+.expense-compose-sheet .primary-btn,.payment-compose-sheet .primary-btn { background:linear-gradient(120deg,#a6e0c7,#86cbb3); color:#12362b; min-width:180px; min-height:52px; border-radius:15px; box-shadow:0 4px 22px #98dbc31a; }
+.expense-compose-sheet .form-actions,.payment-compose-sheet .form-actions { border:0; margin-top:18px; padding-top:0; }
+.expense-compose-sheet .sheet-head h2,.payment-compose-sheet .sheet-head h2 { color:#edf5f2; }
+.compose-details-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 2px 10px; color:#d7e5e0; font-size:12px; font-weight:750; }
+.compose-details-heading small { color:#aebfba; font-size:10px; font-weight:600; }
+.payment-compose-sheet .payment-compose-chips { grid-template-columns:1fr 1.45fr .9fr 1fr 1fr; }
+.payment-compose-sheet .payment-invoice-hint { margin:0; color:#b8ccc5; font-size:11px; line-height:1.45; }
+.payment-compose-sheet .payment-trace-note { color:#b8ccc5; }
+.payment-compose-sheet .payment-trace-note strong { color:#96dbc1; }
 .expense-compose-sheet .optional-fields,.expense-compose-sheet .receipt-upload-card { background:#1c2d354d; border-color:#c3ded530; color:#e3eee9; }
 .expense-compose-sheet .review-toggle small,.expense-compose-sheet .receipt-upload-copy small { color:#b8ccc5; }
 @media(max-width:700px) {
-  .form-sheet.expense-compose-sheet { width:calc(100vw - 20px); max-height:90dvh; left:10px; bottom:10px; border-radius:22px; transform:none; animation:mobileSheetIn .22s var(--ease); }
+  .form-sheet.expense-compose-sheet,.form-sheet.payment-compose-sheet { width:calc(100vw - 20px); max-height:90dvh; left:10px; bottom:10px; border-radius:22px; transform:none; animation:mobileSheetIn .22s var(--ease); }
   .compose-chips { grid-template-columns:1fr 1fr; }
   .compose-chips .field:nth-child(2) { grid-column:2; }
   .compose-chips .field:last-child { grid-column:1 / -1; }
-  .expense-compose-sheet .compose-prompt input { padding:16px; min-height:76px; }
+  .expense-compose-sheet .compose-prompt input,.payment-compose-sheet .compose-prompt input { padding:16px; min-height:76px; }
+  .payment-compose-sheet .payment-compose-chips { grid-template-columns:1fr 1fr; }
+  .payment-compose-sheet .payment-compose-chips .field:nth-child(2) { grid-column:2; }
+  .payment-compose-sheet .payment-compose-chips .field:last-child { grid-column:1 / -1; }
 }
 #dynamicForm { display:flex; flex-direction:column; }
 #formFields { display:flex; flex-direction:column; gap:14px; }

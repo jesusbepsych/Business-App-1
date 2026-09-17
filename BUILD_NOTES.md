@@ -315,3 +315,10 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Explicit context continues to win—for example, opening a payment from an invoice selects that invoice regardless of the remembered payment type.
 - Replaced the new-expense category menu with Food, Gas, Parking, Car, Subscriptions, Misc, Fees, and Work Equipment.
 - Preserved legacy category labels and historical rollups without rewriting existing Expense source records.
+## Revision 7 — Quick Receive payment composer
+
+- Replaced the long payment form with the same calm, compact Smart Compose language used by expenses.
+- Added optional local parsing for `amount from payer via method`, with editable interpreted fields and a narrow recognized-method list.
+- Kept payment type, date, and invoice linkage explicit; no accounting classification or invoice relationship is inferred.
+- Preserved invoice outstanding-balance limits, received-money traceability, remembered type/method defaults, and all stored payment fields.
+- Added responsive two-column behavior for phone/iPad widths without changing the Atrium scene or Home analytics wiring.
