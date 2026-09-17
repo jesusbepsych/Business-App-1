@@ -96,7 +96,7 @@ This checkpoint activates the outgoing-money side of Business Ledger while prese
 - Invoices, partial/full payments, and direct income
 - Expenses with Business / Mixed / Personal use classification
 - Separate original total and business-use amount
-- Bookkeeping categories including supplies, vehicle/fuel, parking/tolls, phone/internet, software, training, insurance, marketing, meals, fees, equipment, and other
+- Streamlined bookkeeping categories: Food, Gas, Parking, Car, Subscriptions, Misc, Fees, and Work Equipment
 - Business-purpose notes and optional client/session linking
 - Needs Review queue integrated with Home Attention
 - Optional receipt image/PDF attachment
@@ -177,3 +177,9 @@ Phase 8 expands Home with a calm analytics workspace. It adds selectable ranges,
 # Phase 8 Analytics Chart Refinement
 
 This refinement adds proportional currency axes, a continuously scrubbable monthly net-movement chart, a separate Income vs Expenses trend, and small traceable donut charts for income sources and expense categories. Every visualization responds to the Analytics date-range control and remains derived from authoritative source records.
+
+# Entry Memory + Expense Category Refinement
+
+Successful new entries now remember their recurring selections per workspace. New expenses reopen with the last submitted classification and category; the same principle also carries forward relevant selections for payments, sessions, invoices, mileage, clients, and vehicles. On the first use after this update, compatible choices are inferred from the newest existing record. Explicit launch context—such as recording a payment from a specific invoice—continues to take priority. Abandoned forms and edits do not change these defaults.
+
+New expense entries use Food, Gas, Parking, Car, Subscriptions, Misc, Fees, and Work Equipment. Existing expenses retain their original saved category and label, including when edited or viewed in historical analytics and tax summaries.

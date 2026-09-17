@@ -307,3 +307,11 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Donut slices remain traceable and open the exact Payment or Expense records represented by the selected slice.
 - All charts, pies, KPIs, rankings, and evidence predicates use the single top-level Analytics range selection.
 - No transaction model, stored aggregate, or schema behavior changed.
+
+# Entry Memory + Expense Categories
+
+- Added workspace-specific remembered defaults for recurring creation flows: expense classification/category, payment type/method, session client/time, invoice client, mileage class/vehicle, client color/status, and vehicle status.
+- Defaults update only after a successful new record. Cancelled forms and edits do not unexpectedly change the next-entry state.
+- Explicit context continues to win—for example, opening a payment from an invoice selects that invoice regardless of the remembered payment type.
+- Replaced the new-expense category menu with Food, Gas, Parking, Car, Subscriptions, Misc, Fees, and Work Equipment.
+- Preserved legacy category labels and historical rollups without rewriting existing Expense source records.

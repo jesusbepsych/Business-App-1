@@ -3,12 +3,17 @@
 
   const STORAGE_KEY = 'business-ledger:v0.2';
   const SIDEBAR_COLLAPSE_KEY = 'business-ledger-sidebar-collapsed';
+  const ENTRY_DEFAULTS_KEY = 'business-ledger-entry-defaults:v1';
   const nowIso = () => new Date().toISOString();
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   const CLIENT_COLOR_KEYS = ['blue','teal','green','amber','coral','purple','pink','sky'];
   const EXPENSE_CATEGORIES = [
-    ['supplies','Supplies'],['vehicle_fuel','Vehicle & fuel'],['parking_tolls','Parking & tolls'],['phone_internet','Phone & internet'],['software','Software'],['training','Training & education'],['insurance','Insurance'],['marketing','Marketing'],['meals','Meals'],['fees','Fees'],['equipment','Equipment'],['other','Other']
+    ['food','Food'],['gas','Gas'],['parking','Parking'],['car','Car'],['subscriptions','Subscriptions'],['misc','Misc'],['fees','Fees'],['work_equipment','Work Equipment']
   ];
+  const LEGACY_EXPENSE_CATEGORIES = [
+    ['supplies','Supplies'],['vehicle_fuel','Vehicle & fuel'],['parking_tolls','Parking & tolls'],['phone_internet','Phone & internet'],['software','Software'],['training','Training & education'],['insurance','Insurance'],['marketing','Marketing'],['meals','Meals'],['equipment','Equipment'],['other','Other']
+  ];
+  const EXPENSE_CATEGORY_LABELS = Object.fromEntries([...LEGACY_EXPENSE_CATEGORIES, ...EXPENSE_CATEGORIES]);
   const defaultClientColorForIndex = (index = 0) => CLIENT_COLOR_KEYS[Math.abs(Number(index) || 0) % CLIENT_COLOR_KEYS.length];
 
   const initialData = {
@@ -194,6 +199,27 @@
   const repository = new LocalRepository();
   const receiptBlobStore = new ReceiptBlobStore();
   const data = repository.load();
+  const entryDefaults = (() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(ENTRY_DEFAULTS_KEY) || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  })();
+  function entryDefaultsFor(formType) {
+    return entryDefaults[data.activeBusinessId]?.[formType] || {};
+  }
+  function rememberEntryDefaults(formType, selections) {
+    const businessId = data.activeBusinessId;
+    if (!businessId || !formType || !selections || typeof selections !== 'object') return;
+    entryDefaults[businessId] ||= {};
+    entryDefaults[businessId][formType] = { ...(entryDefaults[businessId][formType] || {}), ...selections };
+    try { localStorage.setItem(ENTRY_DEFAULTS_KEY, JSON.stringify(entryDefaults)); } catch (error) { console.warn('Could not save entry defaults.', error); }
+  }
+  function mostRecentRecord(records, dateField = 'createdAt') {
+    return (records || []).slice().sort((a,b) => `${b?.[dateField] || ''}${b?.createdAt || ''}`.localeCompare(`${a?.[dateField] || ''}${a?.createdAt || ''}`))[0] || null;
+  }
   const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsRange: '6m', workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null, taxTab: 'overview', taxYear: null, mileageFilter: 'all', mileagePage: 1, mileagePageSize: 7 };
   let homeRecentRotationTimer = null;
   let homeRecentSignature = '';
@@ -613,6 +639,7 @@
 
   function openModal(modal) {
     closeModal(false);
+    $('#formSheet').classList.toggle('expense-compose-sheet', modal === $('#formSheet') && ui.formMode === 'expense');
     ui.modal = modal;
     overlay.hidden = false;
     modal.hidden = false;
@@ -1114,7 +1141,7 @@
     return ({ cash:'Cash', check:'Check', zelle:'Zelle', venmo:'Venmo', ach:'ACH', direct_deposit:'Direct deposit', card:'Card', other:'Other' })[method] || 'Other';
   }
 
-  function expenseCategoryLabel(category) { return Object.fromEntries(EXPENSE_CATEGORIES)[category] || 'Other'; }
+  function expenseCategoryLabel(category) { return EXPENSE_CATEGORY_LABELS[category] || 'Misc'; }
   function expenseClassLabel(value) { return ({ business:'Business', mixed:'Mixed', personal:'Personal' })[value] || 'Business'; }
   function expenseClassStatus(value) { return value === 'business' ? 'success' : value === 'mixed' ? 'accent' : 'void'; }
   function fileSizeLabel(bytes = 0) { if (bytes < 1024) return `${bytes} B`; if (bytes < 1024*1024) return `${(bytes/1024).toFixed(1)} KB`; return `${(bytes/1024/1024).toFixed(1)} MB`; }
@@ -1276,7 +1303,8 @@
     if (existing?.status === 'void') { showToast('Voided invoices are preserved as read-only records.'); return; }
     if (existing && invoicePayments(existing).length) { showToast('Correct or delete linked payments before editing this invoice.'); return; }
     ui.invoiceFormId = existingId;
-    const selectedClientId = existing?.clientId || clientId || (sessionId ? data.sessions.find(s => s.id === sessionId)?.clientId : '') || (clients.length === 1 ? clients[0].id : '');
+    const rememberedClientId = entryDefaultsFor('invoice').clientId || mostRecentRecord(businessInvoices(),'issueDate')?.clientId;
+    const selectedClientId = existing?.clientId || clientId || (sessionId ? data.sessions.find(s => s.id === sessionId)?.clientId : '') || (clients.some(client => client.id === rememberedClientId) ? rememberedClientId : '') || (clients.length === 1 ? clients[0].id : '');
     const today = businessToday();
     const issueDate = existing?.issueDate || today;
     const dueDate = existing?.dueDate || addDays(issueDate, activeBusiness().invoiceSettings?.defaultDueDays ?? 7);
@@ -1420,6 +1448,7 @@
     const sender = activeBusiness();
     const senderSnapshot = { displayName: sender.legalName || sender.displayName, senderEmail: sender.invoiceSettings?.senderEmail || '', senderPhone: sender.invoiceSettings?.senderPhone || '', senderAddress: sender.invoiceSettings?.senderAddress || '', paymentInstructions: sender.invoiceSettings?.paymentInstructions || '' };
 
+    const creating = !ui.invoiceFormId;
     let invoice;
     if (ui.invoiceFormId) {
       invoice = invoiceById(ui.invoiceFormId);
@@ -1437,6 +1466,7 @@
       persist('created', 'Invoice', invoice.id, { number: invoice.number });
       showToast(`${invoice.number} saved as draft`);
     }
+    if (creating) rememberEntryDefaults('invoice', { clientId });
     ui.invoiceFormId = null;
     closeModal();
     renderAll();
@@ -1575,7 +1605,11 @@
     const existing = existingId ? paymentById(existingId) : null;
     const invoices = eligiblePaymentInvoices(existing);
     const preselectedInvoice = invoiceId ? invoiceById(invoiceId) : existing?.invoiceId ? invoiceById(existing.invoiceId) : null;
-    const defaultKind = preselectedInvoice ? 'invoice' : existing?.kind ? existing.kind : invoices.length ? 'invoice' : 'direct';
+    const remembered = entryDefaultsFor('payment');
+    const recentPayment = mostRecentRecord(businessPayments(),'receivedDate');
+    const priorKind = remembered.kind || recentPayment?.kind;
+    const rememberedKind = priorKind === 'direct' || (priorKind === 'invoice' && invoices.length) ? priorKind : null;
+    const defaultKind = preselectedInvoice ? 'invoice' : existing?.kind ? existing.kind : rememberedKind || (invoices.length ? 'invoice' : 'direct');
     ui.formMode = 'payment';
     ui.formRecordId = existingId;
     $('#formEyebrow').textContent = existing ? 'EDIT PAYMENT' : 'MONEY RECEIVED';
@@ -1586,7 +1620,9 @@
     const selectedInvoice = selectedInvoiceId ? invoiceById(selectedInvoiceId) : null;
     const startingAmountCents = existing?.amountCents ?? (selectedInvoice ? paymentRemainingBeforeCurrent(selectedInvoice, existing) : 0);
     const clients = businessClients();
-    const defaultMethod = existing?.method || businessPayments().slice().sort((a,b) => `${b.receivedDate || ''}${b.createdAt || ''}`.localeCompare(`${a.receivedDate || ''}${a.createdAt || ''}`))[0]?.method || 'zelle';
+    const paymentMethods = new Set(['zelle','venmo','ach','direct_deposit','cash','check','card','other']);
+    const rememberedMethod = remembered.method || recentPayment?.method;
+    const defaultMethod = existing?.method || (paymentMethods.has(rememberedMethod) ? rememberedMethod : 'zelle');
     $('#formFields').innerHTML = `
       <div class="payment-type-switch" role="group" aria-label="Payment source">
         <button type="button" class="payment-type-option ${defaultKind === 'invoice' ? 'active' : ''}" data-payment-kind="invoice"><span>Invoice payment</span><small>Apply money to a sent invoice</small></button>
@@ -1683,6 +1719,7 @@
     } else {
       const payment = { id: uid('payment'), businessId: data.activeBusinessId, ...payload, createdAt: nowIso(), updatedAt: nowIso() };
       data.payments.push(payment);
+      rememberEntryDefaults('payment', { kind: payment.kind, method: payment.method });
       persist('created', 'Payment', payment.id, { kind: payment.kind, invoiceId: payment.invoiceId, amountCents: payment.amountCents });
       ui.formRecordId = payment.id;
       showToast(payment.kind === 'invoice' ? `Payment applied to ${payment.invoiceNumberSnapshot}` : 'Income recorded');
@@ -1741,28 +1778,39 @@
     $('#formSheet').classList.remove('session-form-sheet');
     const existing = existingId ? expenseById(existingId) : null;
     const clients = businessClients();
-    const recentCategory = businessExpenses().slice().sort((a,b) => `${b.date || ''}${b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.createdAt || ''}`))[0]?.category || 'supplies';
-    const selectedCategory = existing?.category || recentCategory;
-    const classification = existing?.classification || 'business';
+    const remembered = entryDefaultsFor('expense');
+    const recentExpense = mostRecentRecord(businessExpenses(),'date');
+    const activeCategoryKeys = new Set(EXPENSE_CATEGORIES.map(([key]) => key));
+    const priorCategory = remembered.category || recentExpense?.category;
+    const priorClassification = remembered.classification || recentExpense?.classification;
+    const selectedCategory = existing?.category || (activeCategoryKeys.has(priorCategory) ? priorCategory : 'food');
+    const classification = existing?.classification || (['business','mixed','personal'].includes(priorClassification) ? priorClassification : 'business');
+    const categoryOptions = existing && !activeCategoryKeys.has(selectedCategory)
+      ? [[selectedCategory, `${expenseCategoryLabel(selectedCategory)} · previous category`], ...EXPENSE_CATEGORIES]
+      : EXPENSE_CATEGORIES;
     const existingReceipt = existing?.receiptId ? receiptById(existing.receiptId) : null;
     ui.formMode = 'expense'; ui.formRecordId = existingId;
     $('#formEyebrow').textContent = existing ? 'EDIT EXPENSE' : 'MONEY SPENT';
     $('#formTitle').textContent = existing ? (existing.merchant || 'Expense') : 'New expense';
     $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Save expense';
     $('#formFields').innerHTML = `
-      <div class="expense-type-switch" role="group" aria-label="Expense use">
-        <button type="button" class="expense-type-option ${classification === 'business' ? 'active' : ''}" data-expense-class="business"><span>Business</span><small>100% business use</small></button>
-        <button type="button" class="expense-type-option ${classification === 'mixed' ? 'active' : ''}" data-expense-class="mixed"><span>Mixed</span><small>Business + personal</small></button>
-        <button type="button" class="expense-type-option ${classification === 'personal' ? 'active' : ''}" data-expense-class="personal"><span>Personal</span><small>Track, not business</small></button>
-      </div>
+      <label class="compose-prompt"><span>Quick entry <em>optional</em></span><input id="expenseCompose" autocomplete="off" maxlength="160" placeholder="$40 at Shell" aria-describedby="expenseComposeHint" /></label>
+      <p class="compose-hint" id="expenseComposeHint">Type an amount at a merchant, or use the fields below. Category and use stay as selected.</p>
       <input type="hidden" name="classification" id="expenseClassification" value="${classification}" />
-      <div class="field-row three"><label class="field"><span>Date</span><input name="date" type="date" required value="${escapeHtml(existing?.date || businessToday())}" /></label><label class="field"><span>Merchant / source</span><input name="merchant" maxlength="120" required placeholder="e.g. Target" value="${escapeHtml(existing?.merchant || '')}" /></label><label class="field"><span>Amount</span><div class="money-input"><span>$</span><input name="total" id="expenseTotal" required inputmode="decimal" min="0.01" step="0.01" type="number" placeholder="0.00" value="${existing ? (existing.totalCents/100).toFixed(2) : ''}" /></div></label></div>
-      <div class="field-row expense-amount-row ${classification === 'mixed' ? '' : 'single'}" id="expenseAmountRow"><label class="field"><span>Category</span><select name="category">${EXPENSE_CATEGORIES.map(([value,label]) => `<option value="${value}" ${selectedCategory === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select></label><label class="field" id="expenseBusinessAmountField" ${classification === 'mixed' ? '' : 'hidden'}><span>Business portion</span><div class="money-input"><span>$</span><input name="businessAmount" id="expenseBusinessAmount" inputmode="decimal" min="0" step="0.01" type="number" placeholder="0.00" value="${existing?.classification === 'mixed' ? (existing.businessCents/100).toFixed(2) : ''}" /></div></label></div>
+      <div class="compose-chips">
+        <label class="field"><span>Use</span><select id="expenseUse">${['personal','business','mixed'].map(value => `<option value="${value}" ${classification === value ? 'selected' : ''}>${value[0].toUpperCase() + value.slice(1)}</option>`).join('')}</select></label>
+        <label class="field"><span>Merchant</span><input name="merchant" id="expenseMerchant" maxlength="120" required placeholder="Merchant" value="${escapeHtml(existing?.merchant || '')}" /></label>
+        <label class="field"><span>Amount · USD</span><input name="total" id="expenseTotal" required inputmode="decimal" min="0.01" step="0.01" type="number" placeholder="0.00" value="${existing ? (existing.totalCents/100).toFixed(2) : ''}" /></label>
+        <label class="field"><span>Category</span><select name="category">${categoryOptions.map(([value,label]) => `<option value="${value}" ${selectedCategory === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select></label>
+        <label class="field"><span>Date</span><input name="date" type="date" required value="${escapeHtml(existing?.date || businessToday())}" /></label>
+      </div>
+      <div id="expenseAmountRow"><label class="field" id="expenseBusinessAmountField" ${classification === 'mixed' ? '' : 'hidden'}><span>Business portion · USD</span><input name="businessAmount" id="expenseBusinessAmount" inputmode="decimal" min="0.01" step="0.01" type="number" placeholder="Less than the total" value="${existing?.classification === 'mixed' ? (existing.businessCents/100).toFixed(2) : ''}" /></label></div>
+      <details class="compose-details" ${existing?.receiptId || existing?.businessPurpose || existing?.clientId || existing?.sessionId || existing?.description || existing?.reviewStatus === 'needs_review' ? 'open' : ''}><summary>Add receipt or details <span aria-hidden="true">⌄</span></summary><div class="compose-details-body">
       <label class="field" id="expensePurposeField" ${classification === 'personal' ? 'hidden' : ''}><span>Business purpose <em>recommended</em></span><input name="businessPurpose" maxlength="240" placeholder="Why was this needed for the business?" value="${escapeHtml(existing?.businessPurpose || '')}" /></label>
       <details class="optional-fields" ${existing?.clientId || existing?.sessionId || existing?.description ? 'open' : ''}><summary>Link & describe <span>optional</span></summary><div class="optional-fields-body"><div class="field-row"><label class="field"><span>Client</span><select name="clientId" id="expenseClient"><option value="">No linked client</option>${clients.map(client => `<option value="${client.id}" ${client.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}</select></label><label class="field"><span>Session</span><select name="sessionId" id="expenseSession">${expenseSessionOptions(existing?.clientId || '', existing?.sessionId || '')}</select></label></div><label class="field"><span>Description</span><input name="description" maxlength="220" placeholder="Optional detail about the purchase" value="${escapeHtml(existing?.description || '')}" /></label></div></details>
       <div class="receipt-upload-card ${existingReceipt ? 'has-file' : ''}" id="receiptUploadCard"><div class="receipt-upload-icon">▧</div><div class="receipt-upload-copy"><strong>${existingReceipt ? escapeHtml(existingReceipt.fileName) : 'Attach receipt'}</strong><small id="receiptUploadMeta">${existingReceipt ? `${escapeHtml(fileSizeLabel(existingReceipt.size))} · choose a file to replace` : 'Image or PDF · optional · up to 12 MB'}</small></div><label class="receipt-upload-button"><input name="receiptFile" id="expenseReceiptFile" type="file" accept="image/*,application/pdf" /><span>${existingReceipt ? 'Replace' : 'Choose file'}</span></label></div>
       ${existingReceipt ? `<label class="expense-remove-receipt"><input type="checkbox" name="removeReceipt" value="yes" /> Remove current receipt</label>` : ''}
-      <label class="review-toggle"><input type="checkbox" name="needsReview" value="yes" ${existing?.reviewStatus === 'needs_review' || (!existing && classification === 'mixed') ? 'checked' : ''}/><span><strong>Needs review</strong><small>Keep this expense in the Attention queue until you verify it.</small></span></label>`;
+      <label class="review-toggle"><input type="checkbox" name="needsReview" value="yes" ${existing?.reviewStatus === 'needs_review' || (!existing && classification === 'mixed') ? 'checked' : ''}/><span><strong>Needs review</strong><small>Keep this expense in the Attention queue until you verify it.</small></span></label></div></details>`;
     openModal($('#formSheet'));
 
     const classInput = $('#expenseClassification');
@@ -1777,8 +1825,24 @@
       mixedField.hidden = value !== 'mixed';
       amountRow?.classList.toggle('single', value !== 'mixed');
       purposeField.hidden = value === 'personal';
-      if (value === 'mixed' && !businessAmount.value && totalInput.value) businessAmount.value = totalInput.value;
+      businessAmount.required = value === 'mixed';
+      businessAmount.disabled = value !== 'mixed';
     }
+    $('#expenseUse').addEventListener('change', event => setClass(event.target.value));
+    const compose = $('#expenseCompose');
+    const merchantInput = $('#expenseMerchant');
+    const hint = $('#expenseComposeHint');
+    compose.addEventListener('input', () => {
+      const parsed = parseExpenseCompose(compose.value);
+      compose.setCustomValidity(parsed.error || '');
+      hint.textContent = parsed.error || 'Category and use stay as selected. Review the fields, then save.';
+      if (parsed.amount) { totalInput.value = parsed.amount; merchantInput.value = parsed.merchant; }
+    });
+    [totalInput, merchantInput].forEach(input => input.addEventListener('input', () => {
+      compose.value = '';
+      compose.setCustomValidity('');
+      hint.textContent = 'Using your edited fields. Category and use stay as selected.';
+    }));
     $$('[data-expense-class]', $('#formFields')).forEach(btn => btn.addEventListener('click', () => setClass(btn.dataset.expenseClass)));
     $('#expenseClient')?.addEventListener('change', event => { $('#expenseSession').innerHTML = expenseSessionOptions(event.target.value, ''); });
     $('#expenseReceiptFile')?.addEventListener('change', event => {
@@ -1788,6 +1852,16 @@
       $('#receiptUploadMeta').textContent = `${fileSizeLabel(file.size)} · ready to attach`;
     });
     setClass(classification);
+  }
+
+  // Deliberately narrow, local syntax: never infer classification or tax treatment.
+  function parseExpenseCompose(text) {
+    if (!text.trim()) return {};
+    const match = text.trim().match(/^\$?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s+at\s+(.+)$/i);
+    if (!match || !Number.isFinite(Number(match[1].replace(/,/g, ''))) || Number(match[1].replace(/,/g, '')) <= 0 || match[2].trim().length > 120) {
+      return { error: 'Use “40 at Shell” with a positive amount and a merchant, or clear quick entry and edit the fields.' };
+    }
+    return { amount: Number(match[1].replace(/,/g, '')).toFixed(2), merchant: match[2].trim() };
   }
 
   async function saveExpense(form) {
@@ -1823,7 +1897,8 @@
       data.receipts = data.receipts.filter(item => item.id !== receiptId);
       receiptId = null;
     }
-    const payload = { date, merchant, description:(form.get('description') || '').trim(), totalCents, classification, businessCents, category:form.get('category') || 'other', businessPurpose:purpose, clientId:client?.id || null, clientNameSnapshot:client?.displayName || existing?.clientNameSnapshot || '', sessionId:session?.id || null, sessionDateSnapshot:session?.date || existing?.sessionDateSnapshot || '', sessionTimeSnapshot:session ? sessionTimeRangeLabel(session) : existing?.sessionTimeSnapshot || '', reviewStatus, receiptId };
+    const category = form.get('category') || 'misc';
+    const payload = { date, merchant, description:(form.get('description') || '').trim(), totalCents, classification, businessCents, category, businessPurpose:purpose, clientId:client?.id || null, clientNameSnapshot:client?.displayName || existing?.clientNameSnapshot || '', sessionId:session?.id || null, sessionDateSnapshot:session?.date || existing?.sessionDateSnapshot || '', sessionTimeSnapshot:session ? sessionTimeRangeLabel(session) : existing?.sessionTimeSnapshot || '', reviewStatus, receiptId };
     if (existing) {
       const before = deepClone(existing); Object.assign(existing, payload, { updatedAt:nowIso() });
       const receipt = receiptId ? receiptById(receiptId) : null; if (receipt) receipt.expenseId = existing.id;
@@ -1832,6 +1907,7 @@
     } else {
       const expense = { id:uid('expense'), businessId:data.activeBusinessId, ...payload, createdAt:nowIso(), updatedAt:nowIso() };
       data.expenses.push(expense); const receipt = receiptId ? receiptById(receiptId) : null; if (receipt) receipt.expenseId = expense.id;
+      rememberEntryDefaults('expense', { classification, category });
       persist('created','Expense',expense.id,{ totalCents, businessCents, classification, category:expense.category, receiptId });
       ui.formRecordId = expense.id; showToast(receiptId ? 'Expense and receipt saved' : 'Expense saved');
     }
@@ -1971,8 +2047,10 @@
     const trips = businessMileageTrips().filter(x => String(x.date || '').startsWith(prefix));
     const incomeCents = payments.reduce((sum,x)=>sum + Number(x.amountCents || 0),0);
     const businessExpenseCents = expenses.reduce((sum,x)=>sum + Number(x.businessCents || 0),0);
-    const vehicleOperatingCents = expenses.filter(x=>x.category==='vehicle_fuel').reduce((sum,x)=>sum + Number(x.businessCents || 0),0);
-    const parkingTollsCents = expenses.filter(x=>x.category==='parking_tolls').reduce((sum,x)=>sum + Number(x.businessCents || 0),0);
+    const vehicleOperatingCategories = new Set(['vehicle_fuel','gas','car']);
+    const parkingCategories = new Set(['parking_tolls','parking']);
+    const vehicleOperatingCents = expenses.filter(x=>vehicleOperatingCategories.has(x.category)).reduce((sum,x)=>sum + Number(x.businessCents || 0),0);
+    const parkingTollsCents = expenses.filter(x=>parkingCategories.has(x.category)).reduce((sum,x)=>sum + Number(x.businessCents || 0),0);
     const nonVehicleExpenseCents = businessExpenseCents - vehicleOperatingCents;
     const businessTrips = trips.filter(x=>x.classification==='business');
     const mileageDeductionCents = businessTrips.reduce((sum,x)=>sum + mileagePotentialDeductionCents(x),0);
@@ -1983,7 +2061,12 @@
     const planningProfitCents = incomeCents - modeledDeductionsCents;
     const reviewExpenses = expenses.filter(x=>x.reviewStatus==='needs_review');
     const reviewTrips = trips.filter(mileageReviewStatus);
-    const categories = EXPENSE_CATEGORIES.map(([key,label])=>({key,label,cents:expenses.filter(x=>x.category===key).reduce((sum,x)=>sum+Number(x.businessCents||0),0),count:expenses.filter(x=>x.category===key && Number(x.businessCents||0)>0).length})).filter(x=>x.cents>0).sort((a,b)=>b.cents-a.cents);
+    const categoryMap = new Map();
+    expenses.filter(x=>Number(x.businessCents||0)>0).forEach(expense=>{
+      const current=categoryMap.get(expense.category) || {key:expense.category,label:expenseCategoryLabel(expense.category),cents:0,count:0};
+      current.cents += Number(expense.businessCents||0); current.count += 1; categoryMap.set(expense.category,current);
+    });
+    const categories = [...categoryMap.values()].sort((a,b)=>b.cents-a.cents);
     return {year,payments,expenses,trips,incomeCents,businessExpenseCents,vehicleOperatingCents,parkingTollsCents,nonVehicleExpenseCents,businessTrips,mileageDeductionCents,unknownRateTrips,modeledDeductionsCents,planningProfitCents,reviewExpenses,reviewTrips,categories};
   }
 
@@ -2008,10 +2091,10 @@
       title = quarter ? `Q${quarter} received income` : `${year} received income`;
       explanation = 'This total comes only from Payment records. Invoice totals are not counted again.';
     } else if (scope === 'expenses') {
-      records = model.expenses.filter(item => item.category !== 'vehicle_fuel' && Number(item.businessCents || 0) > 0);
+      records = model.expenses.filter(item => !['vehicle_fuel','gas','car'].includes(item.category) && Number(item.businessCents || 0) > 0);
       totalCents = records.reduce((sum,item)=>sum+Number(item.businessCents||0),0);
       title = `${year} non-vehicle expenses`;
-      explanation = 'Each row contributes its saved business-use amount. Vehicle & fuel is excluded from this standard-mileage scenario.';
+      explanation = 'Each row contributes its saved business-use amount. Gas, Car, and legacy vehicle/fuel costs are excluded from this standard-mileage scenario.';
     } else {
       records = model.businessTrips;
       totalCents = records.reduce((sum,item)=>sum+mileagePotentialDeductionCents(item),0);
@@ -2044,9 +2127,9 @@
     $('#taxMileageRateCaption').textContent=model.year===2026?'72.5¢ Jan–Jun · 76¢ Jul–Dec':'Potential standard-mileage amount';
     $('#taxFlowSummary').innerHTML=`
       <button class="tax-flow-row evidence-source-row" data-evidence-scope="income"><span>Received income</span><strong>${formatMoney(model.incomeCents,activeBusiness().currency)}</strong><small>${model.payments.length} source ${model.payments.length===1?'payment':'payments'} · View evidence</small></button>
-      <button class="tax-flow-row evidence-source-row" data-evidence-scope="expenses"><span>Non-vehicle business expenses</span><strong>− ${formatMoney(model.nonVehicleExpenseCents,activeBusiness().currency)}</strong><small>Standard-mileage scenario excludes recorded Vehicle & fuel operating costs · View evidence</small></button>
+      <button class="tax-flow-row evidence-source-row" data-evidence-scope="expenses"><span>Non-vehicle business expenses</span><strong>− ${formatMoney(model.nonVehicleExpenseCents,activeBusiness().currency)}</strong><small>Standard-mileage scenario excludes recorded Gas and Car operating costs · View evidence</small></button>
       <button class="tax-flow-row evidence-source-row" data-evidence-scope="mileage"><span>Standard-mileage scenario</span><strong>− ${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong><small>${formatMiles(model.businessTrips.reduce((n,x)=>n+Number(x.miles||0),0))} business miles · View evidence</small></button>
-      <div class="tax-flow-row total"><span>Planning profit</span><strong>${formatMoney(model.planningProfitCents,activeBusiness().currency)}</strong><small>Uses standard mileage instead of recorded vehicle/fuel operating costs</small></div>`;
+      <div class="tax-flow-row total"><span>Planning profit</span><strong>${formatMoney(model.planningProfitCents,activeBusiness().currency)}</strong><small>Uses standard mileage instead of recorded Gas and Car operating costs</small></div>`;
     const issues=[];
     if(model.reviewExpenses.length) issues.push(`${model.reviewExpenses.length} expense${model.reviewExpenses.length===1?'':'s'} need review`);
     if(model.reviewTrips.length) issues.push(`${model.reviewTrips.length} mileage trip${model.reviewTrips.length===1?'':'s'} need review`);
@@ -2065,7 +2148,7 @@
     $('#taxDeductionContainer').innerHTML=`<div class="tax-deduction-head"><span>Expense category</span><span>Business-use amount</span></div>${rows||'<div class="large-empty"><strong>No business-use expenses this year</strong><p>Expenses recorded in Money will appear here automatically.</p></div>'}<button class="tax-deduction-row mileage-deduction-row evidence-source-row" data-evidence-scope="mileage"><span><strong>Standard mileage scenario</strong><small>${model.businessTrips.length} business trips · rate applied by trip date · View evidence</small></span><strong>${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong></button>`;
     $$('[data-tax-expense-category]').forEach(btn=>btn.addEventListener('click',()=>{setView('money');ui.moneyTab='expenses';ui.expenseFilter='all';syncMoneyTabs();renderMoney();showToast(`${btn.querySelector('strong').textContent} comes from Money → Expenses`);}));
     $('[data-evidence-scope="mileage"]', $('#taxDeductionContainer'))?.addEventListener('click',()=>openEvidenceDetail('mileage',{year:model.year}));
-    $('#taxVehicleMethodCard').innerHTML=`<p class="eyebrow">VEHICLE METHOD CHECK</p><h3>Standard mileage scenario</h3><div class="tax-method-stat"><span>Potential mileage amount</span><strong>${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong></div><div class="tax-method-stat"><span>Recorded vehicle & fuel</span><strong>${formatMoney(model.vehicleOperatingCents,activeBusiness().currency)}</strong></div><div class="tax-method-stat"><span>Parking & tolls on file</span><strong>${formatMoney(model.parkingTollsCents,activeBusiness().currency)}</strong></div><p>Standard mileage and actual vehicle operating costs are alternative methods; this planning view does not stack Vehicle & fuel on top of the standard-mileage amount. Business parking and tolls remain separately visible.</p><small>Eligibility and method-choice rules can depend on the vehicle and prior-year treatment.</small>`;
+    $('#taxVehicleMethodCard').innerHTML=`<p class="eyebrow">VEHICLE METHOD CHECK</p><h3>Standard mileage scenario</h3><div class="tax-method-stat"><span>Potential mileage amount</span><strong>${formatMoney(model.mileageDeductionCents,activeBusiness().currency)}</strong></div><div class="tax-method-stat"><span>Recorded Gas + Car costs</span><strong>${formatMoney(model.vehicleOperatingCents,activeBusiness().currency)}</strong></div><div class="tax-method-stat"><span>Parking on file</span><strong>${formatMoney(model.parkingTollsCents,activeBusiness().currency)}</strong></div><p>Standard mileage and actual vehicle operating costs are alternative methods; this planning view does not stack Gas, Car, or legacy vehicle/fuel costs on top of the standard-mileage amount. Business parking remains separately visible.</p><small>Eligibility and method-choice rules can depend on the vehicle and prior-year treatment.</small>`;
   }
 
   function renderTaxes() {
@@ -2127,13 +2210,16 @@
   function openVehicleForm(existingId = null) {
     $('#formSheet').classList.remove('session-form-sheet');
     const existing = existingId ? vehicleById(existingId) : null;
+    const remembered = entryDefaultsFor('vehicle');
+    const priorStatus = remembered.status || mostRecentRecord(businessVehicles())?.status;
+    const selectedStatus = existing?.status || (priorStatus === 'inactive' ? 'inactive' : 'active');
     ui.formMode='vehicle'; ui.formRecordId=existingId;
     $('#formEyebrow').textContent=existing ? 'EDIT VEHICLE' : 'NEW VEHICLE';
     $('#formTitle').textContent=existing ? (existing.nickname || vehicleDisplayName(existing)) : 'Vehicle profile';
     $('#formSubmitBtn').textContent=existing ? 'Save changes' : 'Save vehicle';
     $('#formFields').innerHTML=`<div class="field-row three"><label class="field"><span>Year</span><input name="year" inputmode="numeric" maxlength="4" placeholder="2024" value="${escapeHtml(existing?.year || '')}" /></label><label class="field"><span>Make</span><input name="make" maxlength="60" placeholder="Honda" value="${escapeHtml(existing?.make || '')}" /></label><label class="field"><span>Model</span><input name="model" maxlength="60" placeholder="Civic" value="${escapeHtml(existing?.model || '')}" /></label></div>
       <label class="field"><span>Nickname <small>optional</small></span><input name="nickname" maxlength="80" placeholder="Main car" value="${escapeHtml(existing?.nickname || '')}" /></label>
-      <div class="field-row"><label class="field"><span>Status</span><select name="status"><option value="active" ${existing?.status!=='inactive'?'selected':''}>Active</option><option value="inactive" ${existing?.status==='inactive'?'selected':''}>Inactive</option></select></label><label class="field"><span>Current odometer <small>optional</small></span><input name="odometer" type="number" inputmode="decimal" min="0" step="1" placeholder="0" value="${escapeHtml(existing?.odometer || '')}" /></label></div>
+      <div class="field-row"><label class="field"><span>Status</span><select name="status"><option value="active" ${selectedStatus==='active'?'selected':''}>Active</option><option value="inactive" ${selectedStatus==='inactive'?'selected':''}>Inactive</option></select></label><label class="field"><span>Current odometer <small>optional</small></span><input name="odometer" type="number" inputmode="decimal" min="0" step="1" placeholder="0" value="${escapeHtml(existing?.odometer || '')}" /></label></div>
       <label class="check-row"><input name="isPrimary" type="checkbox" ${existing?.isPrimary || (!existing && !businessVehicles().some(v=>v.isPrimary)) ? 'checked' : ''} /><span><strong>Primary vehicle</strong><small>Used as the default when logging new mileage.</small></span></label>
       <label class="field"><span>Notes <small>optional</small></span><textarea name="notes" rows="3" maxlength="400" placeholder="Anything useful about this vehicle">${escapeHtml(existing?.notes || '')}</textarea></label>`;
     openModal($('#formSheet'));
@@ -2149,13 +2235,19 @@
     const vehicles=businessVehicles().filter(v=>v.status!=='inactive' || v.id===existing?.vehicleId);
     if (!vehicles.length && !existing) { showToast('Add a vehicle before logging mileage.'); openVehicleForm(); return; }
     const primary=vehicles.find(v=>v.isPrimary) || vehicles[0];
+    const remembered=entryDefaultsFor('mileage');
+    const recentTrip=mostRecentRecord(businessMileageTrips(),'date');
+    const priorClassification=remembered.classification || recentTrip?.classification;
+    const priorVehicleId=remembered.vehicleId || recentTrip?.vehicleId;
+    const classification=existing?.classification || (priorClassification==='personal' ? 'personal' : 'business');
+    const selectedVehicleId=existing?.vehicleId || (vehicles.some(vehicle=>vehicle.id===priorVehicleId) ? priorVehicleId : primary?.id);
     const clients=businessClients();
     ui.formMode='mileage'; ui.formRecordId=existingId;
     $('#formEyebrow').textContent=existing ? 'EDIT MILEAGE' : 'MILEAGE';
     $('#formTitle').textContent=existing ? `${formatMiles(existing.miles)} trip` : 'New mileage trip';
     $('#formSubmitBtn').textContent=existing ? 'Save changes' : 'Save trip';
-    $('#formFields').innerHTML=`<div class="mileage-type-switch" role="group" aria-label="Trip classification"><button type="button" class="expense-type-option ${(existing?.classification||'business')==='business'?'active':''}" data-mileage-class="business"><span>Business</span><small>Tax-relevant work travel</small></button><button type="button" class="expense-type-option ${existing?.classification==='personal'?'active':''}" data-mileage-class="personal"><span>Personal</span><small>Tracked, not business</small></button></div><input type="hidden" name="classification" id="mileageClassification" value="${escapeHtml(existing?.classification||'business')}" />
-      <div class="field-row three"><label class="field"><span>Date</span><input name="date" type="date" required value="${escapeHtml(existing?.date || businessToday())}" /></label><label class="field"><span>Vehicle</span><select name="vehicleId" required>${vehicles.map(v=>`<option value="${v.id}" ${(existing?.vehicleId || primary?.id)===v.id?'selected':''}>${escapeHtml(vehicleDisplayName(v))}</option>`).join('')}</select></label><label class="field"><span>Miles</span><input name="miles" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="0.0" value="${escapeHtml(existing?.miles || '')}" /></label></div>
+    $('#formFields').innerHTML=`<div class="mileage-type-switch" role="group" aria-label="Trip classification"><button type="button" class="expense-type-option ${classification==='business'?'active':''}" data-mileage-class="business"><span>Business</span><small>Tax-relevant work travel</small></button><button type="button" class="expense-type-option ${classification==='personal'?'active':''}" data-mileage-class="personal"><span>Personal</span><small>Tracked, not business</small></button></div><input type="hidden" name="classification" id="mileageClassification" value="${escapeHtml(classification)}" />
+      <div class="field-row three"><label class="field"><span>Date</span><input name="date" type="date" required value="${escapeHtml(existing?.date || businessToday())}" /></label><label class="field"><span>Vehicle</span><select name="vehicleId" required>${vehicles.map(v=>`<option value="${v.id}" ${selectedVehicleId===v.id?'selected':''}>${escapeHtml(vehicleDisplayName(v))}</option>`).join('')}</select></label><label class="field"><span>Miles</span><input name="miles" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="0.0" value="${escapeHtml(existing?.miles || '')}" /></label></div>
       <div class="field-row"><label class="field"><span>Start <small>optional</small></span><input name="startLabel" maxlength="120" placeholder="Home / starting point" value="${escapeHtml(existing?.startLabel || '')}" /></label><label class="field"><span>End <small>optional</small></span><input name="endLabel" maxlength="120" placeholder="Client / destination" value="${escapeHtml(existing?.endLabel || '')}" /></label></div>
       <label class="field" id="mileagePurposeField"><span>Business purpose</span><input name="purpose" maxlength="220" placeholder="e.g. Client session, supplies, business meeting" value="${escapeHtml(existing?.purpose || '')}" /></label>
       <details class="optional-fields" ${existing?.clientId || existing?.sessionId || existing?.notes ? 'open' : ''}><summary>Link work & add notes <span>optional</span></summary><div class="optional-fields-body"><div class="field-row"><label class="field"><span>Client</span><select name="clientId"><option value="">No linked client</option>${clients.map(c=>`<option value="${c.id}" ${c.id===existing?.clientId?'selected':''}>${escapeHtml(c.displayName)}</option>`).join('')}</select></label><label class="field"><span>Work session</span><select name="sessionId">${mileageSessionOptions(existing?.sessionId || '')}</select></label></div><label class="field"><span>Notes</span><textarea name="notes" rows="3" maxlength="500" placeholder="Parking context, route note, or other detail">${escapeHtml(existing?.notes || '')}</textarea></label></div></details>
@@ -2167,7 +2259,7 @@
       const linked = mileageSessionSelect.value ? data.sessions.find(item=>item.id===mileageSessionSelect.value) : null;
       if (linked && mileageClientSelect) mileageClientSelect.value = linked.clientId || '';
     });
-    if ((existing?.classification||'business')==='personal') $('#mileagePurposeField').hidden=true;
+    if (classification==='personal') $('#mileagePurposeField').hidden=true;
     openModal($('#formSheet'));
   }
 
@@ -2273,11 +2365,16 @@
     $('#formEyebrow').textContent = existing ? 'EDIT CLIENT' : 'ADD CLIENT';
     $('#formTitle').textContent = existing ? existing.displayName : 'New client';
     $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Add client';
-    const selectedColorKey = clientColorKey(existing || { colorKey: defaultClientColorForIndex(businessClients().length) });
+    const remembered = entryDefaultsFor('client');
+    const recentClient = mostRecentRecord(businessClients());
+    const priorColorKey = remembered.colorKey || recentClient?.colorKey;
+    const priorStatus = remembered.status || recentClient?.status;
+    const selectedColorKey = clientColorKey(existing || { colorKey: CLIENT_COLOR_KEYS.includes(priorColorKey) ? priorColorKey : defaultClientColorForIndex(businessClients().length) });
+    const selectedStatus = existing?.status || (priorStatus === 'inactive' ? 'inactive' : 'active');
     $('#formFields').innerHTML = `
       <label class="field"><span>Client / payer name</span><input name="displayName" required maxlength="100" placeholder="e.g. Client A" value="${escapeHtml(existing?.displayName || '')}" /><small>You can use an alias if you do not want identifying client information in the prototype.</small></label>
       <fieldset class="client-color-field"><legend>Client color</legend><div class="client-color-picker" role="radiogroup" aria-label="Client color">${CLIENT_COLOR_KEYS.map((key, index) => `<label class="client-color-option" title="${key[0].toUpperCase()+key.slice(1)}"><input type="radio" name="colorKey" value="${key}" ${selectedColorKey === key ? 'checked' : ''}/><span class="client-color-swatch client-bg-${key}" aria-hidden="true"></span><span class="sr-only">${key}</span></label>`).join('')}</div><small>Used as a quick visual identifier in work views.</small></fieldset>
-      <div class="field-row"><label class="field"><span>Default hourly rate</span><div class="money-input"><span>$</span><input name="rate" required inputmode="decimal" min="0" step="0.01" type="number" placeholder="0.00" value="${existing ? (existing.defaultRateCents/100).toFixed(2) : ''}" /></div></label><label class="field"><span>Status</span><select name="status"><option value="active" ${existing?.status !== 'inactive' ? 'selected' : ''}>Active</option><option value="inactive" ${existing?.status === 'inactive' ? 'selected' : ''}>Inactive</option></select></label></div>
+      <div class="field-row"><label class="field"><span>Default hourly rate</span><div class="money-input"><span>$</span><input name="rate" required inputmode="decimal" min="0" step="0.01" type="number" placeholder="0.00" value="${existing ? (existing.defaultRateCents/100).toFixed(2) : ''}" /></div></label><label class="field"><span>Status</span><select name="status"><option value="active" ${selectedStatus === 'active' ? 'selected' : ''}>Active</option><option value="inactive" ${selectedStatus === 'inactive' ? 'selected' : ''}>Inactive</option></select></label></div>
       <details class="optional-fields" ${existing?.billingEmail || existing?.billingAddress ? 'open' : ''}><summary>Billing details <span>optional</span></summary><div class="optional-fields-body"><label class="field"><span>Billing email</span><input name="billingEmail" type="email" maxlength="160" placeholder="payer@example.com" value="${escapeHtml(existing?.billingEmail || '')}" /></label><label class="field"><span>Billing address</span><textarea name="billingAddress" rows="2" maxlength="300" placeholder="Optional address shown on invoices">${escapeHtml(existing?.billingAddress || '')}</textarea></label></div></details>
       <label class="field"><span>Notes <em>optional</em></span><textarea name="notes" rows="3" maxlength="500" placeholder="Billing arrangement, general context, or reminder…">${escapeHtml(existing?.notes || '')}</textarea></label>`;
     openModal($('#formSheet'));
@@ -2301,29 +2398,38 @@
     $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Log session';
     const today = businessToday();
     const clientLocked = Boolean(existing?.invoiceId);
+    const remembered = entryDefaultsFor('session');
+    const recentSession = mostRecentRecord(businessSessions(),'date');
+    const priorClientId = remembered.clientId || recentSession?.clientId;
+    const selectedClientId = existing?.clientId || (clients.some(client=>client.id===priorClientId) ? priorClientId : '') || (clients.length===1 ? clients[0].id : '');
+    const selectedClient = clients.find(client=>client.id===selectedClientId);
+    const priorStart = remembered.startTime || recentSession?.startTime;
+    const priorEnd = remembered.endTime || recentSession?.endTime;
+    const initialStart = existing?.startTime || (timeToMinutes(priorStart) != null ? priorStart : '');
+    const initialEnd = existing?.endTime || (timeToMinutes(priorEnd) != null ? priorEnd : '');
     $('#formSheet').classList.add('session-form-sheet');
     $('#formFields').innerHTML = `
-      <label class="field"><span>Client</span><select ${clientLocked ? 'disabled' : 'name="clientId"'} id="sessionClient" required><option value="">Choose client</option>${clients.map(c => `<option value="${c.id}" data-rate="${c.defaultRateCents || 0}" ${c.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select>${clientLocked ? `<input type="hidden" name="clientId" value="${escapeHtml(existing.clientId)}" /><small>Client is locked while this session is attached to ${escapeHtml(invoiceById(existing.invoiceId)?.number || 'an invoice')}. Edit the invoice first to move the session.</small>` : ''}</label>
+      <label class="field"><span>Client</span><select ${clientLocked ? 'disabled' : 'name="clientId"'} id="sessionClient" required><option value="">Choose client</option>${clients.map(c => `<option value="${c.id}" data-rate="${c.defaultRateCents || 0}" ${c.id === selectedClientId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select>${clientLocked ? `<input type="hidden" name="clientId" value="${escapeHtml(existing.clientId)}" /><small>Client is locked while this session is attached to ${escapeHtml(invoiceById(existing.invoiceId)?.number || 'an invoice')}. Edit the invoice first to move the session.</small>` : ''}</label>
       <div class="session-entry-grid">
         <div class="clock-picker" id="sessionClockPicker">
           <div class="clock-picker-head">
             <div><span class="clock-kicker">TIME</span><strong id="clockInstruction">Choose start time</strong></div>
             <div class="time-summary" aria-label="Selected times">
-              <button type="button" class="time-chip active" data-clock-target="start"><small>Start</small><strong id="clockStartLabel">${clockTimeLabel(existing?.startTime)}</strong></button>
+              <button type="button" class="time-chip active" data-clock-target="start"><small>Start</small><strong id="clockStartLabel">${clockTimeLabel(initialStart)}</strong></button>
               <span class="time-summary-arrow">→</span>
-              <button type="button" class="time-chip" data-clock-target="end"><small>End</small><strong id="clockEndLabel">${clockTimeLabel(existing?.endTime)}</strong></button>
+              <button type="button" class="time-chip" data-clock-target="end"><small>End</small><strong id="clockEndLabel">${clockTimeLabel(initialEnd)}</strong></button>
             </div>
           </div>
-          <input type="hidden" name="startTime" id="clockStartInput" value="${existing?.startTime || ''}" />
-          <input type="hidden" name="endTime" id="clockEndInput" value="${existing?.endTime || ''}" />
+          <input type="hidden" name="startTime" id="clockStartInput" value="${initialStart}" />
+          <input type="hidden" name="endTime" id="clockEndInput" value="${initialEnd}" />
           <div class="clock-dial-wrap">
-            <div class="clock-dial" id="clockDial" role="slider" tabindex="0" aria-label="Choose start time" aria-valuetext="${clockTimeLabel(existing?.startTime)}">
+            <div class="clock-dial" id="clockDial" role="slider" tabindex="0" aria-label="Choose start time" aria-valuetext="${clockTimeLabel(initialStart)}">
               <div class="clock-ticks" id="clockTicks" aria-hidden="true"></div>
               <div class="clock-numbers" id="clockNumbers" aria-hidden="true"></div>
               <div class="clock-hand" id="clockHand"><span></span></div>
               <div class="clock-center">
                 <small id="clockTargetLabel">START</small>
-                <strong id="clockReadout">${clockTimeLabel(existing?.startTime) !== '—' ? clockTimeLabel(existing?.startTime) : clockTimeLabel(currentRoundedTime())}</strong>
+                <strong id="clockReadout">${clockTimeLabel(initialStart) !== '—' ? clockTimeLabel(initialStart) : clockTimeLabel(currentRoundedTime())}</strong>
               </div>
             </div>
           </div>
@@ -2342,15 +2448,14 @@
         </div>
         <div class="session-meta-stack">
           <label class="field"><span>Date</span><input name="date" type="date" required value="${existing?.date || today}" /></label>
-          <label class="field"><span>Hourly rate for this session</span><div class="money-input"><span>$</span><input name="rate" id="sessionRate" required inputmode="decimal" min="0" step="0.01" type="number" value="${existing ? (existing.rateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div><small>The saved session keeps this rate even if the client rate changes later.</small></label>
+          <label class="field"><span>Hourly rate for this session</span><div class="money-input"><span>$</span><input name="rate" id="sessionRate" required inputmode="decimal" min="0" step="0.01" type="number" value="${existing ? (existing.rateCents/100).toFixed(2) : selectedClient ? (selectedClient.defaultRateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div><small>The saved session keeps this rate even if the client rate changes later.</small></label>
           <label class="field session-note-field"><span>Session note <em>optional</em></span><textarea name="notes" rows="6" maxlength="500" placeholder="Brief work note or billing context…">${escapeHtml(existing?.notes || '')}</textarea></label>
         </div>
       </div>`;
     openModal($('#formSheet'));
     const select = $('#sessionClient');
-    if (!existing && clients.length === 1) { select.value = clients[0].id; $('#sessionRate').value = (clients[0].defaultRateCents/100).toFixed(2); }
     select.addEventListener('change', () => { const option = select.selectedOptions[0]; if (option?.dataset.rate) $('#sessionRate').value = (Number(option.dataset.rate)/100).toFixed(2); });
-    initClockTimePicker(existing?.startTime || '', existing?.endTime || '');
+    initClockTimePicker(initialStart, initialEnd);
   }
 
   function initClockTimePicker(initialStart = '', initialEnd = '') {
@@ -2566,7 +2671,7 @@
       } else {
         const vehicle={id:uid('vehicle'),businessId:data.activeBusinessId,...payload,createdAt:nowIso(),updatedAt:nowIso()};
         if (!businessVehicles().some(v=>v.isPrimary) && vehicle.status!=='inactive') vehicle.isPrimary=true;
-        data.vehicles.push(vehicle); ui.formRecordId=vehicle.id; persist('created','Vehicle',vehicle.id,{isPrimary:vehicle.isPrimary}); showToast('Vehicle added');
+        data.vehicles.push(vehicle); ui.formRecordId=vehicle.id; rememberEntryDefaults('vehicle', { status:vehicle.status }); persist('created','Vehicle',vehicle.id,{isPrimary:vehicle.isPrimary}); showToast('Vehicle added');
       }
       const id=ui.formRecordId; closeModal(); renderAll(); setView('taxes'); ui.taxTab='vehicles'; syncTaxTabs(); if(id) setTimeout(()=>openVehicleDetail(id),35); return;
     }
@@ -2587,6 +2692,7 @@
         const trip=mileageTripById(ui.formRecordId); if(!trip) return; const before=deepClone(trip); Object.assign(trip,payload,{updatedAt:nowIso()}); persist('updated','MileageTrip',trip.id,{before,after:deepClone(trip)}); showToast('Mileage updated');
       } else {
         const trip={id:uid('mileage'),businessId:data.activeBusinessId,...payload,createdAt:nowIso(),updatedAt:nowIso()}; data.mileageTrips.push(trip); ui.formRecordId=trip.id; persist('created','MileageTrip',trip.id,{miles:trip.miles,classification:trip.classification,vehicleId:trip.vehicleId}); showToast('Mileage trip saved');
+        rememberEntryDefaults('mileage', { classification:trip.classification, vehicleId:trip.vehicleId });
       }
       const id=ui.formRecordId; ui.mileagePage=1; closeModal(); renderAll(); setView('taxes'); ui.taxTab='mileage'; syncTaxTabs(); if(id) setTimeout(()=>openMileageDetail(id),35); return;
     }
@@ -2598,7 +2704,7 @@
         persist('updated', 'Client', client.id, { before, after: deepClone(client) }); showToast('Client updated');
       } else {
         const client = { id: uid('client'), businessId: data.activeBusinessId, ...payload, createdAt: nowIso(), updatedAt: nowIso() };
-        data.clients.push(client); persist('created', 'Client', client.id); showToast('Client added');
+        data.clients.push(client); rememberEntryDefaults('client', { colorKey:client.colorKey, status:client.status }); persist('created', 'Client', client.id); showToast('Client added');
       }
     }
     if (ui.formMode === 'session') {
@@ -2622,7 +2728,7 @@
         persist('updated', 'WorkSession', session.id, { before, after: deepClone(session) }); showToast('Work session updated');
       } else {
         const session = { id: uid('session'), businessId: data.activeBusinessId, ...payload, invoiceStatus: 'uninvoiced', invoiceId: null, createdAt: nowIso(), updatedAt: nowIso() };
-        data.sessions.push(session); ui.sessionPage = 1; persist('created', 'WorkSession', session.id); showToast('Work session logged');
+        data.sessions.push(session); ui.sessionPage = 1; rememberEntryDefaults('session', { clientId:session.clientId, startTime:session.startTime, endTime:session.endTime }); persist('created', 'WorkSession', session.id); showToast('Work session logged');
       }
     }
     if (ui.formMode === 'invoice-settings') {

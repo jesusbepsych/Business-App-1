@@ -314,3 +314,9 @@ The Business Flow graph now plots monthly `payments.amountCents − expenses.bus
 Income vs Expenses plots the two underlying monthly series separately. Composition donuts reuse the already-filtered client/source and expense-category rollups. When a donut would exceed five named slices, smaller slices are grouped as a visual `Other` segment only; detail rankings and drill-through records remain unabridged.
 
 All chart models are rebuilt from the current Analytics range on every render. No chart data is persisted.
+
+## Workspace entry defaults and category compatibility
+
+Entry defaults are lightweight UI preferences stored separately from financial source records and keyed by workspace. They are written only after successful creation and never enter the audit trail as financial events. Record edits always render the record's own saved values, while explicit creation context overrides remembered defaults.
+
+The active expense-category vocabulary is Food, Gas, Parking, Car, Subscriptions, Misc, Fees, and Work Equipment. The display layer retains a legacy label map so older expenses remain understandable and traceable without data migration. Tax rollups discover categories from source records rather than assuming only the active menu, while both legacy Vehicle & fuel and the new Gas/Car categories continue to participate in vehicle-operating-cost planning.
