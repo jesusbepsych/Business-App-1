@@ -322,3 +322,18 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Kept payment type, date, and invoice linkage explicit; no accounting classification or invoice relationship is inferred.
 - Preserved invoice outstanding-balance limits, received-money traceability, remembered type/method defaults, and all stored payment fields.
 - Added responsive two-column behavior for phone/iPad widths without changing the Atrium scene or Home analytics wiring.
+## Revision 8 — clearer gold segment borders
+
+- Increased only the gold border's thickness, contrast, glow, and moving highlight visibility on the four segmented navigation bars.
+- Preserved the existing frosted-gray interiors, active states, sizing, and surrounding layout.
+- Kept the shimmer restrained and disabled its motion when reduced-motion is requested.
+
+## Revision 9 — Calendar Sweep invoices
+
+- Rebuilt Create/Edit Invoice around a client-filtered monthly calendar while preserving the existing invoice and session source records.
+- Calendar work labels stay compact and show the aggregate hours and earned value for that client on each date; their color follows the client's saved color.
+- Added touch/pointer sweeping across workdays, individual selection in the adjacent session list, Select all/Clear shortcuts, and live session/hour/total summaries.
+- New invoices show only uninvoiced sessions. Editing keeps sessions already attached to that invoice available while continuing to exclude sessions attached to other invoices.
+- Changing clients after selecting work now requires confirmation and clears the prior selection, preventing sessions from different clients from being mixed accidentally.
+- Kept custom line items, notes/terms, invoice numbering, issue/due dates, immutable invoice snapshots, payment protections, and edit behavior intact.
+- Added responsive iPad/phone layouts, reduced-motion handling, and Calendar Sweep coverage to the reusable smoke test.

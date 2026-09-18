@@ -1,3 +1,7 @@
+# Business Ledger — Phase 8, Revision 9
+
+Current build: **Calendar Sweep Invoices**. The invoice builder filters work by client, displays client-colored daily hour/value labels, supports touch sweeping to select billable sessions, and preserves the existing traceable invoice snapshot rules.
+
 ## Typography scale refinement
 
 All explicit interface typography has been increased slightly while preserving the existing hierarchy: compact labels receive about +1px, normal interface text about +7%, and large display/title text about +5%. Compact text-bearing controls receive minor breathing-room adjustments to avoid crowding. No business logic or data model behavior changed.

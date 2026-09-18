@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase8-r7-quick-receive" />
+  <link rel="stylesheet" href="styles.css?v=phase8-r9-calendar-sweep-invoices" />
 </head>
 <body class="home-atrium-active">
 
@@ -323,20 +323,45 @@
 
   <section class="sheet invoice-sheet" id="invoiceSheet" role="dialog" aria-modal="true" aria-labelledby="invoiceTitle" hidden>
     <div class="sheet-handle"></div>
-    <div class="sheet-head invoice-sheet-head"><div><p class="eyebrow" id="invoiceEyebrow">NEW INVOICE</p><h2 id="invoiceTitle">Create invoice</h2><small id="invoiceNumberHint">Next number</small></div><button class="close-btn" data-close aria-label="Close">×</button></div>
+    <div class="sheet-head invoice-sheet-head"><div><p class="eyebrow" id="invoiceEyebrow">CALENDAR SWEEP</p><h2 id="invoiceTitle">Create invoice</h2><small>Select a client, then sweep across work to bill.</small></div><button class="close-btn" data-close aria-label="Close">×</button></div>
     <form id="invoiceForm">
-      <div class="invoice-form-grid">
-        <div class="invoice-form-main">
-          <div class="invoice-basics">
-            <label class="field"><span>Client</span><select id="invoiceClient" required><option value="">Choose client</option></select></label>
-            <label class="field"><span>Issue date</span><input id="invoiceIssueDate" type="date" required /></label>
-            <label class="field"><span>Due date</span><input id="invoiceDueDate" type="date" required /></label>
-          </div>
-          <section class="invoice-builder-section"><div class="builder-title"><div><p class="eyebrow">WORK TO BILL</p><h3>Select sessions</h3></div><div class="builder-title-tools"><div class="builder-selection-actions" aria-label="Session selection shortcuts"><button type="button" id="selectAllInvoiceSessions">Select all</button><span aria-hidden="true">·</span><button type="button" id="clearInvoiceSessions">Clear</button></div></div></div><div id="invoiceSessionChoices" class="invoice-session-list"></div></section>
-          <section class="invoice-builder-section"><div class="builder-title"><div><p class="eyebrow">ADDITIONAL</p><h3>Custom line items</h3></div><button type="button" class="text-btn" id="addManualInvoiceLine">＋ Add item</button></div><div id="invoiceManualItems" class="manual-lines"></div></section>
-          <label class="field invoice-note"><span>Invoice note <em>optional</em></span><textarea id="invoiceNote" rows="3" maxlength="700" placeholder="A short note to the payer…"></textarea></label>
+      <div class="invoice-basics invoice-calendar-basics">
+        <label class="field"><span>Client</span><select id="invoiceClient" required><option value="">Choose client</option></select></label>
+        <label class="field"><span>Invoice number</span><input id="invoiceNumberDisplay" readonly aria-readonly="true" /></label>
+        <label class="field"><span>Issue date</span><input id="invoiceIssueDate" type="date" required /></label>
+        <label class="field"><span>Due date</span><input id="invoiceDueDate" type="date" required /></label>
+      </div>
+      <div class="invoice-client-change-confirm" id="invoiceClientChangeConfirm" hidden role="status">
+        <span><strong>Change client?</strong><small>Selected work will be cleared so sessions from different clients never mix.</small></span>
+        <span class="invoice-client-change-actions"><button type="button" id="keepInvoiceClient">Keep current</button><button type="button" id="confirmInvoiceClient">Change client</button></span>
+      </div>
+      <div class="invoice-calendar-layout">
+        <div class="invoice-calendar-column">
+          <section class="invoice-calendar-card" id="invoiceCalendar" data-client-color="blue" aria-label="Billable session calendar">
+            <div class="invoice-calendar-head">
+              <span class="invoice-month-controls"><button type="button" id="invoiceCalendarPrev" aria-label="Previous month">‹</button><button type="button" id="invoiceCalendarNext" aria-label="Next month">›</button></span>
+              <strong id="invoiceCalendarMonth">Month</strong>
+              <span class="invoice-period-summary"><small>Billing period</small><b id="invoiceCalendarRange">Select session dates</b></span>
+              <button type="button" class="invoice-clear-range" id="invoiceCalendarClear">Clear</button>
+            </div>
+            <div class="invoice-calendar-weekdays" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+            <div class="invoice-calendar-grid" id="invoiceCalendarGrid"></div>
+            <p class="invoice-sweep-hint" id="invoiceSweepHint">Touch a work label and sweep across other workdays to include them.</p>
+          </section>
+          <details class="invoice-disclosure" id="invoiceCustomDetails"><summary><span><b>Custom item</b><small>Add a product, service, reimbursement, or adjustment</small></span><span aria-hidden="true">⌄</span></summary><div class="invoice-disclosure-body"><div class="builder-title"><h3>Custom line items</h3><button type="button" class="text-btn" id="addManualInvoiceLine">＋ Add item</button></div><div id="invoiceManualItems" class="manual-lines"></div></div></details>
+          <details class="invoice-disclosure" id="invoiceNoteDetails"><summary><span><b>Note / terms</b><small>Add a client-facing note or payment terms</small></span><span aria-hidden="true">⌄</span></summary><div class="invoice-disclosure-body"><label class="field invoice-note"><span>Invoice note <em>optional</em></span><textarea id="invoiceNote" rows="3" maxlength="700" placeholder="A short note to the payer…"></textarea></label></div></details>
         </div>
-        <aside class="invoice-form-summary"><div><p class="eyebrow">DRAFT TOTAL</p><strong id="invoiceDraftTotal">$0</strong><span id="invoiceDraftItemCount">0 line items</span></div><p>Select work once. The invoice stores a snapshot of the client, rates, and line items so later changes do not silently rewrite it.</p></aside>
+        <aside class="invoice-session-column">
+          <div class="invoice-session-heading"><span><strong>Client sessions</strong><small id="invoiceSessionRangeCaption">Choose a client to see uninvoiced work.</small></span><div class="builder-selection-actions" aria-label="Session selection shortcuts"><button type="button" id="selectAllInvoiceSessions">Select all</button><button type="button" id="clearInvoiceSessions">Clear</button></div></div>
+          <div id="invoiceSessionChoices" class="invoice-session-list"></div>
+          <div class="invoice-calendar-totals">
+            <span><b id="invoiceDraftSessionCount">0</b><small>sessions</small></span>
+            <span><b id="invoiceDraftHours">0h</b><small>total hours</small></span>
+            <span class="invoice-total-emphasis"><b id="invoiceDraftTotal">$0</b><small>invoice total</small></span>
+          </div>
+          <p class="invoice-integrity-note"><span>✓</span> Selected sessions, client details, rates, and line items are snapshotted when saved.</p>
+          <span id="invoiceDraftItemCount" class="sr-only">0 line items</span>
+        </aside>
       </div>
       <div class="form-actions invoice-form-actions"><button type="button" class="secondary-btn" data-close>Cancel</button><button type="submit" class="primary-btn" id="invoiceSubmitBtn">Save draft</button></div>
     </form>
@@ -358,6 +383,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase8-entry-memory-categories"></script>
+  <script src="app.js?v=phase8-r9-calendar-sweep-invoices"></script>
 </body>
 </html>

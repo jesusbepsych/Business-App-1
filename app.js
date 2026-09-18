@@ -220,7 +220,7 @@
   function mostRecentRecord(records, dateField = 'createdAt') {
     return (records || []).slice().sort((a,b) => `${b?.[dateField] || ''}${b?.createdAt || ''}`.localeCompare(`${a?.[dateField] || ''}${a?.createdAt || ''}`))[0] || null;
   }
-  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsRange: '6m', workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null, taxTab: 'overview', taxYear: null, mileageFilter: 'all', mileagePage: 1, mileagePageSize: 7 };
+  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsRange: '6m', workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null, taxTab: 'overview', taxYear: null, mileageFilter: 'all', mileagePage: 1, mileagePageSize: 7 };
   let homeRecentRotationTimer = null;
   let homeRecentSignature = '';
   let homeRecentSwapTimer = null;
@@ -1294,6 +1294,35 @@
     };
   }
 
+  function eligibleInvoiceSessions(clientId) {
+    const existing = ui.invoiceFormId ? invoiceById(ui.invoiceFormId) : null;
+    return businessSessions()
+      .filter(session => session.clientId === clientId && (session.invoiceStatus === 'uninvoiced' || session.invoiceId === existing?.id))
+      .sort((a,b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`));
+  }
+
+  function invoiceSelectedSessionIds() {
+    return new Set($$('input[name="invoiceSession"]:checked', $('#invoiceSessionChoices')).map(input => input.value));
+  }
+
+  function invoiceMonthKey(date) {
+    return /^\d{4}-\d{2}/.test(date || '') ? `${date.slice(0,7)}-01` : `${businessToday().slice(0,7)}-01`;
+  }
+
+  function shiftInvoiceMonth(monthKey, offset) {
+    const [year, month] = invoiceMonthKey(monthKey).split('-').map(Number);
+    const shifted = new Date(year, month - 1 + offset, 1);
+    return `${shifted.getFullYear()}-${String(shifted.getMonth()+1).padStart(2,'0')}-01`;
+  }
+
+  function initialInvoiceCalendarMonth(sessions, selectedIds, issueDate) {
+    const selected = sessions.filter(session => selectedIds.has(session.id));
+    if (selected.length) return invoiceMonthKey(selected[0].date);
+    const issueMonth = issueDate?.slice(0,7);
+    if (sessions.some(session => session.date?.startsWith(issueMonth))) return invoiceMonthKey(issueDate);
+    return invoiceMonthKey(sessions.at(-1)?.date || issueDate);
+  }
+
   function openInvoiceForm({ existingId = null, clientId = null, sessionId = null } = {}) {
     const clients = businessClients().filter(client => client.status === 'active' || client.id === clientId || client.id === invoiceById(existingId)?.clientId);
     if (!clients.length) {
@@ -1313,17 +1342,25 @@
     const selectedSessionIds = new Set((existing?.lineItems || []).filter(item => item.type === 'session').map(item => item.sessionId));
     if (sessionId) selectedSessionIds.add(sessionId);
 
-    $('#invoiceEyebrow').textContent = existing ? 'EDIT INVOICE' : 'NEW INVOICE';
+    $('#invoiceEyebrow').textContent = existing ? 'EDIT INVOICE · CALENDAR SWEEP' : 'CALENDAR SWEEP';
     $('#invoiceTitle').textContent = existing ? existing.number : 'Create invoice';
-    $('#invoiceNumberHint').textContent = existing ? existing.number : `Next number · ${invoiceNumberPreview()}`;
     $('#invoiceSubmitBtn').textContent = existing ? 'Save changes' : 'Save draft';
     $('#invoiceClient').innerHTML = `<option value="">Choose client</option>${clients.map(client => `<option value="${client.id}" ${client.id === selectedClientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}`;
+    $('#invoiceClient').value = selectedClientId;
+    $('#invoiceClient').dataset.currentClientId = selectedClientId;
+    $('#invoiceNumberDisplay').value = existing?.number || invoiceNumberPreview();
     $('#invoiceIssueDate').value = issueDate;
     $('#invoiceDueDate').value = dueDate;
     $('#invoiceNote').value = existing?.note || '';
     $('#invoiceManualItems').innerHTML = '';
     (existing?.lineItems || []).filter(item => item.type === 'manual').forEach(item => addManualInvoiceRow(item));
+    $('#invoiceCustomDetails').open = Boolean((existing?.lineItems || []).some(item => item.type === 'manual'));
+    $('#invoiceNoteDetails').open = Boolean(existing?.note);
+    $('#invoiceClientChangeConfirm').hidden = true;
+    ui.invoicePendingClientId = null;
     $('#invoiceSheet').dataset.selectedSessions = JSON.stringify([...selectedSessionIds]);
+    const eligibleSessions = eligibleInvoiceSessions(selectedClientId);
+    ui.invoiceCalendarMonth = initialInvoiceCalendarMonth(eligibleSessions, selectedSessionIds, issueDate);
     renderInvoiceSessionChoices(selectedClientId, selectedSessionIds);
     updateInvoiceDraftTotal();
     openModal($('#invoiceSheet'));
@@ -1336,25 +1373,158 @@
     const clearBtn = $('#clearInvoiceSessions');
     if (selectAllBtn) selectAllBtn.disabled = !inputs.length || selectedCount === inputs.length;
     if (clearBtn) clearBtn.disabled = selectedCount === 0;
+    if ($('#invoiceCalendarClear')) $('#invoiceCalendarClear').disabled = selectedCount === 0;
   }
 
   function renderInvoiceSessionChoices(clientId, selected = new Set()) {
-    const existing = ui.invoiceFormId ? invoiceById(ui.invoiceFormId) : null;
-    const sessions = businessSessions().filter(session => session.clientId === clientId && (session.invoiceStatus === 'uninvoiced' || session.invoiceId === existing?.id)).sort((a,b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`));
+    const sessions = eligibleInvoiceSessions(clientId);
     const host = $('#invoiceSessionChoices');
+    const client = clientById(clientId);
+    const colorKey = clientColorKey(client);
+    $('#invoiceSheet').dataset.invoiceClientColor = colorKey;
+    $('#invoiceCalendar').dataset.clientColor = colorKey;
     if (!clientId) {
       host.innerHTML = `<div class="inline-empty invoice-empty"><small>Choose a client to see uninvoiced work.</small></div>`;
+      renderInvoiceCalendar('', [], selected);
       updateInvoiceSelectionActions();
       return;
     }
     if (!sessions.length) {
       host.innerHTML = `<div class="inline-empty invoice-empty"><strong>No uninvoiced sessions</strong><small>You can still add a custom line item below.</small></div>`;
+      renderInvoiceCalendar(clientId, [], selected);
       updateInvoiceSelectionActions();
       return;
     }
-    host.innerHTML = sessions.map(session => `<label class="invoice-session-option"><input type="checkbox" name="invoiceSession" value="${session.id}" ${selected.has(session.id) ? 'checked' : ''}/><span class="invoice-check">✓</span><span class="invoice-session-date"><strong>${formatDate(session.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(session.date,{weekday:'short'})}</small></span><span class="invoice-session-main"><strong>${escapeHtml(sessionTimeRangeLabel(session))}</strong><small>${hoursLabel(sessionMinutes(session))} · ${session.notes ? escapeHtml(session.notes) : 'Work session'}</small></span><strong class="invoice-session-amount">${formatMoney(sessionAmountCents(session), activeBusiness().currency)}</strong></label>`).join('');
-    $$('input[name="invoiceSession"]', host).forEach(input => input.addEventListener('change', () => { updateInvoiceDraftTotal(); updateInvoiceSelectionActions(); }));
+    host.innerHTML = sessions.map(session => `<label class="invoice-session-option"><input type="checkbox" name="invoiceSession" value="${session.id}" data-session-date="${session.date}" ${selected.has(session.id) ? 'checked' : ''}/><span class="invoice-check">✓</span><span class="invoice-session-date"><strong>${formatDate(session.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(session.date,{weekday:'short'})}</small></span><span class="invoice-session-main"><strong>${escapeHtml(sessionTimeRangeLabel(session))}</strong><small>${hoursLabel(sessionMinutes(session))} · ${session.notes ? escapeHtml(session.notes) : 'Work session'}</small></span><strong class="invoice-session-amount">${formatMoney(sessionAmountCents(session), activeBusiness().currency)}</strong></label>`).join('');
+    $$('input[name="invoiceSession"]', host).forEach(input => input.addEventListener('change', () => { updateInvoiceDraftTotal(); updateInvoiceSelectionActions(); syncInvoiceCalendarSelection(); }));
+    renderInvoiceCalendar(clientId, sessions, selected);
     updateInvoiceSelectionActions();
+  }
+
+  function invoiceCalendarDateLabel(date) {
+    return formatDate(date,{month:'short',day:'numeric'});
+  }
+
+  function renderInvoiceCalendar(clientId, sessions = eligibleInvoiceSessions(clientId), selected = invoiceSelectedSessionIds()) {
+    const monthKey = invoiceMonthKey(ui.invoiceCalendarMonth || $('#invoiceIssueDate').value);
+    ui.invoiceCalendarMonth = monthKey;
+    const [year, month] = monthKey.split('-').map(Number);
+    const firstWeekday = new Date(year, month - 1, 1).getDay();
+    const gridStart = new Date(year, month - 1, 1 - firstWeekday);
+    const byDate = new Map();
+    sessions.forEach(session => {
+      if (!byDate.has(session.date)) byDate.set(session.date, []);
+      byDate.get(session.date).push(session);
+    });
+    const selectedDates = sessions.filter(session => selected.has(session.id)).map(session => session.date).sort();
+    const rangeStart = selectedDates[0] || '';
+    const rangeEnd = selectedDates.at(-1) || '';
+    $('#invoiceCalendarMonth').textContent = new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(`${monthKey}T12:00:00Z`));
+    const cells = [];
+    for (let index = 0; index < 42; index += 1) {
+      const day = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + index);
+      const date = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+      const daySessions = byDate.get(date) || [];
+      const checkedCount = daySessions.filter(session => selected.has(session.id)).length;
+      const totalMinutes = daySessions.reduce((sum, session) => sum + sessionMinutes(session), 0);
+      const totalCents = daySessions.reduce((sum, session) => sum + sessionAmountCents(session), 0);
+      const outside = day.getMonth() !== month - 1;
+      const inRange = rangeStart && date >= rangeStart && date <= rangeEnd;
+      const stateClass = checkedCount && checkedCount === daySessions.length ? 'selected' : checkedCount ? 'partial' : '';
+      const classes = ['invoice-calendar-day', outside ? 'outside' : '', daySessions.length ? 'has-sessions' : '', inRange ? 'in-range' : '', stateClass].filter(Boolean).join(' ');
+      const workLabel = daySessions.length ? `<span class="invoice-calendar-work"><span>${hoursLabel(totalMinutes)} · ${formatMoney(totalCents, activeBusiness().currency)}</span><i aria-hidden="true">${checkedCount === daySessions.length ? '✓' : checkedCount ? '–' : ''}</i></span>` : '';
+      const aria = daySessions.length ? `${invoiceCalendarDateLabel(date)}, ${hoursLabel(totalMinutes)}, ${formatMoney(totalCents, activeBusiness().currency)}, ${checkedCount === daySessions.length ? 'selected' : checkedCount ? 'partially selected' : 'not selected'}` : invoiceCalendarDateLabel(date);
+      cells.push(`<button type="button" class="${classes}" data-invoice-date="${date}" aria-label="${escapeHtml(aria)}" aria-pressed="${checkedCount > 0}" ${daySessions.length ? '' : 'disabled'}><span class="invoice-calendar-number">${day.getDate()}</span>${workLabel}</button>`);
+    }
+    $('#invoiceCalendarGrid').innerHTML = cells.join('');
+    bindInvoiceCalendarSweep();
+    updateInvoiceCalendarRange(selectedDates, sessions.length);
+  }
+
+  function invoiceInputsForDate(date) {
+    return $$(`input[name="invoiceSession"][data-session-date="${date}"]`, $('#invoiceSessionChoices'));
+  }
+
+  function setInvoiceDateSelection(date, checked) {
+    const inputs = invoiceInputsForDate(date);
+    if (!inputs.length) return;
+    inputs.forEach(input => { input.checked = checked; });
+    updateInvoiceDraftTotal();
+    updateInvoiceSelectionActions();
+    syncInvoiceCalendarSelection();
+  }
+
+  function toggleInvoiceDateSelection(date) {
+    const inputs = invoiceInputsForDate(date);
+    if (!inputs.length) return;
+    setInvoiceDateSelection(date, !inputs.every(input => input.checked));
+  }
+
+  function syncInvoiceCalendarSelection() {
+    const selectedInputs = $$('input[name="invoiceSession"]:checked', $('#invoiceSessionChoices'));
+    const selectedDates = selectedInputs.map(input => input.dataset.sessionDate).filter(Boolean).sort();
+    $$('[data-invoice-date]', $('#invoiceCalendarGrid')).forEach(cell => {
+      const inputs = invoiceInputsForDate(cell.dataset.invoiceDate);
+      const checkedCount = inputs.filter(input => input.checked).length;
+      cell.classList.toggle('selected', Boolean(inputs.length) && checkedCount === inputs.length);
+      cell.classList.toggle('partial', checkedCount > 0 && checkedCount < inputs.length);
+      cell.setAttribute('aria-pressed', checkedCount > 0 ? 'true' : 'false');
+      const mark = $('.invoice-calendar-work i', cell);
+      if (mark) mark.textContent = checkedCount === inputs.length ? '✓' : checkedCount ? '–' : '';
+    });
+    updateInvoiceCalendarRange(selectedDates, $$('input[name="invoiceSession"]', $('#invoiceSessionChoices')).length);
+  }
+
+  function updateInvoiceCalendarRange(selectedDates, availableCount) {
+    const uniqueDates = [...new Set(selectedDates)].sort();
+    const start = uniqueDates[0];
+    const end = uniqueDates.at(-1);
+    $('#invoiceCalendarRange').textContent = start ? (start === end ? invoiceCalendarDateLabel(start) : `${invoiceCalendarDateLabel(start)} — ${invoiceCalendarDateLabel(end)}`) : 'Select session dates';
+    const selectedCount = $$('input[name="invoiceSession"]:checked', $('#invoiceSessionChoices')).length;
+    $('#invoiceSessionRangeCaption').textContent = selectedCount ? `${selectedCount} selected · ${$('#invoiceCalendarRange').textContent}` : availableCount ? `${availableCount} uninvoiced ${availableCount === 1 ? 'session' : 'sessions'} available` : 'No uninvoiced sessions for this client.';
+    $$('[data-invoice-date]', $('#invoiceCalendarGrid')).forEach(cell => cell.classList.toggle('in-range', Boolean(start) && cell.dataset.invoiceDate >= start && cell.dataset.invoiceDate <= end));
+  }
+
+  function bindInvoiceCalendarSweep() {
+    const grid = $('#invoiceCalendarGrid');
+    if (grid.dataset.sweepBound === 'true') return;
+    grid.dataset.sweepBound = 'true';
+    let sweeping = false;
+    let targetState = true;
+    let lastDate = '';
+    let suppressClick = false;
+    const dateButton = target => target?.closest?.('[data-invoice-date].has-sessions');
+    const apply = button => {
+      if (!button || button.dataset.invoiceDate === lastDate) return;
+      lastDate = button.dataset.invoiceDate;
+      setInvoiceDateSelection(lastDate, targetState);
+    };
+    grid.addEventListener('pointerdown', event => {
+      const button = dateButton(event.target);
+      if (!button) return;
+      event.preventDefault();
+      const inputs = invoiceInputsForDate(button.dataset.invoiceDate);
+      targetState = !inputs.length || !inputs.every(input => input.checked);
+      sweeping = true;
+      suppressClick = true;
+      lastDate = '';
+      button.setPointerCapture?.(event.pointerId);
+      apply(button);
+    });
+    grid.addEventListener('pointermove', event => {
+      if (!sweeping) return;
+      const target = document.elementFromPoint?.(event.clientX, event.clientY);
+      apply(dateButton(target));
+    });
+    const finish = () => { sweeping = false; lastDate = ''; setTimeout(() => { suppressClick = false; }, 0); };
+    grid.addEventListener('pointerup', finish);
+    grid.addEventListener('pointercancel', finish);
+    grid.addEventListener('click', event => {
+      const button = dateButton(event.target);
+      if (!button) return;
+      if (suppressClick) { event.preventDefault(); return; }
+      toggleInvoiceDateSelection(button.dataset.invoiceDate);
+    });
   }
 
   function addManualInvoiceRow(item = {}) {
@@ -1416,6 +1586,9 @@
     const total = lines.reduce((sum, item) => sum + item.amountCents, 0);
     const totalMinutes = lines.reduce((sum, item) => item.type === 'session' ? sum + Number(item.quantityMinutes || 0) : sum, 0);
     const count = lines.length;
+    const sessionCount = lines.filter(item => item.type === 'session').length;
+    $('#invoiceDraftSessionCount').textContent = sessionCount;
+    $('#invoiceDraftHours').textContent = hoursLabel(totalMinutes);
     $('#invoiceDraftTotal').textContent = formatMoney(total, activeBusiness().currency);
     $('#invoiceDraftItemCount').textContent = `${durationExactLabel(totalMinutes)} · ${count} ${count === 1 ? 'line item' : 'line items'}`;
   }
@@ -3079,7 +3252,51 @@
   ], ui.expenseFilter, value => { ui.expenseFilter = value; ui.expensePage = 1; renderMoney(); }));
   $('#receiptSearch').addEventListener('input', renderRecords);
   $('#invoiceForm').addEventListener('submit', saveInvoice);
-  $('#invoiceClient').addEventListener('change', event => { renderInvoiceSessionChoices(event.target.value, new Set()); updateInvoiceDraftTotal(); });
+  function applyInvoiceClientChange(clientId, announce = false) {
+    const clientSelect = $('#invoiceClient');
+    clientSelect.value = clientId;
+    clientSelect.dataset.currentClientId = clientId;
+    ui.invoicePendingClientId = null;
+    $('#invoiceClientChangeConfirm').hidden = true;
+    const sessions = eligibleInvoiceSessions(clientId);
+    ui.invoiceCalendarMonth = initialInvoiceCalendarMonth(sessions, new Set(), $('#invoiceIssueDate').value);
+    renderInvoiceSessionChoices(clientId, new Set());
+    updateInvoiceDraftTotal();
+    if (announce) showToast('Client changed; selected work was cleared.');
+  }
+
+  $('#invoiceClient').addEventListener('change', event => {
+    const nextClientId = event.target.value;
+    const currentClientId = event.target.dataset.currentClientId || '';
+    const hasSelectedWork = $$('input[name="invoiceSession"]:checked', $('#invoiceSessionChoices')).length > 0;
+    if (nextClientId !== currentClientId && currentClientId && hasSelectedWork) {
+      ui.invoicePendingClientId = nextClientId;
+      event.target.value = currentClientId;
+      $('#invoiceClientChangeConfirm').hidden = false;
+      return;
+    }
+    applyInvoiceClientChange(nextClientId);
+  });
+  $('#keepInvoiceClient').addEventListener('click', () => {
+    ui.invoicePendingClientId = null;
+    $('#invoiceClientChangeConfirm').hidden = true;
+    $('#invoiceClient').focus();
+  });
+  $('#confirmInvoiceClient').addEventListener('click', () => applyInvoiceClientChange(ui.invoicePendingClientId || '', true));
+  $('#invoiceCalendarPrev').addEventListener('click', () => {
+    ui.invoiceCalendarMonth = shiftInvoiceMonth(ui.invoiceCalendarMonth, -1);
+    renderInvoiceCalendar($('#invoiceClient').value);
+  });
+  $('#invoiceCalendarNext').addEventListener('click', () => {
+    ui.invoiceCalendarMonth = shiftInvoiceMonth(ui.invoiceCalendarMonth, 1);
+    renderInvoiceCalendar($('#invoiceClient').value);
+  });
+  $('#invoiceCalendarClear').addEventListener('click', () => {
+    $$('input[name="invoiceSession"]', $('#invoiceSessionChoices')).forEach(input => { input.checked = false; });
+    updateInvoiceDraftTotal();
+    updateInvoiceSelectionActions();
+    syncInvoiceCalendarSelection();
+  });
   $('#invoiceIssueDate').addEventListener('change', event => {
     if (!ui.invoiceFormId) $('#invoiceDueDate').value = addDays(event.target.value, activeBusiness().invoiceSettings?.defaultDueDays ?? 7);
   });
@@ -3088,11 +3305,13 @@
     $$('input[name="invoiceSession"]', $('#invoiceSessionChoices')).forEach(input => { input.checked = true; });
     updateInvoiceDraftTotal();
     updateInvoiceSelectionActions();
+    syncInvoiceCalendarSelection();
   });
   $('#clearInvoiceSessions').addEventListener('click', () => {
     $$('input[name="invoiceSession"]', $('#invoiceSessionChoices')).forEach(input => { input.checked = false; });
     updateInvoiceDraftTotal();
     updateInvoiceSelectionActions();
+    syncInvoiceCalendarSelection();
   });
   $('#commandInput').addEventListener('input', renderCommandPalette);
 
