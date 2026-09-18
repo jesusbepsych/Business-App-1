@@ -1,6 +1,8 @@
-# Business Ledger — Phase 8, Revision 9
+# Business Ledger — Phase 8, Revision 10
 
 Current build: **Calendar Sweep Invoices**. The invoice builder filters work by client, displays client-colored daily hour/value labels, supports touch sweeping to select billable sessions, and preserves the existing traceable invoice snapshot rules.
+
+Revision 10 adds a persistent Money-header Expense shortcut, keeps Invoice Settings inside overall Settings, and corrects calendar tap handling on touch browsers without changing sweep selection.
 
 ## Typography scale refinement
 

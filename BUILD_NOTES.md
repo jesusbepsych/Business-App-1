@@ -337,3 +337,10 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Changing clients after selecting work now requires confirmation and clears the prior selection, preventing sessions from different clients from being mixed accidentally.
 - Kept custom line items, notes/terms, invoice numbering, issue/due dates, immutable invoice snapshots, payment protections, and edit behavior intact.
 - Added responsive iPad/phone layouts, reduced-motion handling, and Calendar Sweep coverage to the reusable smoke test.
+
+## Revision 10 — Money shortcut + reliable calendar taps
+
+- Replaced the Money-header Invoice Settings button with a persistent `＋ Expense` shortcut; the existing Expenses sub-tab shortcut remains available.
+- Kept Invoice Settings in the overall Settings sheet, avoiding a duplicate high-level control without removing the feature.
+- Fixed touch calendar taps being immediately toggled a second time by the browser's synthesized click event.
+- Preserved pointer/finger sweep selection, mouse clicks, keyboard activation, client filtering, and live invoice totals.

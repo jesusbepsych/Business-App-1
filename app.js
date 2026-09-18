@@ -1492,7 +1492,7 @@
     let sweeping = false;
     let targetState = true;
     let lastDate = '';
-    let suppressClick = false;
+    let suppressClickUntil = 0;
     const dateButton = target => target?.closest?.('[data-invoice-date].has-sessions');
     const apply = button => {
       if (!button || button.dataset.invoiceDate === lastDate) return;
@@ -1506,7 +1506,9 @@
       const inputs = invoiceInputsForDate(button.dataset.invoiceDate);
       targetState = !inputs.length || !inputs.every(input => input.checked);
       sweeping = true;
-      suppressClick = true;
+      // Pointer-down performs the tap immediately. Keep the following synthetic
+      // click from toggling the date a second time (notably on iPad Safari).
+      suppressClickUntil = Date.now() + 750;
       lastDate = '';
       button.setPointerCapture?.(event.pointerId);
       apply(button);
@@ -1516,13 +1518,13 @@
       const target = document.elementFromPoint?.(event.clientX, event.clientY);
       apply(dateButton(target));
     });
-    const finish = () => { sweeping = false; lastDate = ''; setTimeout(() => { suppressClick = false; }, 0); };
+    const finish = () => { sweeping = false; lastDate = ''; };
     grid.addEventListener('pointerup', finish);
     grid.addEventListener('pointercancel', finish);
     grid.addEventListener('click', event => {
       const button = dateButton(event.target);
       if (!button) return;
-      if (suppressClick) { event.preventDefault(); return; }
+      if (Date.now() < suppressClickUntil) { event.preventDefault(); return; }
       toggleInvoiceDateSelection(button.dataset.invoiceDate);
     });
   }
@@ -3227,7 +3229,7 @@
   $('#addInvoiceBtn').addEventListener('click', () => openInvoiceForm());
   $('#addPaymentBtn').addEventListener('click', () => openPaymentForm());
   $('#addExpenseBtn').addEventListener('click', () => openExpenseForm());
-  $('#invoiceSettingsBtn').addEventListener('click', () => openInvoiceSettingsForm());
+  $('#addExpenseShortcutBtn').addEventListener('click', () => openExpenseForm());
   $('#invoiceSettingsFromSettings').addEventListener('click', () => { closeModal(); openInvoiceSettingsForm(); });
   $('#invoiceFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
     { value:'all', label:'All invoices' },

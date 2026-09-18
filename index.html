@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase8-r9-calendar-sweep-invoices" />
+  <link rel="stylesheet" href="styles.css?v=phase8-r10-money-shortcut-calendar-tap" />
 </head>
 <body class="home-atrium-active">
 
@@ -180,7 +180,7 @@
         <div class="content-wrap money-atrium-content">
           <div class="page-heading money-heading">
             <div><p class="eyebrow">MONEY</p><h1>Billed, received, and spent.</h1><p class="subtitle">Invoices show what was billed. Payments show what arrived. Expenses show what left the business and keep supporting evidence attached.</p></div>
-            <div class="heading-actions money-actions"><button class="utility-text-btn" id="invoiceSettingsBtn">Invoice settings</button><button class="secondary-btn" id="addPaymentBtn">＋ Payment</button><button class="primary-btn" id="addInvoiceBtn">＋ Invoice</button></div>
+            <div class="heading-actions money-actions"><button class="secondary-btn" id="addExpenseShortcutBtn">＋ Expense</button><button class="secondary-btn" id="addPaymentBtn">＋ Payment</button><button class="primary-btn" id="addInvoiceBtn">＋ Invoice</button></div>
           </div>
 
           <div class="money-metric-grid">
@@ -383,6 +383,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase8-r9-calendar-sweep-invoices"></script>
+  <script src="app.js?v=phase8-r10-money-shortcut-calendar-tap"></script>
 </body>
 </html>
