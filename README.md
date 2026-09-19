@@ -1,8 +1,8 @@
-# Business Ledger — Phase 8, Revision 11
+# Business Ledger — Phase 8, Revision 12
 
-Current build: **Paired Clocks + Client Quick Times**. Work sessions use independent start/end clocks with a live duration/value summary and three reusable time-pair shortcuts per client.
+Current build: **Unified Session Surface + Fluid Clock Dragging**. Work sessions keep the independent clocks and three per-client quick-time pairs while placing client, date, rate, clocks, totals, and notes inside one continuous surface.
 
-Revision 11 keeps the existing session source fields and validation intact while turning the entry surface into a calmer, faster interaction. Quick times are lightweight workspace/client preferences rather than financial records, and switching clients changes only the three corresponding shortcuts.
+Revision 12 adds continuous circular finger dragging with live five-minute updates, reliable pointer capture/fallback handling, and natural noon/midnight crossing. Tap selection and all Revision 11 record-integrity rules remain intact.
 
 ## Typography scale refinement
 

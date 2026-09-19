@@ -3554,6 +3554,18 @@ html.atrium-lite .analytics-card,html.atrium-lite .analytics-kpi,html.atrium-lit
 @media(max-width:540px){.session-form-sheet{width:calc(100vw - 12px);padding:15px}.session-form-sheet .sheet-head h2{font-size:23px}.paired-session-top{grid-template-columns:1fr}.paired-session-top .field:first-child{grid-column:auto}.paired-clock-picker{grid-template-columns:1fr 1fr;gap:8px;padding:14px 9px}.paired-clock-dial{width:100%}.paired-clock-center{min-width:62px;min-height:52px}.paired-clock-center strong{font-size:11px}.paired-clock-label{font-size:16px}.paired-clock-numbers span{font-size:7px}.quick-time-grid{gap:5px}.quick-time-slot{min-height:50px}.paired-session-total{grid-template-columns:1fr 1px 1fr;gap:9px}.paired-session-total em{display:none}.session-form-sheet .form-actions{bottom:-15px;margin:12px -15px -15px;padding:11px 15px 16px}}
 @media(prefers-reduced-motion:reduce){.quick-time-grid.is-switching{animation:none}.session-note-disclosure>summary>span:last-child{transition:none}}
 
+/* Revision 12 — unified session surface and fluid clock dragging */
+.paired-session-top{grid-column:1/-1;margin:0 0 5px;padding-bottom:12px;border-bottom:1px solid rgba(214,233,242,.09)}
+.paired-session-top .field{background:rgba(255,255,255,.026)}
+.paired-clock-dial{cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:contain;transition:box-shadow .16s ease,transform .16s ease}
+.paired-clock-dial.is-adjusting{cursor:grabbing;transform:scale(1.012);box-shadow:0 0 0 3px rgba(237,194,105,.16),inset 0 0 0 8px rgba(255,255,255,.012),inset 0 0 34px rgba(0,0,0,.25),0 16px 36px rgba(0,0,0,.23)}
+.paired-clock-face[data-clock-face="end"] .paired-clock-dial.is-adjusting{box-shadow:0 0 0 3px color-mix(in srgb,var(--session-client-color) 25%,transparent),inset 0 0 0 8px rgba(255,255,255,.012),inset 0 0 34px rgba(0,0,0,.25),0 16px 36px rgba(0,0,0,.23)}
+.paired-clock-hand{will-change:transform;transition:transform 70ms linear}
+.paired-clock-dial.is-adjusting .paired-clock-hand{transition:none}
+.session-note-disclosure{grid-column:1/-1;margin-top:0;background:rgba(3,13,21,.29)}
+@media(max-width:860px){.paired-session-top{grid-row:1}.paired-clock-face[data-clock-face="start"]{grid-column:1;grid-row:2}.paired-clock-face[data-clock-face="end"]{grid-column:2;grid-row:2}.quick-time-bay{grid-column:1/-1;grid-row:3}.paired-session-total{grid-row:4}.session-note-disclosure{grid-row:5}.paired-clock-arc{top:37%}}
+@media(prefers-reduced-motion:reduce){.paired-clock-dial,.paired-clock-hand{transition:none}}
+
 /* Phase 8 chart refinement — scaled axes, fluid scrubber, and composition rings */
 .analytics-legend .net:before{background:#72deb0;box-shadow:0 0 12px rgba(114,222,176,.48)}
 .analytics-svg.scrubbable-chart{touch-action:pan-y;user-select:none;-webkit-user-select:none}

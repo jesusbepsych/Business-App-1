@@ -353,3 +353,11 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Scoped quick times by workspace and client in a separate local preference key. Switching clients uses a short fizzle transition and never rewrites work sessions or other source records.
 - Preserved the authoritative session fields, hourly-rate snapshot, overnight-duration behavior, invoiced-session protections, audit behavior, and remembered successful-entry defaults.
 - Added responsive iPad/phone layouts, reduced-motion handling, accessible clock sliders, and smoke-test coverage for per-client switching, application, and persistence.
+
+## Revision 12 — Unified session surface + fluid clock dragging
+
+- Moved client, date, hourly rate, both clocks, three quick-time slots, live totals, and the optional note into one continuous session container and background treatment.
+- Reworked pointer tracking so a finger can rotate either clock smoothly instead of relying on isolated taps.
+- Updates the selected time, AM/PM state, duration, and estimated value live during a drag, still snapping to five-minute increments.
+- Added pointer capture plus document-level fallback tracking so movement remains stable near and beyond the dial edge on touch browsers.
+- Preserved tap selection, keyboard adjustment, per-client preset transitions, authoritative session fields, overnight durations, and invoice protections.

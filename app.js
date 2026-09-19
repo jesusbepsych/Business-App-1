@@ -2670,12 +2670,12 @@
     const initialEnd = existing?.endTime || (timeToMinutes(priorEnd) != null ? priorEnd : '');
     $('#formSheet').classList.add('session-form-sheet');
     $('#formFields').innerHTML = `
+      <section class="paired-clock-picker" id="sessionClockPicker" data-client-color="${clientColorKey(selectedClient)}">
       <div class="paired-session-top">
         <label class="field"><span>Client</span><select ${clientLocked ? 'disabled' : 'name="clientId"'} id="sessionClient" required><option value="">Choose client</option>${clients.map(c => `<option value="${c.id}" data-rate="${c.defaultRateCents || 0}" data-color="${clientColorKey(c)}" ${c.id === selectedClientId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select>${clientLocked ? `<input type="hidden" name="clientId" value="${escapeHtml(existing.clientId)}" /><small>Client is locked while this session is attached to ${escapeHtml(invoiceById(existing.invoiceId)?.number || 'an invoice')}.</small>` : ''}</label>
         <label class="field"><span>Date</span><input name="date" type="date" required value="${existing?.date || today}" /></label>
         <label class="field"><span>Hourly rate</span><div class="money-input"><span>$</span><input name="rate" id="sessionRate" required inputmode="decimal" min="0" step="0.01" type="number" value="${existing ? (existing.rateCents/100).toFixed(2) : selectedClient ? (selectedClient.defaultRateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div></label>
       </div>
-      <section class="paired-clock-picker" id="sessionClockPicker" data-client-color="${clientColorKey(selectedClient)}">
         <input type="hidden" name="startTime" id="clockStartInput" value="${initialStart}" />
         <input type="hidden" name="endTime" id="clockEndInput" value="${initialEnd}" />
         <div class="paired-clock-face" data-clock-face="start">
@@ -2701,8 +2701,8 @@
         </div>
         <div class="paired-clock-arc" aria-hidden="true"><span></span></div>
         <div class="paired-session-total" id="clockDuration"><span><small>SESSION LENGTH</small><strong id="sessionDurationValue">Select both times</strong></span><i></i><span><small>SESSION VALUE</small><strong id="sessionValue">—</strong></span><em>Snaps to 5 min</em></div>
-      </section>
-      <details class="session-note-disclosure" ${existing?.notes ? 'open' : ''}><summary><span><b>Session note</b><small>Optional billing context or reminder</small></span><span aria-hidden="true">⌄</span></summary><div><textarea name="notes" rows="3" maxlength="500" placeholder="Brief work note or billing context…">${escapeHtml(existing?.notes || '')}</textarea></div></details>`;
+        <details class="session-note-disclosure" ${existing?.notes ? 'open' : ''}><summary><span><b>Session note</b><small>Optional billing context or reminder</small></span><span aria-hidden="true">⌄</span></summary><div><textarea name="notes" rows="3" maxlength="500" placeholder="Brief work note or billing context…">${escapeHtml(existing?.notes || '')}</textarea></div></details>
+      </section>`;
     openModal($('#formSheet'));
     const select = $('#sessionClient');
     const picker = initPairedClockTimePicker(initialStart, initialEnd, selectedClientId);
@@ -2761,20 +2761,60 @@
       updateSummary();
     }
 
-    function pointerTime(target,event) {
-      const face=faces[target], rect=face.dial.getBoundingClientRect();
-      const x=event.clientX-(rect.left+rect.width/2), y=event.clientY-(rect.top+rect.height/2);
-      let angle=Math.atan2(x,-y)*180/Math.PI; if(angle<0) angle+=360;
-      const minutes12=Math.round(((angle/360)*720)/5)*5%720;
-      return minutesToTime(minutes12+(periodFor(face.preview)==='PM'?720:0));
+    function pointerAngle(face,event) {
+      const coalesced=event.getCoalescedEvents?.()||[];
+      const sample=coalesced[coalesced.length-1]||event;
+      const rect=face.dial.getBoundingClientRect();
+      const x=sample.clientX-(rect.left+rect.width/2), y=sample.clientY-(rect.top+rect.height/2);
+      let angle=Math.atan2(x,-y)*180/Math.PI;
+      return angle<0?angle+360:angle;
+    }
+
+    function setFaceTime(target,totalMinutes) {
+      const face=faces[target];
+      face.preview=minutesToTime(Math.round(totalMinutes/5)*5);
+      inputs[target].value=face.preview;
+      renderFace(target);
     }
 
     function bindFace(target) {
       const face=faces[target]; clockMarks(face);
-      face.dial.addEventListener('pointerdown',event=>{event.preventDefault();face.dragging=true;face.dial.setPointerCapture?.(event.pointerId);face.preview=pointerTime(target,event);renderFace(target);});
-      face.dial.addEventListener('pointermove',event=>{if(!face.dragging)return;face.preview=pointerTime(target,event);renderFace(target);});
-      face.dial.addEventListener('pointerup',event=>{if(!face.dragging)return;face.dragging=false;face.preview=pointerTime(target,event);inputs[target].value=face.preview;renderFace(target);});
-      face.dial.addEventListener('pointercancel',()=>{face.dragging=false;renderFace(target);});
+      const move=event=>{
+        if(!face.dragging||(face.pointerId!=null&&event.pointerId!==face.pointerId))return;
+        if(event.cancelable)event.preventDefault();
+        const angle=pointerAngle(face,event);
+        let delta=angle-face.lastAngle;
+        if(delta>180)delta-=360;
+        if(delta<-180)delta+=360;
+        face.dragMinutes=(face.dragMinutes+delta*2+1440)%1440;
+        face.lastAngle=angle;
+        setFaceTime(target,face.dragMinutes);
+      };
+      const finish=event=>{
+        if(!face.dragging||(event?.pointerId!=null&&face.pointerId!=null&&event.pointerId!==face.pointerId))return;
+        if(event?.type==='pointerup')move(event);
+        face.dragging=false;face.pointerId=null;face.dial.classList.remove('is-adjusting');
+        try{face.dial.releasePointerCapture?.(event?.pointerId)}catch(error){}
+        document.removeEventListener?.('pointermove',move);
+        document.removeEventListener?.('pointerup',finish);
+        document.removeEventListener?.('pointercancel',finish);
+        renderFace(target);
+      };
+      face.dial.addEventListener('pointerdown',event=>{
+        if(event.cancelable)event.preventDefault();
+        const angle=pointerAngle(face,event), current=timeToMinutes(face.preview)??0;
+        face.dragging=true;face.pointerId=event.pointerId;face.lastAngle=angle;
+        face.dragMinutes=(Math.round((angle/360*720)/5)*5%720)+(periodFor(face.preview)==='PM'?720:0);
+        face.dial.classList.add('is-adjusting');
+        setFaceTime(target,face.dragMinutes);
+        try{face.dial.setPointerCapture?.(event.pointerId)}catch(error){}
+        document.addEventListener('pointermove',move,{passive:false});
+        document.addEventListener('pointerup',finish);
+        document.addEventListener('pointercancel',finish);
+      });
+      face.dial.addEventListener('pointermove',move,{passive:false});
+      face.dial.addEventListener('pointerup',finish);
+      face.dial.addEventListener('pointercancel',finish);
       face.dial.addEventListener('keydown',event=>{
         if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key))return;
         event.preventDefault();
