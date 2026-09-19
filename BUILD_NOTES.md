@@ -344,3 +344,12 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Kept Invoice Settings in the overall Settings sheet, avoiding a duplicate high-level control without removing the feature.
 - Fixed touch calendar taps being immediately toggled a second time by the browser's synthesized click event.
 - Preserved pointer/finger sweep selection, mouse clicks, keyboard activation, client filtering, and live invoice totals.
+
+## Revision 11 — Paired work clocks + client quick times
+
+- Rebuilt Add/Edit Work Session around independent start and end clock faces with five-minute pointer snapping, AM/PM controls, and keyboard adjustments.
+- Added a live session-length and estimated-value summary without creating or storing a second financial calculation.
+- Added exactly three reusable start/end quick-time slots per client. Filled slots apply both times in one tap; each slot can be created, edited, replaced, or removed inline.
+- Scoped quick times by workspace and client in a separate local preference key. Switching clients uses a short fizzle transition and never rewrites work sessions or other source records.
+- Preserved the authoritative session fields, hourly-rate snapshot, overnight-duration behavior, invoiced-session protections, audit behavior, and remembered successful-entry defaults.
+- Added responsive iPad/phone layouts, reduced-motion handling, accessible clock sliders, and smoke-test coverage for per-client switching, application, and persistence.

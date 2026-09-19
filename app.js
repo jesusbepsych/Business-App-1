@@ -4,6 +4,7 @@
   const STORAGE_KEY = 'business-ledger:v0.2';
   const SIDEBAR_COLLAPSE_KEY = 'business-ledger-sidebar-collapsed';
   const ENTRY_DEFAULTS_KEY = 'business-ledger-entry-defaults:v1';
+  const SESSION_QUICK_TIMES_KEY = 'business-ledger-session-quick-times:v1';
   const nowIso = () => new Date().toISOString();
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   const CLIENT_COLOR_KEYS = ['blue','teal','green','amber','coral','purple','pink','sky'];
@@ -207,6 +208,14 @@
       return {};
     }
   })();
+  const sessionQuickTimes = (() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(SESSION_QUICK_TIMES_KEY) || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  })();
   function entryDefaultsFor(formType) {
     return entryDefaults[data.activeBusinessId]?.[formType] || {};
   }
@@ -216,6 +225,21 @@
     entryDefaults[businessId] ||= {};
     entryDefaults[businessId][formType] = { ...(entryDefaults[businessId][formType] || {}), ...selections };
     try { localStorage.setItem(ENTRY_DEFAULTS_KEY, JSON.stringify(entryDefaults)); } catch (error) { console.warn('Could not save entry defaults.', error); }
+  }
+  function quickTimesForClient(clientId) {
+    const slots = sessionQuickTimes[data.activeBusinessId]?.[clientId];
+    return Array.from({ length: 3 }, (_, index) => {
+      const slot = Array.isArray(slots) ? slots[index] : null;
+      return slot && timeToMinutes(slot.startTime) != null && timeToMinutes(slot.endTime) != null && slot.startTime !== slot.endTime
+        ? { startTime: slot.startTime, endTime: slot.endTime }
+        : null;
+    });
+  }
+  function saveQuickTimesForClient(clientId, slots) {
+    if (!data.activeBusinessId || !clientId) return;
+    sessionQuickTimes[data.activeBusinessId] ||= {};
+    sessionQuickTimes[data.activeBusinessId][clientId] = Array.from({ length: 3 }, (_, index) => slots[index] || null);
+    try { localStorage.setItem(SESSION_QUICK_TIMES_KEY, JSON.stringify(sessionQuickTimes)); } catch (error) { console.warn('Could not save session quick times.', error); }
   }
   function mostRecentRecord(records, dateField = 'createdAt') {
     return (records || []).slice().sort((a,b) => `${b?.[dateField] || ''}${b?.createdAt || ''}`.localeCompare(`${a?.[dateField] || ''}${a?.createdAt || ''}`))[0] || null;
@@ -2630,9 +2654,9 @@
       return;
     }
     ui.formMode = 'session'; ui.formRecordId = existingId;
-    $('#formEyebrow').textContent = existing ? 'EDIT SESSION' : 'LOG WORK';
-    $('#formTitle').textContent = existing ? 'Edit work session' : 'New work session';
-    $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Log session';
+    $('#formEyebrow').textContent = existing ? 'EDIT WORK SESSION' : 'NEW WORK SESSION';
+    $('#formTitle').textContent = existing ? 'Adjust the session' : 'Mark the session';
+    $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Save session';
     const today = businessToday();
     const clientLocked = Boolean(existing?.invoiceId);
     const remembered = entryDefaultsFor('session');
@@ -2646,200 +2670,170 @@
     const initialEnd = existing?.endTime || (timeToMinutes(priorEnd) != null ? priorEnd : '');
     $('#formSheet').classList.add('session-form-sheet');
     $('#formFields').innerHTML = `
-      <label class="field"><span>Client</span><select ${clientLocked ? 'disabled' : 'name="clientId"'} id="sessionClient" required><option value="">Choose client</option>${clients.map(c => `<option value="${c.id}" data-rate="${c.defaultRateCents || 0}" ${c.id === selectedClientId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select>${clientLocked ? `<input type="hidden" name="clientId" value="${escapeHtml(existing.clientId)}" /><small>Client is locked while this session is attached to ${escapeHtml(invoiceById(existing.invoiceId)?.number || 'an invoice')}. Edit the invoice first to move the session.</small>` : ''}</label>
-      <div class="session-entry-grid">
-        <div class="clock-picker" id="sessionClockPicker">
-          <div class="clock-picker-head">
-            <div><span class="clock-kicker">TIME</span><strong id="clockInstruction">Choose start time</strong></div>
-            <div class="time-summary" aria-label="Selected times">
-              <button type="button" class="time-chip active" data-clock-target="start"><small>Start</small><strong id="clockStartLabel">${clockTimeLabel(initialStart)}</strong></button>
-              <span class="time-summary-arrow">→</span>
-              <button type="button" class="time-chip" data-clock-target="end"><small>End</small><strong id="clockEndLabel">${clockTimeLabel(initialEnd)}</strong></button>
-            </div>
-          </div>
-          <input type="hidden" name="startTime" id="clockStartInput" value="${initialStart}" />
-          <input type="hidden" name="endTime" id="clockEndInput" value="${initialEnd}" />
-          <div class="clock-dial-wrap">
-            <div class="clock-dial" id="clockDial" role="slider" tabindex="0" aria-label="Choose start time" aria-valuetext="${clockTimeLabel(initialStart)}">
-              <div class="clock-ticks" id="clockTicks" aria-hidden="true"></div>
-              <div class="clock-numbers" id="clockNumbers" aria-hidden="true"></div>
-              <div class="clock-hand" id="clockHand"><span></span></div>
-              <div class="clock-center">
-                <small id="clockTargetLabel">START</small>
-                <strong id="clockReadout">${clockTimeLabel(initialStart) !== '—' ? clockTimeLabel(initialStart) : clockTimeLabel(currentRoundedTime())}</strong>
-              </div>
-            </div>
-          </div>
-          <div class="clock-controls">
-            <div class="period-toggle" aria-label="AM or PM">
-              <button type="button" data-period="AM">AM</button><button type="button" data-period="PM">PM</button>
-            </div>
-            <div class="clock-stage-nav">
-              <button type="button" class="clock-arrow" id="clockPrev" aria-label="Edit start time">←</button>
-              <span id="clockStageText">Start time</span>
-              <button type="button" class="clock-arrow" id="clockNext" aria-label="Edit end time">→</button>
-            </div>
-            <span class="clock-snap-note">Snaps to 5 min</span>
-          </div>
-          <div class="clock-duration" id="clockDuration">Select a start and end time</div>
+      <div class="paired-session-top">
+        <label class="field"><span>Client</span><select ${clientLocked ? 'disabled' : 'name="clientId"'} id="sessionClient" required><option value="">Choose client</option>${clients.map(c => `<option value="${c.id}" data-rate="${c.defaultRateCents || 0}" data-color="${clientColorKey(c)}" ${c.id === selectedClientId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select>${clientLocked ? `<input type="hidden" name="clientId" value="${escapeHtml(existing.clientId)}" /><small>Client is locked while this session is attached to ${escapeHtml(invoiceById(existing.invoiceId)?.number || 'an invoice')}.</small>` : ''}</label>
+        <label class="field"><span>Date</span><input name="date" type="date" required value="${existing?.date || today}" /></label>
+        <label class="field"><span>Hourly rate</span><div class="money-input"><span>$</span><input name="rate" id="sessionRate" required inputmode="decimal" min="0" step="0.01" type="number" value="${existing ? (existing.rateCents/100).toFixed(2) : selectedClient ? (selectedClient.defaultRateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div></label>
+      </div>
+      <section class="paired-clock-picker" id="sessionClockPicker" data-client-color="${clientColorKey(selectedClient)}">
+        <input type="hidden" name="startTime" id="clockStartInput" value="${initialStart}" />
+        <input type="hidden" name="endTime" id="clockEndInput" value="${initialEnd}" />
+        <div class="paired-clock-face" data-clock-face="start">
+          <span class="paired-clock-kicker">START</span><strong class="paired-clock-label" id="clockStartLabel">${clockTimeLabel(initialStart)}</strong>
+          <div class="paired-clock-dial" id="clockStartDial" role="slider" tabindex="0" aria-label="Choose start time" aria-valuetext="${clockTimeLabel(initialStart)}"><div class="paired-clock-ticks" id="clockStartTicks" aria-hidden="true"></div><div class="paired-clock-numbers" id="clockStartNumbers" aria-hidden="true"></div><div class="paired-clock-hand" id="clockStartHand"><span></span></div><div class="paired-clock-center"><small>START</small><strong id="clockStartReadout">${clockTimeLabel(initialStart) !== '—' ? clockTimeLabel(initialStart) : clockTimeLabel(currentRoundedTime())}</strong></div></div>
+          <div class="paired-period-toggle" aria-label="Start time AM or PM"><button type="button" data-face-period="start-AM">AM</button><button type="button" data-face-period="start-PM">PM</button></div>
         </div>
-        <div class="session-meta-stack">
-          <label class="field"><span>Date</span><input name="date" type="date" required value="${existing?.date || today}" /></label>
-          <label class="field"><span>Hourly rate for this session</span><div class="money-input"><span>$</span><input name="rate" id="sessionRate" required inputmode="decimal" min="0" step="0.01" type="number" value="${existing ? (existing.rateCents/100).toFixed(2) : selectedClient ? (selectedClient.defaultRateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div><small>The saved session keeps this rate even if the client rate changes later.</small></label>
-          <label class="field session-note-field"><span>Session note <em>optional</em></span><textarea name="notes" rows="6" maxlength="500" placeholder="Brief work note or billing context…">${escapeHtml(existing?.notes || '')}</textarea></label>
+        <div class="quick-time-bay">
+          <span class="quick-time-kicker">QUICK TIMES</span>
+          <div class="quick-time-grid" id="sessionQuickTimes" aria-live="polite"></div>
+          <button type="button" class="quick-time-manage" id="quickTimeManage" hidden>Done</button>
+          <div class="quick-time-editor" id="quickTimeEditor" hidden>
+            <small id="quickTimeEditorTitle">Set quick time</small>
+            <div><label><span>Start</span><input type="time" id="quickTimeStart" step="300" /></label><label><span>End</span><input type="time" id="quickTimeEnd" step="300" /></label></div>
+            <span><button type="button" class="quick-time-remove" id="quickTimeDelete" hidden>Remove</button><button type="button" id="quickTimeCancel">Cancel</button><button type="button" id="quickTimeSave">Save</button></span>
+          </div>
+          <span class="quick-time-help">Three presets per client</span>
         </div>
-      </div>`;
+        <div class="paired-clock-face" data-clock-face="end">
+          <span class="paired-clock-kicker">END</span><strong class="paired-clock-label" id="clockEndLabel">${clockTimeLabel(initialEnd)}</strong>
+          <div class="paired-clock-dial" id="clockEndDial" role="slider" tabindex="0" aria-label="Choose end time" aria-valuetext="${clockTimeLabel(initialEnd)}"><div class="paired-clock-ticks" id="clockEndTicks" aria-hidden="true"></div><div class="paired-clock-numbers" id="clockEndNumbers" aria-hidden="true"></div><div class="paired-clock-hand" id="clockEndHand"><span></span></div><div class="paired-clock-center"><small>END</small><strong id="clockEndReadout">${clockTimeLabel(initialEnd) !== '—' ? clockTimeLabel(initialEnd) : clockTimeLabel(addMinutesToTime(initialStart || currentRoundedTime(),60))}</strong></div></div>
+          <div class="paired-period-toggle" aria-label="End time AM or PM"><button type="button" data-face-period="end-AM">AM</button><button type="button" data-face-period="end-PM">PM</button></div>
+        </div>
+        <div class="paired-clock-arc" aria-hidden="true"><span></span></div>
+        <div class="paired-session-total" id="clockDuration"><span><small>SESSION LENGTH</small><strong id="sessionDurationValue">Select both times</strong></span><i></i><span><small>SESSION VALUE</small><strong id="sessionValue">—</strong></span><em>Snaps to 5 min</em></div>
+      </section>
+      <details class="session-note-disclosure" ${existing?.notes ? 'open' : ''}><summary><span><b>Session note</b><small>Optional billing context or reminder</small></span><span aria-hidden="true">⌄</span></summary><div><textarea name="notes" rows="3" maxlength="500" placeholder="Brief work note or billing context…">${escapeHtml(existing?.notes || '')}</textarea></div></details>`;
     openModal($('#formSheet'));
     const select = $('#sessionClient');
-    select.addEventListener('change', () => { const option = select.selectedOptions[0]; if (option?.dataset.rate) $('#sessionRate').value = (Number(option.dataset.rate)/100).toFixed(2); });
-    initClockTimePicker(initialStart, initialEnd);
+    const picker = initPairedClockTimePicker(initialStart, initialEnd, selectedClientId);
+    select.addEventListener('change', () => {
+      const option = select.selectedOptions[0];
+      if (option?.dataset.rate) $('#sessionRate').value = (Number(option.dataset.rate)/100).toFixed(2);
+      $('#sessionClockPicker').dataset.clientColor = option?.dataset.color || 'blue';
+      picker.switchClient(select.value);
+      picker.updateSummary();
+    });
+    $('#sessionRate').addEventListener('input', picker.updateSummary);
   }
 
-  function initClockTimePicker(initialStart = '', initialEnd = '') {
-    const dial = $('#clockDial'); if (!dial) return;
-    const startInput = $('#clockStartInput'), endInput = $('#clockEndInput');
-    const startLabel = $('#clockStartLabel'), endLabel = $('#clockEndLabel');
-    const readout = $('#clockReadout'), targetLabel = $('#clockTargetLabel'), instruction = $('#clockInstruction');
-    const hand = $('#clockHand'), duration = $('#clockDuration'), stageText = $('#clockStageText');
-    const ticks = $('#clockTicks'), numbers = $('#clockNumbers');
-    let target = initialStart && !initialEnd ? 'end' : 'start';
-    let previewTime = target === 'start' ? (initialStart || currentRoundedTime()) : (initialEnd || initialStart || currentRoundedTime());
-    let periodExplicit = { start: Boolean(initialStart), end: Boolean(initialEnd) };
-    let dragging = false;
+  function initPairedClockTimePicker(initialStart = '', initialEnd = '', initialClientId = '') {
+    const picker = $('#sessionClockPicker'); if (!picker) return { switchClient(){}, updateSummary(){} };
+    const inputs = { start: $('#clockStartInput'), end: $('#clockEndInput') };
+    const labels = { start: $('#clockStartLabel'), end: $('#clockEndLabel') };
+    const faces = {
+      start: { dial: $('#clockStartDial'), ticks: $('#clockStartTicks'), numbers: $('#clockStartNumbers'), hand: $('#clockStartHand'), readout: $('#clockStartReadout'), preview: initialStart || currentRoundedTime(), dragging: false },
+      end: { dial: $('#clockEndDial'), ticks: $('#clockEndTicks'), numbers: $('#clockEndNumbers'), hand: $('#clockEndHand'), readout: $('#clockEndReadout'), preview: initialEnd || addMinutesToTime(initialStart || currentRoundedTime(), 60), dragging: false }
+    };
+    let activeClientId = initialClientId;
+    let editingSlot = null;
 
-    ticks.innerHTML = Array.from({length:144}, (_, i) => {
-      const angleDeg = i * 2.5;
-      const angle = angleDeg * Math.PI / 180;
-      const x = 50 + 45.5 * Math.sin(angle), y = 50 - 45.5 * Math.cos(angle);
-      return `<span class="clock-tick ${i % 12 === 0 ? 'hour' : i % 3 === 0 ? 'quarter' : ''}" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${angleDeg}deg)"></span>`;
-    }).join('');
-    numbers.innerHTML = Array.from({length:12}, (_, i) => {
-      const hour = i === 0 ? 12 : i;
-      const angle = i * 30 * Math.PI / 180;
-      const x = 50 + 39 * Math.sin(angle), y = 50 - 39 * Math.cos(angle);
-      return `<span style="left:${x}%;top:${y}%">${hour}</span>`;
-    }).join('');
-
-    const activeInput = () => target === 'start' ? startInput : endInput;
-    const selectedValue = () => activeInput().value || previewTime || currentRoundedTime();
-    const periodFor = (value) => (timeToMinutes(value) ?? 0) >= 720 ? 'PM' : 'AM';
-
-    function setTarget(next) {
-      target = next;
-      const value = activeInput().value;
-      previewTime = value || (target === 'end' ? (startInput.value ? addMinutesToTime(startInput.value, 60) : currentRoundedTime()) : currentRoundedTime());
-      $$('.time-chip', $('#sessionClockPicker')).forEach(btn => btn.classList.toggle('active', btn.dataset.clockTarget === target));
-      targetLabel.textContent = target.toUpperCase();
-      instruction.textContent = target === 'start' ? 'Choose start time' : 'Choose end time';
-      stageText.textContent = target === 'start' ? 'Start time' : 'End time';
-      dial.setAttribute('aria-label', instruction.textContent);
-      renderDial();
+    function periodFor(value) { return (timeToMinutes(value) ?? 0) >= 720 ? 'PM' : 'AM'; }
+    function clockMarks(face) {
+      face.ticks.innerHTML = Array.from({length:144}, (_, i) => {
+        const degrees=i*2.5, angle=degrees*Math.PI/180, x=50+45*Math.sin(angle), y=50-45*Math.cos(angle);
+        return `<span class="paired-clock-tick ${i%12===0?'hour':i%3===0?'quarter':''}" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${degrees}deg)"></span>`;
+      }).join('');
+      face.numbers.innerHTML = Array.from({length:12}, (_, i) => {
+        const hour=i===0?12:i, angle=i*30*Math.PI/180, x=50+38*Math.sin(angle), y=50-38*Math.cos(angle);
+        return `<span style="left:${x}%;top:${y}%">${hour}</span>`;
+      }).join('');
     }
 
-    function inferEndPeriod(minutes12) {
-      const start = timeToMinutes(startInput.value);
-      if (start == null) return periodFor(previewTime);
-      const candidates = [minutes12, minutes12 + 720];
-      let best = null;
-      for (const candidate of candidates) {
-        let delta = candidate - start;
-        if (delta <= 0) delta += 1440;
-        if (best === null || delta < best.delta) best = { value: candidate % 1440, delta };
-      }
-      return best.value >= 720 ? 'PM' : 'AM';
+    function updateSummary() {
+      const start=inputs.start.value, end=inputs.end.value;
+      labels.start.textContent=clockTimeLabel(start); labels.end.textContent=clockTimeLabel(end);
+      const minutes=start&&end?minutesBetween(start,end):0;
+      $('#sessionDurationValue').textContent=minutes?durationExactLabel(minutes):start||end?'Choose the other time':'Select both times';
+      const rate=Number($('#sessionRate')?.value||0);
+      $('#sessionValue').textContent=minutes&&Number.isFinite(rate)?formatMoney(Math.round(minutes/60*rate*100),activeBusiness().currency):'—';
+      $('#clockDuration').classList.toggle('ready',Boolean(minutes));
+      renderQuickTimes();
     }
 
-    function composeTime(minutes12, period, isEnd = false) {
-      let normalized12 = ((minutes12 % 720) + 720) % 720;
-      let chosenPeriod = period;
-      if (isEnd && !periodExplicit.end) chosenPeriod = inferEndPeriod(normalized12);
-      return minutesToTime(normalized12 + (chosenPeriod === 'PM' ? 720 : 0));
+    function renderFace(target) {
+      const face=faces[target], value=inputs[target].value||face.preview;
+      face.preview=value;
+      const total=timeToMinutes(value)??0, angle=(total%720)/720*360;
+      face.hand.style.transform=`translateX(-50%) rotate(${angle}deg)`;
+      face.readout.textContent=clockTimeLabel(value);
+      face.dial.setAttribute('aria-valuetext',clockTimeLabel(value));
+      $$(`[data-face-period^="${target}-"]`,picker).forEach(btn=>btn.classList.toggle('active',btn.dataset.facePeriod.endsWith(periodFor(value))));
+      updateSummary();
     }
 
-    function renderDial() {
-      const value = selectedValue();
-      const total = timeToMinutes(value) ?? 0;
-      const within12 = total % 720;
-      const angle = (within12 / 720) * 360;
-      hand.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-      readout.textContent = clockTimeLabel(value);
-      dial.setAttribute('aria-valuetext', clockTimeLabel(value));
-      $$('[data-period]', $('#sessionClockPicker')).forEach(btn => btn.classList.toggle('active', btn.dataset.period === periodFor(value)));
-      startLabel.textContent = clockTimeLabel(startInput.value);
-      endLabel.textContent = clockTimeLabel(endInput.value);
-      if (startInput.value && endInput.value) {
-        const mins = minutesBetween(startInput.value, endInput.value);
-        duration.textContent = mins ? `${hoursLabel(mins)} session · ${clockTimeLabel(startInput.value)} → ${clockTimeLabel(endInput.value)}` : 'Start and end cannot be identical';
-        duration.classList.toggle('ready', Boolean(mins));
-      } else {
-        duration.textContent = target === 'start' ? 'Select a start time, then choose the end.' : 'Now select the end time.';
-        duration.classList.remove('ready');
-      }
+    function pointerTime(target,event) {
+      const face=faces[target], rect=face.dial.getBoundingClientRect();
+      const x=event.clientX-(rect.left+rect.width/2), y=event.clientY-(rect.top+rect.height/2);
+      let angle=Math.atan2(x,-y)*180/Math.PI; if(angle<0) angle+=360;
+      const minutes12=Math.round(((angle/360)*720)/5)*5%720;
+      return minutesToTime(minutes12+(periodFor(face.preview)==='PM'?720:0));
     }
 
-    function timeFromPointer(event) {
-      const rect = dial.getBoundingClientRect();
-      const x = event.clientX - (rect.left + rect.width / 2);
-      const y = event.clientY - (rect.top + rect.height / 2);
-      let angle = Math.atan2(x, -y) * 180 / Math.PI;
-      if (angle < 0) angle += 360;
-      const minutes12 = Math.round(((angle / 360) * 720) / 5) * 5 % 720;
-      const currentPeriod = periodFor(selectedValue());
-      return composeTime(minutes12, currentPeriod, target === 'end');
+    function bindFace(target) {
+      const face=faces[target]; clockMarks(face);
+      face.dial.addEventListener('pointerdown',event=>{event.preventDefault();face.dragging=true;face.dial.setPointerCapture?.(event.pointerId);face.preview=pointerTime(target,event);renderFace(target);});
+      face.dial.addEventListener('pointermove',event=>{if(!face.dragging)return;face.preview=pointerTime(target,event);renderFace(target);});
+      face.dial.addEventListener('pointerup',event=>{if(!face.dragging)return;face.dragging=false;face.preview=pointerTime(target,event);inputs[target].value=face.preview;renderFace(target);});
+      face.dial.addEventListener('pointercancel',()=>{face.dragging=false;renderFace(target);});
+      face.dial.addEventListener('keydown',event=>{
+        if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key))return;
+        event.preventDefault();
+        if(event.key==='Enter'||event.key===' '){inputs[target].value=face.preview;renderFace(target);return;}
+        const delta=event.key==='ArrowLeft'?-5:event.key==='ArrowRight'?5:event.key==='ArrowUp'?60:-60;
+        face.preview=addMinutesToTime(face.preview,delta);inputs[target].value=face.preview;renderFace(target);
+      });
     }
 
-    function previewFromPointer(event) {
-      previewTime = timeFromPointer(event);
-      renderDial();
+    function applyTimes(startTime,endTime) {
+      inputs.start.value=startTime; inputs.end.value=endTime;
+      faces.start.preview=startTime; faces.end.preview=endTime;
+      renderFace('start'); renderFace('end');
     }
 
-    function commitSelection() {
-      activeInput().value = previewTime;
-      if (target === 'start') {
-        periodExplicit.start = true;
-        renderDial();
-        setTimeout(() => setTarget('end'), 90);
-      } else {
-        renderDial();
-      }
+    function openQuickEditor(index) {
+      if(!activeClientId){showToast('Choose a client before saving a quick time.');return;}
+      editingSlot=index;
+      const slot=quickTimesForClient(activeClientId)[index];
+      $('#quickTimeEditorTitle').textContent=slot?`Edit quick time ${index+1}`:`Set quick time ${index+1}`;
+      $('#quickTimeStart').value=slot?.startTime||inputs.start.value||'';
+      $('#quickTimeEnd').value=slot?.endTime||inputs.end.value||'';
+      $('#quickTimeDelete').hidden=!slot;
+      $('#quickTimeEditor').hidden=false;
+      $('#quickTimeManage').hidden=false;
     }
 
-    dial.addEventListener('pointerdown', event => {
-      dragging = true;
-      dial.setPointerCapture?.(event.pointerId);
-      previewFromPointer(event);
-    });
-    dial.addEventListener('pointermove', event => { if (dragging) previewFromPointer(event); });
-    dial.addEventListener('pointerup', event => {
-      if (!dragging) return;
-      dragging = false;
-      previewFromPointer(event);
-      commitSelection();
-    });
-    dial.addEventListener('pointercancel', () => { dragging = false; });
-    dial.addEventListener('keydown', event => {
-      if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key)) return;
-      event.preventDefault();
-      if (event.key === 'Enter' || event.key === ' ') { activeInput().value = previewTime; if (target === 'start') setTarget('end'); renderDial(); return; }
-      const delta = event.key === 'ArrowLeft' ? -5 : event.key === 'ArrowRight' ? 5 : event.key === 'ArrowUp' ? 60 : -60;
-      previewTime = addMinutesToTime(selectedValue(), delta);
-      renderDial();
-    });
+    function closeQuickEditor(){editingSlot=null;$('#quickTimeEditor').hidden=true;$('#quickTimeManage').hidden=true;}
 
-    $$('[data-clock-target]', $('#sessionClockPicker')).forEach(btn => btn.addEventListener('click', () => setTarget(btn.dataset.clockTarget)));
-    $('#clockPrev').addEventListener('click', () => setTarget('start'));
-    $('#clockNext').addEventListener('click', () => setTarget('end'));
-    $$('[data-period]', $('#sessionClockPicker')).forEach(btn => btn.addEventListener('click', () => {
-      periodExplicit[target] = true;
-      const current = selectedValue();
-      const minutes = timeToMinutes(current) ?? 0;
-      const within12 = minutes % 720;
-      previewTime = minutesToTime(within12 + (btn.dataset.period === 'PM' ? 720 : 0));
-      if (activeInput().value) activeInput().value = previewTime;
-      renderDial();
+    function renderQuickTimes(switching=false) {
+      const host=$('#sessionQuickTimes'); if(!host)return;
+      if(switching)host.classList.add('is-switching');
+      const slots=activeClientId?quickTimesForClient(activeClientId):[null,null,null];
+      host.innerHTML=slots.map((slot,index)=>slot?`<div class="quick-time-slot filled"><button type="button" data-quick-apply="${index}"><small>QUICK ${index+1}</small><strong>${clockTimeLabel(slot.startTime)}</strong><span>→ ${clockTimeLabel(slot.endTime)}</span></button><button type="button" class="quick-time-edit" data-quick-edit="${index}" aria-label="Edit quick time ${index+1}">✎</button></div>`:`<button type="button" class="quick-time-slot empty" data-quick-edit="${index}" ${activeClientId?'':'disabled'}><small>QUICK ${index+1}</small><strong>＋ Set time</strong></button>`).join('');
+      $$('[data-quick-apply]',host).forEach(btn=>btn.addEventListener('click',()=>{const slot=quickTimesForClient(activeClientId)[Number(btn.dataset.quickApply)];if(slot)applyTimes(slot.startTime,slot.endTime);}));
+      $$('[data-quick-edit]',host).forEach(btn=>btn.addEventListener('click',()=>openQuickEditor(Number(btn.dataset.quickEdit))));
+      if(switching)setTimeout(()=>host.classList.remove('is-switching'),260);
+    }
+
+    function switchClient(clientId){activeClientId=clientId;closeQuickEditor();renderQuickTimes(true);}
+
+    bindFace('start'); bindFace('end');
+    $$('[data-face-period]',picker).forEach(btn=>btn.addEventListener('click',()=>{
+      const [target,period]=btn.dataset.facePeriod.split('-'), face=faces[target], minutes=timeToMinutes(face.preview)??0;
+      face.preview=minutesToTime(minutes%720+(period==='PM'?720:0));inputs[target].value=face.preview;renderFace(target);
     }));
-
-    setTarget(target);
+    $('#quickTimeCancel').addEventListener('click',closeQuickEditor);
+    $('#quickTimeManage').addEventListener('click',closeQuickEditor);
+    $('#quickTimeDelete').addEventListener('click',()=>{
+      if(editingSlot==null)return;
+      const slots=quickTimesForClient(activeClientId);slots[editingSlot]=null;saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time removed.');
+    });
+    $('#quickTimeSave').addEventListener('click',()=>{
+      const startTime=$('#quickTimeStart').value,endTime=$('#quickTimeEnd').value;
+      if(timeToMinutes(startTime)==null||timeToMinutes(endTime)==null||startTime===endTime){showToast('Choose two different times for this quick entry.');return;}
+      const slots=quickTimesForClient(activeClientId);slots[editingSlot]={startTime,endTime};saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time saved for this client.');
+    });
+    renderFace('start');renderFace('end');renderQuickTimes();
+    return {switchClient,updateSummary};
   }
 
   function openBusinessForm() {
