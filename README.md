@@ -1,8 +1,8 @@
-# Business Ledger — Phase 8, Revision 12
+# Business Ledger — Phase 8, Revision 13
 
-Current build: **Unified Session Surface + Fluid Clock Dragging**. Work sessions keep the independent clocks and three per-client quick-time pairs while placing client, date, rate, clocks, totals, and notes inside one continuous surface.
+Current build: **Integrated Session Console**. The work-session interface now behaves and reads as one composed instrument rather than separate controls placed inside an outer card.
 
-Revision 12 adds continuous circular finger dragging with live five-minute updates, reliable pointer capture/fallback handling, and natural noon/midnight crossing. Tap selection and all Revision 11 record-integrity rules remain intact.
+Revision 13 replaces the nested-card appearance with shared control rails, structural dividers, flush totals and notes, and a segmented quick-time bridge between the clocks. Revision 12's fluid circular dragging and all record-integrity rules remain intact.
 
 ## Typography scale refinement
 

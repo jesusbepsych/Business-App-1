@@ -361,3 +361,11 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Updates the selected time, AM/PM state, duration, and estimated value live during a drag, still snapping to five-minute increments.
 - Added pointer capture plus document-level fallback tracking so movement remains stable near and beyond the dial edge on touch browsers.
 - Preserved tap selection, keyboard adjustment, per-client preset transitions, authoritative session fields, overnight durations, and invoice protections.
+
+## Revision 13 — Integrated session console
+
+- Reworked the unified container into a single composed console rather than a collection of cards placed inside another card.
+- Joined Client, Date, and Hourly Rate into one continuous upper control rail with shared dividers and inset input wells.
+- Turned the three quick-time presets into one segmented bridge between the clock faces, with shared framing instead of three floating buttons.
+- Made AM/PM controls, live totals, and the optional note visually flush with the same internal architecture.
+- Preserved circular clock dragging, five-minute snapping, per-client preferences, responsive ordering, and the underlying session record model.
