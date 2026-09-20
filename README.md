@@ -1,8 +1,8 @@
-# Business Ledger — Phase 8, Revision 14
+# Business Ledger — Phase 8, Revision 15
 
-Current build: **Single-Surface Session Sheet**. The work-session title, controls, clocks, presets, totals, notes, and save actions now belong to one continuous modal surface.
+Current build: **Lighter Integrated Session Sheet**. The work-session interface retains one continuous surface, now with a brighter graphite-blue glass palette and an action area that dissolves into the sheet.
 
-Revision 14 removes the remaining framed console nested below “Mark the session.” The session sheet itself is now the console, with one outer boundary and internal structural dividers only. Fluid circular dragging and all record-integrity rules remain intact.
+Revision 15 removes the remaining footer-panel appearance around Cancel and Save Session while lightly brightening the full session console. Fluid circular dragging and all record-integrity rules remain intact.
 
 ## Typography scale refinement
 

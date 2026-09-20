@@ -376,3 +376,10 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Made the sheet itself the sole outer container for the title, close control, metadata rail, clocks, quick times, totals, note, and actions.
 - Retained internal dividers and subtle material changes only where they improve scanning; no secondary outer border or rounded container remains.
 - Preserved circular dragging, five-minute snapping, responsive layouts, client presets, validation, and record integrity.
+
+## Revision 15 — Lighter integrated session sheet
+
+- Removed the separate footer-bar treatment around Cancel and Save Session; actions now sit directly on the same continuous sheet material.
+- Shifted the full session interface toward a lighter graphite-blue glass palette without turning it bright or reducing text contrast.
+- Brightened the header, metadata rail, clock wells, quick-time bridge, totals, note field, dividers, and control borders as one coordinated system.
+- Preserved all clock gestures, quick-time behavior, responsive layouts, validation, and source-record integrity.
