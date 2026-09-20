@@ -3584,6 +3584,22 @@ html.atrium-lite .analytics-card,html.atrium-lite .analytics-kpi,html.atrium-lit
 @media(max-width:860px){.paired-clock-picker{grid-template-columns:1fr 1fr}.paired-clock-face{padding:17px 15px 15px}.quick-time-bay{padding:14px 15px;border:0;border-top:1px solid rgba(214,233,242,.085);border-bottom:1px solid rgba(214,233,242,.085);box-shadow:inset 0 10px 22px rgba(0,0,0,.065),inset 0 -10px 22px rgba(0,0,0,.065)}.quick-time-grid{grid-template-columns:repeat(3,1fr)}.quick-time-slot{border-right:1px solid rgba(215,233,242,.085);border-bottom:0}.quick-time-grid>:last-child{border-right:0}.paired-clock-arc{top:40%}}
 @media(max-width:540px){.paired-session-top{grid-template-columns:1fr}.paired-session-top .field{border-right:0;border-bottom:1px solid rgba(214,233,242,.085)}.paired-session-top .field:last-child{border-bottom:0}.paired-clock-face{padding:15px 8px 13px}.quick-time-bay{padding:13px 9px}.paired-session-total{padding:12px}.session-note-disclosure>summary{padding:0 13px}.session-note-disclosure>div{padding:0 13px 13px}}
 
+/* Revision 14 — one continuous session sheet */
+.session-form-sheet{padding:0;overflow:hidden auto;background:linear-gradient(148deg,rgba(17,30,40,.988),rgba(8,18,27,.994));border-color:rgba(206,228,239,.17);scrollbar-width:thin;scrollbar-color:rgba(139,192,218,.28) transparent}
+.session-form-sheet .sheet-head{position:relative;z-index:6;align-items:center;margin:0;padding:22px 24px 18px;border-bottom:1px solid rgba(214,233,242,.09);background:linear-gradient(90deg,rgba(255,255,255,.035),rgba(255,255,255,.012))}
+.session-form-sheet .sheet-head::after{content:"";position:absolute;right:70px;bottom:-1px;left:24px;height:1px;background:linear-gradient(90deg,rgba(239,196,111,.2),rgba(214,233,242,.05),transparent);pointer-events:none}
+.session-form-sheet .sheet-head .eyebrow{margin-bottom:5px;color:rgba(236,201,132,.64)}
+.session-form-sheet .sheet-head h2{color:#f1f6f8}
+.session-form-sheet .close-btn{width:38px;height:38px;border-color:rgba(215,233,242,.11);background:rgba(255,255,255,.035);color:rgba(241,247,249,.77);box-shadow:inset 0 1px rgba(255,255,255,.04)}
+.session-form-sheet .close-btn:hover{border-color:rgba(215,233,242,.2);background:rgba(255,255,255,.065);color:#fff}
+.session-form-sheet #dynamicForm,.session-form-sheet #formFields{gap:0;min-height:0}
+.session-form-sheet .paired-clock-picker{border:0;border-radius:0;background:radial-gradient(circle at 16% 34%,rgba(238,190,93,.065),transparent 29%),radial-gradient(circle at 84% 34%,color-mix(in srgb,var(--session-client-color) 9%,transparent),transparent 31%),linear-gradient(155deg,rgba(16,31,41,.3),rgba(5,15,24,.12));box-shadow:none;overflow:visible}
+.session-form-sheet .paired-clock-picker::before{left:24px;right:24px}
+.session-form-sheet .form-actions{position:sticky;z-index:7;bottom:0;margin:0;padding:14px 24px 19px;border-top:1px solid rgba(214,233,242,.09);background:linear-gradient(180deg,rgba(8,18,27,.86),rgba(8,18,27,.985) 32%);box-shadow:0 -12px 25px rgba(2,9,15,.1)}
+.session-form-sheet .form-actions .secondary-btn{border-color:rgba(215,233,242,.11);background:rgba(255,255,255,.035);color:rgba(241,247,249,.72)}
+@media(max-width:860px){.session-form-sheet{padding:0}.session-form-sheet .sheet-head{padding:19px 20px 16px}.session-form-sheet .sheet-head::after{left:20px}.session-form-sheet .form-actions{bottom:0;margin:0;padding:13px 20px 17px}}
+@media(max-width:540px){.session-form-sheet{padding:0}.session-form-sheet .sheet-head{padding:16px 15px 14px}.session-form-sheet .sheet-head::after{left:15px;right:60px}.session-form-sheet .form-actions{bottom:0;margin:0;padding:11px 15px 14px}}
+
 /* Phase 8 chart refinement — scaled axes, fluid scrubber, and composition rings */
 .analytics-legend .net:before{background:#72deb0;box-shadow:0 0 12px rgba(114,222,176,.48)}
 .analytics-svg.scrubbable-chart{touch-action:pan-y;user-select:none;-webkit-user-select:none}

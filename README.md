@@ -1,8 +1,8 @@
-# Business Ledger — Phase 8, Revision 13
+# Business Ledger — Phase 8, Revision 14
 
-Current build: **Integrated Session Console**. The work-session interface now behaves and reads as one composed instrument rather than separate controls placed inside an outer card.
+Current build: **Single-Surface Session Sheet**. The work-session title, controls, clocks, presets, totals, notes, and save actions now belong to one continuous modal surface.
 
-Revision 13 replaces the nested-card appearance with shared control rails, structural dividers, flush totals and notes, and a segmented quick-time bridge between the clocks. Revision 12's fluid circular dragging and all record-integrity rules remain intact.
+Revision 14 removes the remaining framed console nested below “Mark the session.” The session sheet itself is now the console, with one outer boundary and internal structural dividers only. Fluid circular dragging and all record-integrity rules remain intact.
 
 ## Typography scale refinement
 

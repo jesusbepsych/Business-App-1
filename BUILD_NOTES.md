@@ -369,3 +369,10 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Turned the three quick-time presets into one segmented bridge between the clock faces, with shared framing instead of three floating buttons.
 - Made AM/PM controls, live totals, and the optional note visually flush with the same internal architecture.
 - Preserved circular clock dragging, five-minute snapping, per-client preferences, responsive ordering, and the underlying session record model.
+
+## Revision 14 — Single-surface session sheet
+
+- Removed the remaining framed console beneath the session title, eliminating the modal-within-a-modal appearance.
+- Made the sheet itself the sole outer container for the title, close control, metadata rail, clocks, quick times, totals, note, and actions.
+- Retained internal dividers and subtle material changes only where they improve scanning; no secondary outer border or rounded container remains.
+- Preserved circular dragging, five-minute snapping, responsive layouts, client presets, validation, and record integrity.
