@@ -3971,7 +3971,21 @@ html.atrium-lite .analytics-card,html.atrium-lite .analytics-kpi,html.atrium-lit
   .integrated-profile-sheet #formFields>.optional-fields{padding-right:16px;padding-left:16px}
   .integrated-profile-sheet .form-actions{padding:11px 16px calc(15px + env(safe-area-inset-bottom))}
   .integrated-profile-sheet .form-actions::before{right:16px;left:16px}
-  .integrated-profile-sheet .form-actions .primary-btn{min-width:0;flex:1}
+.integrated-profile-sheet .form-actions .primary-btn{min-width:0;flex:1}
+}
+
+/* Revision 21 — single clock session entry. */
+.single-clock-timebar{display:flex;align-items:center;gap:10px;padding:12px 24px 4px;border-bottom:1px solid rgba(224,240,247,.1)}
+.single-time-chip{display:grid;gap:3px;min-width:126px;padding:10px 14px;border:1px solid rgba(224,240,247,.15);border-radius:13px;background:rgba(255,255,255,.045);color:#f7fbfd;text-align:left;font:inherit;cursor:pointer;transition:background .18s ease,border-color .18s ease,box-shadow .18s ease}
+.single-time-chip span{font-size:9px;letter-spacing:.13em;color:rgba(231,241,246,.55);font-weight:800}.single-time-chip strong{font-size:16px}.single-time-chip.active{border-color:rgba(132,215,255,.62);background:linear-gradient(145deg,rgba(113,197,239,.17),rgba(144,134,227,.12));box-shadow:0 0 0 2px rgba(112,207,255,.11),0 0 18px rgba(99,194,245,.12)}
+.single-time-arrow{color:rgba(196,225,240,.62);font-size:17px}.single-clock-hint{margin-left:auto;color:rgba(228,239,245,.5);font-size:10px}
+.single-clock-editor{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 24px 0}.single-direct-time{display:flex;align-items:center;gap:8px;color:rgba(224,237,244,.58);font-size:10px}.single-direct-time input{min-height:31px;padding:4px 8px;border:1px solid rgba(220,237,245,.17);border-radius:8px;background:rgba(255,255,255,.045);color:#f5fbfd;color-scheme:dark;font:inherit}.single-clock-undo{padding:5px 9px;border:1px solid rgba(154,211,247,.25);border-radius:8px;background:rgba(107,177,224,.08);color:#c7e9ff;font:inherit;font-size:10px;cursor:pointer}.single-clock-undo:hover{background:rgba(107,177,224,.15)}
+.single-clock-face{display:grid;justify-items:center;gap:8px;padding:12px 24px 4px}.single-clock-face .paired-clock-dial{width:min(340px,48vw);height:min(340px,48vw);min-width:218px;min-height:218px}.single-clock-face .paired-clock-kicker{color:rgba(163,221,249,.74)}.single-clock-face .paired-period-toggle{margin-top:-2px}
+.single-clock-arc{height:20px;margin:0 24px;position:relative}.single-clock-arc::before{content:"";position:absolute;left:23%;right:23%;top:0;height:38px;border-top:1px solid rgba(125,212,250,.2);border-radius:50%}.single-clock-arc span{position:absolute;left:50%;top:-4px;width:5px;height:5px;border-radius:50%;background:#9ec9ff;box-shadow:0 0 12px #89dfff}
+.single-clock-dial{touch-action:none}.single-clock-dial .paired-clock-hand{background:linear-gradient(180deg,#b5e9ff,#8c9bff)}.single-clock-dial .paired-clock-center{border-color:rgba(160,218,255,.35);background:rgba(82,110,153,.7);box-shadow:0 0 22px rgba(92,191,247,.15)}
+@media(max-width:860px){.single-clock-timebar{padding-right:20px;padding-left:20px}.single-clock-editor{padding-right:20px;padding-left:20px}.single-clock-face{padding-right:20px;padding-left:20px}.single-clock-arc{margin-right:20px;margin-left:20px}}
+@media(max-width:540px){.single-clock-timebar{padding-right:15px;padding-left:15px}.single-time-chip{min-width:0;flex:1}.single-time-chip strong{font-size:14px}.single-clock-hint{display:none}.single-clock-editor{padding-right:15px;padding-left:15px}.single-direct-time{font-size:9px}.single-clock-face{padding-right:15px;padding-left:15px}.single-clock-face .paired-clock-dial{width:min(310px,78vw);height:min(310px,78vw)}.single-clock-arc{margin-right:15px;margin-left:15px}}
+@media(prefers-reduced-motion:reduce){.single-time-chip,.single-clock-undo{transition:none}}
   .client-profile-sheet .client-color-picker{gap:9px}
   .client-profile-sheet .client-color-option,.client-profile-sheet .client-color-swatch{width:32px;height:32px}
 }

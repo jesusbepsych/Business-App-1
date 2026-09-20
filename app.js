@@ -2769,10 +2769,20 @@
       </div>
         <input type="hidden" name="startTime" id="clockStartInput" value="${initialStart}" />
         <input type="hidden" name="endTime" id="clockEndInput" value="${initialEnd}" />
-        <div class="paired-clock-face" data-clock-face="start">
-          <span class="paired-clock-kicker">START</span><strong class="paired-clock-label" id="clockStartLabel">${clockTimeLabel(initialStart)}</strong>
-          <div class="paired-clock-dial" id="clockStartDial" role="slider" tabindex="0" aria-label="Choose start time" aria-valuetext="${clockTimeLabel(initialStart)}"><div class="paired-clock-ticks" id="clockStartTicks" aria-hidden="true"></div><div class="paired-clock-numbers" id="clockStartNumbers" aria-hidden="true"></div><div class="paired-clock-hand" id="clockStartHand"><span></span></div><div class="paired-clock-center"><small>START</small><strong id="clockStartReadout">${clockTimeLabel(initialStart) !== '—' ? clockTimeLabel(initialStart) : clockTimeLabel(currentRoundedTime())}</strong></div></div>
-          <div class="paired-period-toggle" aria-label="Start time AM or PM"><button type="button" data-face-period="start-AM">AM</button><button type="button" data-face-period="start-PM">PM</button></div>
+        <div class="single-clock-timebar" aria-label="Session times">
+          <button type="button" class="single-time-chip active" data-clock-target="start"><span>START</span><strong id="clockStartLabel">${clockTimeLabel(initialStart)}</strong></button>
+          <span class="single-time-arrow" aria-hidden="true">→</span>
+          <button type="button" class="single-time-chip" data-clock-target="end"><span>END</span><strong id="clockEndLabel">${clockTimeLabel(initialEnd)}</strong></button>
+          <span class="single-clock-hint">Tap a time to adjust</span>
+        </div>
+        <div class="single-clock-editor" id="singleClockEditor">
+          <label class="single-direct-time"><span>Precise correction</span><input type="time" id="singleDirectTime" step="300" aria-label="Edit selected session time" /></label>
+          <button type="button" id="singleClockUndo" class="single-clock-undo" hidden>Undo last change</button>
+        </div>
+        <div class="single-clock-face" data-clock-face="single">
+          <span class="paired-clock-kicker" id="singleClockTargetLabel">START TIME</span>
+          <div class="paired-clock-dial single-clock-dial" id="singleClockDial" role="slider" tabindex="0" aria-label="Choose selected session time" aria-valuetext="${clockTimeLabel(initialStart)}"><div class="paired-clock-ticks" id="singleClockTicks" aria-hidden="true"></div><div class="paired-clock-numbers" id="singleClockNumbers" aria-hidden="true"></div><div class="paired-clock-hand" id="singleClockHand"><span></span></div><div class="paired-clock-center"><small id="singleClockCenterLabel">START</small><strong id="singleClockReadout">${clockTimeLabel(initialStart) !== '—' ? clockTimeLabel(initialStart) : clockTimeLabel(currentRoundedTime())}</strong></div></div>
+          <div class="paired-period-toggle" aria-label="Selected time AM or PM"><button type="button" data-face-period="single-AM">AM</button><button type="button" data-face-period="single-PM">PM</button></div>
         </div>
         <div class="quick-time-bay">
           <span class="quick-time-kicker">QUICK TIMES</span>
@@ -2785,18 +2795,13 @@
           </div>
           <span class="quick-time-help">Three presets per client</span>
         </div>
-        <div class="paired-clock-face" data-clock-face="end">
-          <span class="paired-clock-kicker">END</span><strong class="paired-clock-label" id="clockEndLabel">${clockTimeLabel(initialEnd)}</strong>
-          <div class="paired-clock-dial" id="clockEndDial" role="slider" tabindex="0" aria-label="Choose end time" aria-valuetext="${clockTimeLabel(initialEnd)}"><div class="paired-clock-ticks" id="clockEndTicks" aria-hidden="true"></div><div class="paired-clock-numbers" id="clockEndNumbers" aria-hidden="true"></div><div class="paired-clock-hand" id="clockEndHand"><span></span></div><div class="paired-clock-center"><small>END</small><strong id="clockEndReadout">${clockTimeLabel(initialEnd) !== '—' ? clockTimeLabel(initialEnd) : clockTimeLabel(addMinutesToTime(initialStart || currentRoundedTime(),60))}</strong></div></div>
-          <div class="paired-period-toggle" aria-label="End time AM or PM"><button type="button" data-face-period="end-AM">AM</button><button type="button" data-face-period="end-PM">PM</button></div>
-        </div>
-        <div class="paired-clock-arc" aria-hidden="true"><span></span></div>
+        <div class="single-clock-arc" aria-hidden="true"><span></span></div>
         <div class="paired-session-total" id="clockDuration"><span><small>SESSION LENGTH</small><strong id="sessionDurationValue">Select both times</strong></span><i></i><span><small>SESSION VALUE</small><strong id="sessionValue">—</strong></span><em>Snaps to 5 min</em></div>
         <details class="session-note-disclosure" ${existing?.notes ? 'open' : ''}><summary><span><b>Session note</b><small>Optional billing context or reminder</small></span><span aria-hidden="true">⌄</span></summary><div><textarea name="notes" rows="3" maxlength="500" placeholder="Brief work note or billing context…">${escapeHtml(existing?.notes || '')}</textarea></div></details>
       </section>`;
     openModal($('#formSheet'));
     const select = $('#sessionClient');
-    const picker = initPairedClockTimePicker(initialStart, initialEnd, selectedClientId);
+    const picker = initSingleClockTimePicker(initialStart, initialEnd, selectedClientId);
     select.addEventListener('change', () => {
       const option = select.selectedOptions[0];
       if (option?.dataset.rate) $('#sessionRate').value = (Number(option.dataset.rate)/100).toFixed(2);
@@ -2805,6 +2810,60 @@
       picker.updateSummary();
     });
     $('#sessionRate').addEventListener('input', picker.updateSummary);
+  }
+
+  // Single-dial session entry: the dial edits whichever time chip is active.
+  // Both values stay visible, while direct time input and one-step undo make corrections painless.
+  function initSingleClockTimePicker(initialStart = '', initialEnd = '', initialClientId = '') {
+    const picker=$('#sessionClockPicker'); if(!picker) return {switchClient(){},updateSummary(){}};
+    const inputs={start:$('#clockStartInput'),end:$('#clockEndInput')};
+    const faces={dial:$('#singleClockDial'),ticks:$('#singleClockTicks'),numbers:$('#singleClockNumbers'),hand:$('#singleClockHand'),readout:$('#singleClockReadout')};
+    let active='start', activeClientId=initialClientId, previous=null, dragging=false, pointerId=null, lastAngle=0, dragMinutes=0, editingSlot=null;
+    const valueFor=target=>inputs[target].value||'';
+    const periodFor=value=>(timeToMinutes(value)??0)>=720?'PM':'AM';
+    const labelFor=target=>target==='start'?'START':'END';
+    const clockMarks=()=>{
+      faces.ticks.innerHTML=Array.from({length:144},(_,i)=>{const degrees=i*2.5,a=degrees*Math.PI/180,x=50+45*Math.sin(a),y=50-45*Math.cos(a);return `<span class="paired-clock-tick ${i%12===0?'hour':i%3===0?'quarter':''}" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${degrees}deg)"></span>`}).join('');
+      faces.numbers.innerHTML=Array.from({length:12},(_,i)=>{const h=i===0?12:i,a=i*30*Math.PI/180,x=50+38*Math.sin(a),y=50-38*Math.cos(a);return `<span style="left:${x}%;top:${y}%">${h}</span>`}).join('');
+    };
+    function updateSummary(){
+      const start=valueFor('start'),end=valueFor('end'),minutes=start&&end?minutesBetween(start,end):0;
+      $('#clockStartLabel').textContent=clockTimeLabel(start);$('#clockEndLabel').textContent=clockTimeLabel(end);
+      $('#sessionDurationValue').textContent=minutes?durationExactLabel(minutes):start||end?'Choose the other time':'Select both times';
+      const rate=Number($('#sessionRate')?.value||0);$('#sessionValue').textContent=minutes&&Number.isFinite(rate)?formatMoney(Math.round(minutes/60*rate*100),activeBusiness().currency):'—';$('#clockDuration').classList.toggle('ready',Boolean(minutes));
+      renderQuickTimes();
+    }
+    function render(){
+      const value=valueFor(active)||currentRoundedTime(),total=timeToMinutes(value)??0,angle=(total%720)/720*360;
+      faces.hand.style.transform=`translateX(-50%) rotate(${angle}deg)`;faces.readout.textContent=clockTimeLabel(value);faces.dial.setAttribute('aria-valuetext',clockTimeLabel(value));
+      $('#singleClockTargetLabel').textContent=`${labelFor(active)} TIME`;$('#singleClockCenterLabel').textContent=labelFor(active);
+      $('#singleDirectTime').value=value;
+      $$('[data-clock-target]',picker).forEach(btn=>btn.classList.toggle('active',btn.dataset.clockTarget===active));
+      $$('[data-face-period]',picker).forEach(btn=>btn.classList.toggle('active',btn.dataset.facePeriod.endsWith(periodFor(value))));
+      updateSummary();
+    }
+    function angleFor(event){const rect=faces.dial.getBoundingClientRect(),x=event.clientX-(rect.left+rect.width/2),y=event.clientY-(rect.top+rect.height/2);let a=Math.atan2(x,-y)*180/Math.PI;return a<0?a+360:a;}
+    function setTime(value,remember=true){if(!value)return;if(remember&&inputs[active].value!==value)previous={target:active,value:inputs[active].value};inputs[active].value=value;render();$('#singleClockUndo').hidden=!previous;}
+    const move=event=>{if(!dragging||(pointerId!=null&&event.pointerId!==pointerId))return;if(event.cancelable)event.preventDefault();const a=angleFor(event);let delta=a-lastAngle;if(delta>180)delta-=360;if(delta<-180)delta+=360;dragMinutes=(dragMinutes+delta*2+1440)%1440;lastAngle=a;setTime(minutesToTime(Math.round(dragMinutes/5)*5),false);};
+    const finish=event=>{if(!dragging)return;if(event?.type==='pointerup')move(event);dragging=false;pointerId=null;faces.dial.classList.remove('is-adjusting');document.removeEventListener?.('pointermove',move);document.removeEventListener?.('pointerup',finish);document.removeEventListener?.('pointercancel',finish);};
+    faces.dial.addEventListener('pointerdown',event=>{if(event.cancelable)event.preventDefault();const a=angleFor(event),value=valueFor(active)||currentRoundedTime();previous={target:active,value:inputs[active].value};dragging=true;pointerId=event.pointerId;lastAngle=a;dragMinutes=(Math.round((a/360*720)/5)*5%720)+(periodFor(value)==='PM'?720:0);faces.dial.classList.add('is-adjusting');setTime(minutesToTime(dragMinutes),false);try{faces.dial.setPointerCapture?.(event.pointerId)}catch(error){}document.addEventListener('pointermove',move,{passive:false});document.addEventListener('pointerup',finish);document.addEventListener('pointercancel',finish);});
+    faces.dial.addEventListener('pointermove',move,{passive:false});
+    faces.dial.addEventListener('pointerup',finish);
+    faces.dial.addEventListener('pointercancel',finish);
+    faces.dial.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key))return;event.preventDefault();if(event.key==='Enter'||event.key===' '){faces.dial.blur();return;}setTime(addMinutesToTime(valueFor(active)||currentRoundedTime(),event.key==='ArrowLeft'?-5:event.key==='ArrowRight'?5:event.key==='ArrowUp'?60:-60));});
+    $$('[data-clock-target]',picker).forEach(btn=>btn.addEventListener('click',()=>{active=btn.dataset.clockTarget;render();}));
+    $('#singleDirectTime').addEventListener('change',event=>setTime(event.target.value));
+    $('#singleClockUndo').addEventListener('click',()=>{if(!previous)return;const target=previous.target;const value=previous.value;previous=null;active=target;inputs[target].value=value;render();$('#singleClockUndo').hidden=true;});
+    $$('[data-face-period]',picker).forEach(btn=>btn.addEventListener('click',()=>{const value=valueFor(active)||currentRoundedTime(),minutes=timeToMinutes(value)??0;setTime(minutesToTime(minutes%720+(btn.dataset.facePeriod.endsWith('PM')?720:0)));}));
+    function applyTimes(start,end){previous={target:active,value:inputs[active].value};inputs.start.value=start;inputs.end.value=end;render();$('#singleClockUndo').hidden=false;}
+    function openQuickEditor(index){if(!activeClientId){showToast('Choose a client before saving a quick time.');return;}editingSlot=index;const slot=quickTimesForClient(activeClientId)[index];$('#quickTimeEditorTitle').textContent=slot?`Edit quick time ${index+1}`:`Set quick time ${index+1}`;$('#quickTimeStart').value=slot?.startTime||inputs.start.value||'';$('#quickTimeEnd').value=slot?.endTime||inputs.end.value||'';$('#quickTimeDelete').hidden=!slot;$('#quickTimeEditor').hidden=false;$('#quickTimeManage').hidden=false;}
+    function closeQuickEditor(){editingSlot=null;$('#quickTimeEditor').hidden=true;$('#quickTimeManage').hidden=true;}
+    function renderQuickTimes(switching=false){const host=$('#sessionQuickTimes');if(!host)return;if(switching)host.classList.add('is-switching');const slots=activeClientId?quickTimesForClient(activeClientId):[null,null,null];host.innerHTML=slots.map((slot,index)=>slot?`<div class="quick-time-slot filled"><button type="button" data-quick-apply="${index}"><small>QUICK ${index+1}</small><strong>${clockTimeLabel(slot.startTime)}</strong><span>→ ${clockTimeLabel(slot.endTime)}</span></button><button type="button" class="quick-time-edit" data-quick-edit="${index}" aria-label="Edit quick time ${index+1}">✎</button></div>`:`<button type="button" class="quick-time-slot empty" data-quick-edit="${index}" ${activeClientId?'':'disabled'}><small>QUICK ${index+1}</small><strong>＋ Set time</strong></button>`).join('');$$('[data-quick-apply]',host).forEach(btn=>btn.addEventListener('click',()=>{const slot=quickTimesForClient(activeClientId)[Number(btn.dataset.quickApply)];if(slot)applyTimes(slot.startTime,slot.endTime);}));$$('[data-quick-edit]',host).forEach(btn=>btn.addEventListener('click',()=>openQuickEditor(Number(btn.dataset.quickEdit))));if(switching)setTimeout(()=>host.classList.remove('is-switching'),260);}
+    function switchClient(clientId){activeClientId=clientId;closeQuickEditor();renderQuickTimes(true);}
+    $('#quickTimeCancel').addEventListener('click',closeQuickEditor);$('#quickTimeManage').addEventListener('click',closeQuickEditor);
+    $('#quickTimeDelete').addEventListener('click',()=>{if(editingSlot==null)return;const slots=quickTimesForClient(activeClientId);slots[editingSlot]=null;saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time removed.');});
+    $('#quickTimeSave').addEventListener('click',()=>{const start=$('#quickTimeStart').value,end=$('#quickTimeEnd').value;if(timeToMinutes(start)==null||timeToMinutes(end)==null||start===end){showToast('Choose two different times for this quick entry.');return;}const slots=quickTimesForClient(activeClientId);slots[editingSlot]={startTime:start,endTime:end};saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time saved for this client.');});
+    clockMarks();render();renderQuickTimes();return {switchClient,updateSummary};
   }
 
   function initPairedClockTimePicker(initialStart = '', initialEnd = '', initialClientId = '') {

@@ -1,0 +1,158 @@
+/* Revision 20: surface-only treatment. No geometry or workflow overrides. */
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) {
+  --aurora-text:#f5f8ff;
+  --aurora-muted:#d1deee;
+  color:var(--aurora-text);
+  border-color:rgba(173,209,255,.8);
+  background:
+    radial-gradient(ellipse at 0% 20%,rgba(76,195,240,.22),transparent 55%),
+    radial-gradient(ellipse at 100% 70%,rgba(161,131,237,.24),transparent 57%),
+    linear-gradient(125deg,rgba(91,122,153,.9),rgba(62,82,113,.94) 53%,rgba(85,91,131,.92));
+  box-shadow:inset 1px 0 0 rgba(175,239,255,.85),inset -1px 0 0 rgba(213,183,255,.82),
+    inset 0 1px 0 rgba(239,247,255,.7),inset 0 -1px 0 rgba(193,209,255,.5),
+    -3px 0 12px rgba(80,206,255,.2),3px 0 12px rgba(176,137,249,.2),0 24px 70px rgba(5,13,30,.4);
+  -webkit-backdrop-filter:blur(18px) saturate(1.12);
+  backdrop-filter:blur(18px) saturate(1.12);
+  scrollbar-color:rgba(178,204,244,.55) transparent;
+}
+/* Reflections belong to the complete console, not separate header/footer plates. */
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(.sheet-head,#formFields,.form-actions) {
+  background:transparent;
+}
+#formSheet.client-profile-sheet .sheet-head::after {
+  background:linear-gradient(90deg,rgba(151,227,255,.6),rgba(198,185,250,.3),transparent);
+}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(h2,.field>span,.compose-details-heading,summary,.check-row strong,.client-color-field legend) {color:var(--aurora-text)}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(.eyebrow,.compose-prompt>span) {color:#d6e4ff}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(.compose-hint,.payment-invoice-hint,.payment-trace-note,.field>small,.field>span small,.field>span em,.compose-details-heading small,.client-color-field>small,.review-toggle small,.receipt-upload-copy small,.check-row small,.optional-fields>summary span) {color:var(--aurora-muted)}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(.field input,.field select,.field textarea,.compose-prompt input) {
+  color:var(--aurora-text);
+  border-color:rgba(184,214,246,.48);
+  background:linear-gradient(145deg,rgba(203,226,255,.1),rgba(17,35,65,.18));
+  box-shadow:inset 0 1px 0 rgba(241,249,255,.12),inset 0 -1px 0 rgba(10,28,56,.09);
+  color-scheme:dark;
+  transition:border-color .18s ease,box-shadow .18s ease,background-color .18s ease;
+}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(input,textarea)::placeholder {color:#c6d5e8;opacity:1}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) select option {background:#3a4b68;color:#f5f8ff}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(.field input,.field select,.field textarea,.compose-prompt input):focus {
+  border-color:#b2e6ff;
+  background-color:rgba(160,195,250,.08);
+  box-shadow:inset 0 1px 0 rgba(236,248,255,.2),0 0 0 2px rgba(158,217,255,.23),0 0 15px rgba(116,182,255,.17);
+}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(input,select,textarea,summary,button):focus-visible {outline:2px solid #c6e8ff;outline-offset:3px}
+#formSheet:is(.expense-compose-sheet,.payment-compose-sheet) .compose-prompt input {
+  border-color:rgba(177,222,255,.85);
+  box-shadow:inset 0 1px 0 rgba(245,250,255,.25),0 0 0 1px rgba(180,193,255,.35),0 0 13px rgba(113,199,255,.1);
+}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(.compose-details,.receipt-upload-card,.optional-fields) {
+  background:rgba(196,216,255,.035);
+  border-color:rgba(191,215,249,.28);
+  color:var(--aurora-text);
+}
+#formSheet.client-profile-sheet #formFields>.optional-fields {background:transparent}
+#formSheet.client-profile-sheet #formFields>:is(.field,.field-row,.client-color-field,.check-row),
+#formSheet.client-profile-sheet #formFields>.field-row>.field {border-color:rgba(189,212,246,.18)}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) .form-actions .primary-btn {
+  background:linear-gradient(115deg,#a8daff,#a9b6ff 72%,#b6b5ff);
+  border-color:rgba(224,238,255,.65);
+  color:#11243e;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.42),0 5px 18px rgba(120,158,255,.2);
+}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) .form-actions .primary-btn:hover {background:linear-gradient(115deg,#bce5ff,#bac5ff 72%,#c5c1ff)}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(.secondary-btn,.close-btn) {
+  background:linear-gradient(145deg,rgba(208,227,255,.15),rgba(112,137,191,.13));
+  color:var(--aurora-text);
+  border-color:rgba(191,215,249,.4);
+  box-shadow:inset 0 1px 0 rgba(245,250,255,.13);
+}
+#formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) input[type=checkbox] {accent-color:#b3c9ff}
+/* Retain each client's own swatch colors and meaningful status colors. */
+html.atrium-lite #formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) {
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  background:
+    radial-gradient(ellipse at 0% 20%,rgba(80,198,245,.18),transparent 55%),
+    radial-gradient(ellipse at 100% 70%,rgba(163,135,236,.23),transparent 57%),
+    linear-gradient(125deg,rgba(79,111,145,.98),rgba(61,79,110,.985) 53%,rgba(80,85,125,.985));
+}
+@media(prefers-reduced-motion:reduce){
+  #formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(input,select,textarea,button,summary){transition:none}
+}
+
+/* Revision 22: extend the same Aurora Frost material to the remaining entry
+   consoles. These rules intentionally change only paint, light, and focus
+   treatment; layout, sizing, controls, and workflow remain untouched. */
+#formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet),
+#invoiceSheet.invoice-sheet {
+  --aurora-text:#f5f8ff;
+  --aurora-muted:#d1deee;
+  color:var(--aurora-text);
+  border-color:rgba(173,209,255,.8);
+  background:
+    radial-gradient(ellipse at 0% 18%,rgba(76,195,240,.2),transparent 54%),
+    radial-gradient(ellipse at 100% 74%,rgba(161,131,237,.23),transparent 57%),
+    linear-gradient(125deg,rgba(91,122,153,.91),rgba(62,82,113,.95) 53%,rgba(85,91,131,.93));
+  box-shadow:inset 1px 0 0 rgba(175,239,255,.85),inset -1px 0 0 rgba(213,183,255,.82),
+    inset 0 1px 0 rgba(239,247,255,.7),inset 0 -1px 0 rgba(193,209,255,.5),
+    -3px 0 12px rgba(80,206,255,.2),3px 0 12px rgba(176,137,249,.2),0 24px 70px rgba(5,13,30,.4);
+  -webkit-backdrop-filter:blur(18px) saturate(1.12);
+  backdrop-filter:blur(18px) saturate(1.12);
+  scrollbar-color:rgba(178,204,244,.55) transparent;
+}
+#formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(.sheet-head,#formFields,.form-actions),
+#invoiceSheet.invoice-sheet :is(.invoice-sheet-head,.invoice-calendar-card,.invoice-session-column,.invoice-form-actions) {background-color:transparent}
+#formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(h2,.field>span,.eyebrow,summary,.check-row strong,.client-color-field legend),
+#invoiceSheet.invoice-sheet :is(h2,.eyebrow,.invoice-session-heading strong,.invoice-calendar-head strong,.invoice-disclosure>summary) {color:var(--aurora-text)}
+#formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(.field>small,.field>span small,.field>span em,.quick-time-help,.single-clock-hint,.route-details>summary small,.route-details-body small,.mileage-route-result small,.mileage-purpose small,.check-row small),
+#invoiceSheet.invoice-sheet :is(.invoice-sheet-head small,.invoice-session-heading small,.invoice-sweep-hint,.invoice-disclosure>summary small,.invoice-client-change-confirm small) {color:var(--aurora-muted)}
+#formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(input,select,textarea,.single-time-chip,.quick-time-slot,.route-location-field input,.route-details,summary),
+#invoiceSheet.invoice-sheet :is(input,select,textarea,.invoice-calendar-basics .field,.invoice-calendar-card,.invoice-session-item,.invoice-disclosure) {
+  color:var(--aurora-text);
+  border-color:rgba(184,214,246,.48);
+  background:linear-gradient(145deg,rgba(203,226,255,.1),rgba(17,35,65,.18));
+  box-shadow:inset 0 1px 0 rgba(241,249,255,.12),inset 0 -1px 0 rgba(10,28,56,.09);
+  color-scheme:dark;
+}
+#formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(input,textarea)::placeholder,
+#invoiceSheet.invoice-sheet :is(input,textarea)::placeholder {color:#c6d5e8;opacity:1}
+#formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(input,select,textarea):focus,
+#invoiceSheet.invoice-sheet :is(input,select,textarea):focus {
+  border-color:#b2e6ff;
+  background-color:rgba(160,195,250,.08);
+  box-shadow:inset 0 1px 0 rgba(236,248,255,.2),0 0 0 2px rgba(158,217,255,.23),0 0 15px rgba(116,182,255,.17);
+}
+#formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(input,select,textarea,summary,button):focus-visible,
+#invoiceSheet.invoice-sheet :is(input,select,textarea,summary,button):focus-visible {outline:2px solid #c6e8ff;outline-offset:3px}
+#formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) .form-actions .primary-btn,
+#invoiceSheet.invoice-sheet .invoice-form-actions .primary-btn {
+  background:linear-gradient(115deg,#a8daff,#a9b6ff 72%,#b6b5ff);
+  border-color:rgba(224,238,255,.65);
+  color:#11243e;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.42),0 5px 18px rgba(120,158,255,.2);
+}
+#formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(.secondary-btn,.close-btn),
+#invoiceSheet.invoice-sheet :is(.secondary-btn,.close-btn) {
+  background:linear-gradient(145deg,rgba(208,227,255,.15),rgba(112,137,191,.13));
+  color:var(--aurora-text);
+  border-color:rgba(191,215,249,.4);
+  box-shadow:inset 0 1px 0 rgba(245,250,255,.13);
+}
+#formSheet.session-form-sheet .paired-clock-picker,
+#formSheet.mileage-route-sheet .mileage-route-stage,
+#invoiceSheet.invoice-sheet .invoice-calendar-totals {background:rgba(196,216,255,.035);border-color:rgba(191,215,249,.28)}
+#formSheet.session-form-sheet .single-clock-dial,
+#formSheet.session-form-sheet .paired-clock-dial {box-shadow:inset 0 1px rgba(241,249,255,.13),0 0 28px rgba(116,182,255,.14)}
+html.atrium-lite #formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet),
+html.atrium-lite #invoiceSheet.invoice-sheet {
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  background:
+    radial-gradient(ellipse at 0% 18%,rgba(80,198,245,.17),transparent 54%),
+    radial-gradient(ellipse at 100% 74%,rgba(163,135,236,.21),transparent 57%),
+    linear-gradient(125deg,rgba(79,111,145,.98),rgba(61,79,110,.985) 53%,rgba(80,85,125,.985));
+}
+@media(prefers-reduced-motion:reduce){
+  #formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(input,select,textarea,button,summary),
+  #invoiceSheet.invoice-sheet :is(input,select,textarea,button,summary){transition:none}
+}

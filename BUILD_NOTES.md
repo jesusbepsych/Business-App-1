@@ -415,3 +415,8 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Added a lighter one-frame sheet treatment plus reduced-motion and iPad/Safari-safe animation behavior.
 
 Validation: JavaScript syntax check and both Node test suites pass (existing analytics/entry regressions plus focused mileage animation, lifecycle cleanup, reduced-motion, and stored-distance checks). Browser visual verification was unavailable because the browser download timed out. Device-level Safari smoothness remains to be verified on hardware.
+## Phase 8 — Revision 22: Aurora Frost entry-console extension
+
+- Extended the Aurora Frost visual treatment to work-session, invoice, mileage, and vehicle entry surfaces.
+- Kept structure, dimensions, controls, data flow, validation, and interactions unchanged.
+- Added consistent luminous edge treatment, cool glass gradients, readable muted text, focus states, and static Safari/iPad fallback behavior.

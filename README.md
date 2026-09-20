@@ -1,4 +1,12 @@
-# Business Ledger — Phase 8, Revision 19
+# Business Ledger — Phase 8, Revision 22
+
+## Revision 22 — Aurora Frost entry-console extension
+
+Aurora Frost now covers the remaining entry consoles as a surface-only visual layer: work sessions, invoices, mileage, and vehicles join the existing client, expense, and payment treatments. The update changes material, light, borders, text contrast, focus states, and reduced-motion behavior without moving, resizing, or changing any controls or workflow.
+
+Current revision: **Single Session Clock**. Work-session entry now uses one clock: Start and End remain visible as selectable chips, and the same dial edits whichever chip is active. A native time input provides precise correction and an Undo action restores the previous clock adjustment. Quick client presets still apply both times together. The saved session data model and validation are unchanged.
+
+Current revision: **Aurora Frost** for Client, Expense and Payment forms (including edit mode). Surface-only overrides live in `aurora-frost.css`; deploy this file alongside the existing files. Layout, sizing, workflow and record logic are unchanged. Cool glass, cyan/lavender edge light, restrained reflections, periwinkle primary actions, and readable focus states carry through expanded details. Client swatch colors are preserved. iPad/Safari uses static frost without live backdrop sampling. Previous revision notes follow.
 
 Current build: **Destination Route Console**. New/Edit Mileage now uses a destination-led, automatic-routing-ready console with one continuous lighter graphite-blue surface and a responsive animated route ribbon.
 
