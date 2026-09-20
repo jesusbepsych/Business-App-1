@@ -383,3 +383,18 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Shifted the full session interface toward a lighter graphite-blue glass palette without turning it bright or reducing text contrast.
 - Brightened the header, metadata rail, clock wells, quick-time bridge, totals, note field, dividers, and control borders as one coordinated system.
 - Preserved all clock gestures, quick-time behavior, responsive layouts, validation, and source-record integrity.
+
+## Revision 16 — Integrated invoice console
+
+- Applied the work-session console approach to Create/Edit Invoice with one continuous outer surface and a coordinated lighter graphite-blue palette.
+- Joined Client, Invoice Number, Issue Date, and Due Date into one metadata rail with shared dividers and inset controls.
+- Removed separate card framing from the calendar, session-review column, custom items, note/terms, totals, and action footer.
+- Converted the session-review list and invoice totals into integrated segmented rails while retaining clear selection affordances.
+- Preserved Calendar Sweep gestures and taps, client filtering, client colors, custom line items, notes, numbering, totals, immutable snapshots, and payment protections.
+
+## Revision 17 — Quick Rail console
+
+- Replaced the six separate Quick Add cards with one compact, shared segmented rail inside a lighter graphite-blue glass sheet.
+- Removed redundant “Active” labels and nested icon tiles so all six choices scan as one calm, continuous control.
+- Added restrained gold, periwinkle, and mint icon accents, shared dividers, integrated hover/focus feedback, and responsive three-by-two/two-by-three rail layouts.
+- Preserved all six existing creation routes and their underlying forms, validation, defaults, and source-record behavior.

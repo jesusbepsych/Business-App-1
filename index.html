@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase8-r15-lighter-integrated-session-sheet" />
+  <link rel="stylesheet" href="styles.css?v=phase8-r17-quick-rail-console" />
 </head>
 <body class="home-atrium-active">
 
@@ -294,14 +294,14 @@
   <div class="overlay" id="overlay" hidden></div>
 
   <section class="sheet" id="quickAddSheet" role="dialog" aria-modal="true" aria-labelledby="quickAddTitle" hidden>
-    <div class="sheet-handle"></div><div class="sheet-head"><div><p class="eyebrow">QUICK ADD</p><h2 id="quickAddTitle">What are you adding?</h2></div><button class="close-btn" data-close aria-label="Close">×</button></div>
-    <div class="quick-grid">
-      <button class="quick-card enabled" data-action="add-session"><span class="quick-icon">◫</span><strong>Work session</strong><small>Active</small></button>
-      <button class="quick-card enabled" data-action="add-client"><span class="quick-icon">⌁</span><strong>Client</strong><small>Active</small></button>
-      <button class="quick-card enabled" data-action="add-invoice"><span class="quick-icon">▧</span><strong>Invoice</strong><small>Active</small></button>
-      <button class="quick-card enabled" data-action="add-payment"><span class="quick-icon">$</span><strong>Payment</strong><small>Active</small></button>
-      <button class="quick-card enabled" data-action="add-expense"><span class="quick-icon">−</span><strong>Expense</strong><small>Active</small></button>
-      <button class="quick-card enabled" data-action="add-mileage"><span class="quick-icon">↝</span><strong>Mileage</strong><small>Active</small></button>
+    <div class="sheet-handle"></div><div class="sheet-head"><div><p class="eyebrow">Quick add</p><h2 id="quickAddTitle">What are you adding?</h2></div><button class="close-btn" data-close aria-label="Close">×</button></div>
+    <div class="quick-grid" role="group" aria-label="Quick add choices">
+      <button class="quick-card enabled" data-action="add-session"><span class="quick-icon" aria-hidden="true">◫</span><strong>Work session</strong></button>
+      <button class="quick-card enabled" data-action="add-client"><span class="quick-icon" aria-hidden="true">ϟ</span><strong>Client</strong></button>
+      <button class="quick-card enabled" data-action="add-invoice"><span class="quick-icon" aria-hidden="true">▧</span><strong>Invoice</strong></button>
+      <button class="quick-card enabled" data-action="add-payment"><span class="quick-icon" aria-hidden="true">$</span><strong>Payment</strong></button>
+      <button class="quick-card enabled" data-action="add-expense"><span class="quick-icon" aria-hidden="true">−</span><strong>Expense</strong></button>
+      <button class="quick-card enabled" data-action="add-mileage"><span class="quick-icon" aria-hidden="true">↝</span><strong>Mileage</strong></button>
     </div>
   </section>
 
@@ -383,6 +383,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase8-r15-lighter-integrated-session-sheet"></script>
+  <script src="app.js?v=phase8-r17-quick-rail-console"></script>
 </body>
 </html>

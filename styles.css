@@ -3616,6 +3616,21 @@ html.atrium-lite .analytics-card,html.atrium-lite .analytics-kpi,html.atrium-lit
 @media(max-width:860px){.quick-time-bay{border-color:rgba(228,240,246,.11)}.session-form-sheet .form-actions{bottom:auto;margin:0;padding:10px 20px 19px}.session-form-sheet .form-actions::before{right:20px;left:20px}}
 @media(max-width:540px){.session-form-sheet .form-actions{bottom:auto;margin:0;padding:9px 15px 15px}.session-form-sheet .form-actions::before{right:15px;left:15px}}
 
+/* Revision 16 — lighter single-surface invoice console */
+.invoice-sheet{width:min(1180px,calc(100vw - 28px));max-height:min(940px,calc(100dvh - 24px));padding:0;overflow:hidden auto;background:linear-gradient(148deg,rgba(38,54,65,.988),rgba(22,37,47,.994));border-color:rgba(220,236,244,.22);box-shadow:inset 0 1px rgba(255,255,255,.1),0 28px 90px rgba(0,0,0,.38);scrollbar-width:thin;scrollbar-color:rgba(139,192,218,.28) transparent}
+.invoice-sheet-head{position:relative;z-index:5;align-items:center;margin:0;padding:22px 24px 18px;border-bottom:1px solid rgba(224,238,245,.115);background:linear-gradient(90deg,rgba(255,255,255,.07),rgba(255,255,255,.025))}.invoice-sheet-head::after{content:"";position:absolute;right:70px;bottom:-1px;left:24px;height:1px;background:linear-gradient(90deg,rgba(247,211,142,.3),rgba(227,240,246,.08),transparent);pointer-events:none}.invoice-sheet-head .eyebrow{color:rgba(248,215,150,.78)}.invoice-sheet-head h2{font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:500;letter-spacing:-.03em;color:#f7fbfc}.invoice-sheet-head small{color:rgba(238,246,250,.66)}.invoice-sheet .close-btn{width:38px;height:38px;border-color:rgba(226,239,246,.16);background:rgba(255,255,255,.065);color:rgba(248,252,253,.86);box-shadow:inset 0 1px rgba(255,255,255,.04)}
+#invoiceForm{display:flex;min-height:0;flex-direction:column}.invoice-calendar-basics{grid-template-columns:1.25fr .85fr 1fr 1fr;gap:0;margin:0;padding:0;border-bottom:1px solid rgba(226,239,245,.125);background:linear-gradient(90deg,rgba(255,255,255,.065),rgba(255,255,255,.025));overflow:hidden}.invoice-calendar-basics .field{min-width:0;margin:0;padding:13px 15px 14px;border:0;border-right:1px solid rgba(226,239,245,.11);border-radius:0;background:transparent;box-shadow:none}.invoice-calendar-basics .field:last-child{border-right:0}.invoice-calendar-basics .field>span{margin-bottom:5px;color:rgba(239,247,250,.66);font-size:8px;letter-spacing:.09em;text-transform:uppercase}.invoice-calendar-basics input,.invoice-calendar-basics select{min-height:39px;border:1px solid rgba(227,240,246,.145);border-radius:9px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(7,21,30,.08));box-shadow:inset 0 1px 5px rgba(0,0,0,.11),0 1px rgba(255,255,255,.045)}.invoice-calendar-basics input:focus,.invoice-calendar-basics select:focus{border-color:color-mix(in srgb,var(--invoice-client-color) 40%,rgba(215,233,242,.12));box-shadow:0 0 0 2px color-mix(in srgb,var(--invoice-client-color) 10%,transparent),inset 0 1px 5px rgba(0,0,0,.11)}
+.invoice-client-change-confirm{margin:0;padding:11px 24px;border:0;border-bottom:1px solid rgba(239,198,112,.2);border-radius:0;background:linear-gradient(90deg,rgba(171,113,28,.17),rgba(171,113,28,.07))}
+.invoice-calendar-layout{grid-template-columns:minmax(0,1.2fr) minmax(330px,.85fr);gap:0;margin:0;align-items:stretch;background:radial-gradient(circle at 15% 22%,rgba(246,201,112,.06),transparent 30%),radial-gradient(circle at 88% 30%,color-mix(in srgb,var(--invoice-client-color) 9%,transparent),transparent 32%)}.invoice-calendar-column{gap:0;min-width:0}.invoice-calendar-card,.invoice-session-column,.invoice-disclosure{border:0;border-radius:0;background:transparent;box-shadow:none}
+.invoice-calendar-card{padding:17px 18px 15px;overflow:visible}.invoice-calendar-head{margin-bottom:12px}.invoice-month-controls button,.invoice-clear-range{border-color:rgba(227,240,246,.15);background:rgba(255,255,255,.065);color:#f8fbfc}.invoice-period-summary{border-color:color-mix(in srgb,var(--invoice-client-color) 43%,rgba(227,240,246,.14));background:color-mix(in srgb,var(--invoice-client-color) 16%,rgba(24,40,51,.72))}.invoice-period-summary small{color:rgba(240,247,250,.64)}.invoice-calendar-weekdays span{color:rgba(236,245,249,.6)}.invoice-calendar-grid{border-color:rgba(229,241,247,.15);background:rgba(12,27,36,.2);box-shadow:inset 0 8px 22px rgba(0,0,0,.06)}.invoice-calendar-day{border-color:rgba(229,241,247,.095);color:#f6fafb}.invoice-calendar-day.outside{color:rgba(231,241,246,.35);background:rgba(4,17,25,.06)}.invoice-sweep-hint{color:rgba(236,245,249,.55)}
+.invoice-disclosure{border-top:1px solid rgba(228,240,246,.105)}.invoice-disclosure>summary{min-height:54px;padding:0 18px;background:linear-gradient(90deg,rgba(255,255,255,.035),transparent)}.invoice-disclosure>summary small{color:rgba(237,246,249,.56)}.invoice-disclosure-body{padding:12px 18px 16px;border-top-color:rgba(228,240,246,.09)}
+.invoice-session-column{align-content:start;gap:12px;padding:17px 18px 16px;border-left:1px solid rgba(228,240,246,.11);background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(9,23,32,.075));box-shadow:inset 12px 0 24px rgba(0,0,0,.035)}.invoice-session-heading small{color:rgba(237,246,249,.58)}.invoice-sheet .builder-selection-actions button{border-color:rgba(227,240,246,.14);background:rgba(255,255,255,.055);color:rgba(247,251,252,.78)}
+.invoice-session-column .invoice-session-list{gap:0;padding:0;border:1px solid rgba(230,241,247,.145);border-radius:13px;background:rgba(12,27,36,.2);box-shadow:inset 0 8px 20px rgba(0,0,0,.055);overflow:hidden auto}.invoice-session-column .invoice-session-option{margin:0;border:0;border-bottom:1px solid rgba(230,241,247,.105);border-radius:0;background:transparent;box-shadow:none}.invoice-session-column .invoice-session-option:last-child{border-bottom:0}.invoice-session-column .invoice-session-option:hover{background:color-mix(in srgb,var(--invoice-client-color) 8%,rgba(255,255,255,.015))}.invoice-session-column .invoice-session-option:has(input:checked){border-color:rgba(230,241,247,.105);background:color-mix(in srgb,var(--invoice-client-color) 18%,rgba(20,37,48,.58))}
+.invoice-calendar-totals{margin:0;border:0;border-top:1px solid rgba(228,240,246,.11);border-bottom:1px solid rgba(228,240,246,.11);border-radius:0;background:linear-gradient(90deg,rgba(255,255,255,.04),color-mix(in srgb,var(--invoice-client-color) 7%,rgba(10,24,33,.1)))}.invoice-calendar-totals>span{border-color:rgba(228,240,246,.1)}.invoice-calendar-totals small{color:rgba(236,245,249,.56)}.invoice-calendar-totals .invoice-total-emphasis b{color:#f7cf7e}.invoice-integrity-note{color:rgba(235,245,249,.56)}
+.invoice-sheet .invoice-form-actions{position:relative;margin:0;padding:11px 24px 22px;border:0;background:transparent;box-shadow:none}.invoice-sheet .invoice-form-actions::before{content:"";position:absolute;top:0;right:24px;left:24px;height:1px;background:linear-gradient(90deg,transparent,rgba(230,242,247,.11),transparent)}.invoice-sheet .invoice-form-actions .secondary-btn{border-color:rgba(227,240,246,.14);background:rgba(255,255,255,.055);color:rgba(247,251,252,.82)}.invoice-sheet .invoice-form-actions .primary-btn{min-width:150px;background:linear-gradient(135deg,#a9ebcc,#83d9b6);color:#071b16;box-shadow:0 9px 22px rgba(69,190,146,.14)}
+@media(max-width:930px){.invoice-sheet{width:min(760px,calc(100vw - 20px));padding:0}.invoice-sheet-head{padding:19px 20px 16px}.invoice-sheet-head::after{left:20px}.invoice-calendar-basics{grid-template-columns:1fr 1fr}.invoice-calendar-basics .field:nth-child(2){border-right:0}.invoice-calendar-basics .field:nth-child(-n+2){border-bottom:1px solid rgba(226,239,245,.11)}.invoice-calendar-layout{grid-template-columns:1fr}.invoice-session-column{border-top:1px solid rgba(228,240,246,.11);border-left:0;box-shadow:inset 0 12px 24px rgba(0,0,0,.035)}.invoice-sheet .invoice-form-actions{padding:10px 20px 19px}.invoice-sheet .invoice-form-actions::before{right:20px;left:20px}}
+@media(max-width:590px){.invoice-sheet{width:calc(100vw - 12px);padding:0}.invoice-sheet-head{padding:16px 15px 14px}.invoice-sheet-head::after{right:60px;left:15px}.invoice-calendar-basics{grid-template-columns:1fr}.invoice-calendar-basics .field{border-right:0;border-bottom:1px solid rgba(226,239,245,.11)}.invoice-calendar-basics .field:last-child{border-bottom:0}.invoice-client-change-confirm{padding:11px 15px}.invoice-calendar-card{padding:15px 10px 13px}.invoice-disclosure>summary{padding:0 13px}.invoice-disclosure-body{padding:11px 13px 14px}.invoice-session-column{padding:14px 10px}.invoice-sheet .invoice-form-actions{padding:9px 15px 15px}.invoice-sheet .invoice-form-actions::before{right:15px;left:15px}}
+
 /* Phase 8 chart refinement — scaled axes, fluid scrubber, and composition rings */
 .analytics-legend .net:before{background:#72deb0;box-shadow:0 0 12px rgba(114,222,176,.48)}
 .analytics-svg.scrubbable-chart{touch-action:pan-y;user-select:none;-webkit-user-select:none}
@@ -3632,3 +3647,51 @@ html.atrium-lite .analytics-card,html.atrium-lite .analytics-kpi,html.atrium-lit
 @media(max-width:430px){.analytics-composition{grid-template-columns:1fr}.analytics-donut{justify-content:start}.donut-svg{width:104px;height:104px}}
 @media(prefers-reduced-motion:reduce){.chart-scrubber,.donut-slice{transition:none}}
 .analytics-rank-row .rank-track i,.analytics-rank-row .rank-track.expense i{background:var(--slice-color,#75bfe7);box-shadow:0 0 11px rgba(117,191,231,.24)}
+
+/* Revision 17 — Quick Rail console */
+#quickAddSheet{width:min(1040px,calc(100vw - 32px));padding:0;overflow:hidden;background:radial-gradient(circle at 18% 12%,rgba(245,199,107,.085),transparent 28%),radial-gradient(circle at 86% 16%,rgba(128,154,255,.11),transparent 31%),linear-gradient(148deg,rgba(49,65,82,.985),rgba(30,44,58,.992));border-color:rgba(225,238,246,.24);box-shadow:inset 0 1px rgba(255,255,255,.12),0 30px 90px rgba(0,0,0,.4)}
+#quickAddSheet .sheet-handle{display:none}
+#quickAddSheet .sheet-head{position:relative;align-items:center;margin:0;padding:38px 42px 27px;background:linear-gradient(90deg,rgba(255,255,255,.055),rgba(255,255,255,.018));border:0}
+#quickAddSheet .sheet-head::after{content:"";position:absolute;right:84px;bottom:0;left:42px;height:1px;background:linear-gradient(90deg,rgba(246,205,123,.27),rgba(223,238,246,.09),transparent);pointer-events:none}
+#quickAddSheet .sheet-head .eyebrow{margin-bottom:7px;color:rgba(234,241,246,.72);font-size:13px;font-weight:750;letter-spacing:.01em;text-transform:none}
+#quickAddSheet .sheet-head h2{color:#f9fcfd;font-size:34px;font-weight:720;letter-spacing:-.035em;line-height:1.08}
+#quickAddSheet .close-btn{width:42px;height:42px;border-color:rgba(226,239,246,.19);background:linear-gradient(180deg,rgba(255,255,255,.095),rgba(255,255,255,.045));color:rgba(249,252,253,.9);box-shadow:inset 0 1px rgba(255,255,255,.07),0 8px 20px rgba(0,0,0,.1)}
+#quickAddSheet .close-btn:hover{border-color:rgba(237,211,153,.3);background:rgba(255,255,255,.105)}
+#quickAddSheet .quick-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;margin:0 42px 42px;border:1px solid rgba(226,239,246,.17);border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.052),rgba(12,28,40,.08));box-shadow:inset 0 1px rgba(255,255,255,.065),0 14px 34px rgba(0,0,0,.08);overflow:hidden}
+#quickAddSheet .quick-card{position:relative;min-width:0;min-height:142px;padding:23px 12px 22px;border:0;border-right:1px solid rgba(226,239,246,.13);border-radius:0;background:transparent;color:#f8fbfc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:17px;text-align:center;cursor:pointer;box-shadow:none;transform:none;transition:background .18s var(--ease),box-shadow .18s var(--ease),color .18s var(--ease)}
+#quickAddSheet .quick-card:last-child{border-right:0}
+#quickAddSheet .quick-card::after{content:"";position:absolute;inset:auto 22% 0;height:1px;background:linear-gradient(90deg,transparent,currentColor,transparent);opacity:0;transition:opacity .18s var(--ease)}
+#quickAddSheet .quick-card:hover{transform:none;border-color:rgba(226,239,246,.13);background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.025));box-shadow:inset 0 1px rgba(255,255,255,.055)}
+#quickAddSheet .quick-card:hover::after,#quickAddSheet .quick-card:focus-visible::after{opacity:.48}
+#quickAddSheet .quick-card:focus-visible{z-index:1;outline:2px solid rgba(244,207,132,.52);outline-offset:-3px;background:rgba(255,255,255,.075)}
+#quickAddSheet .quick-icon{width:auto;height:auto;margin:0;border:0;border-radius:0;background:transparent;color:#8fa8ff;display:block;font-size:28px;font-weight:780;line-height:1;text-shadow:0 0 18px currentColor}
+#quickAddSheet .quick-card strong{font-size:14px;font-weight:720;line-height:1.2;white-space:nowrap}
+#quickAddSheet .quick-card:nth-child(1) .quick-icon{color:#efbd61}
+#quickAddSheet .quick-card:nth-child(5) .quick-icon{color:#78dfbd}
+#quickAddSheet .quick-card:nth-child(6) .quick-icon{color:#a390ff}
+
+@media(max-width:900px){
+  #quickAddSheet{width:min(700px,calc(100vw - 28px))}
+  #quickAddSheet .sheet-head{padding:30px 32px 23px}
+  #quickAddSheet .sheet-head::after{right:72px;left:32px}
+  #quickAddSheet .quick-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin:0 32px 32px}
+  #quickAddSheet .quick-card{min-height:122px}
+  #quickAddSheet .quick-card:nth-child(3n){border-right:0}
+  #quickAddSheet .quick-card:nth-child(-n+3){border-bottom:1px solid rgba(226,239,246,.13)}
+}
+@media(max-width:620px){
+  #quickAddSheet{left:0;top:auto;bottom:0;width:100%;max-height:min(82dvh,650px);transform:none;border-radius:26px 26px 0 0}
+  #quickAddSheet .sheet-head{padding:24px 20px 20px}
+  #quickAddSheet .sheet-head::after{right:65px;left:20px}
+  #quickAddSheet .sheet-head h2{font-size:27px}
+  #quickAddSheet .sheet-head .eyebrow{font-size:11px}
+  #quickAddSheet .close-btn{width:38px;height:38px}
+  #quickAddSheet .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 16px calc(18px + env(safe-area-inset-bottom));border-radius:19px}
+  #quickAddSheet .quick-card{min-height:96px;padding:16px 8px;gap:11px}
+  #quickAddSheet .quick-card:nth-child(3n){border-right:1px solid rgba(226,239,246,.13)}
+  #quickAddSheet .quick-card:nth-child(2n){border-right:0}
+  #quickAddSheet .quick-card:nth-child(-n+4){border-bottom:1px solid rgba(226,239,246,.13)}
+  #quickAddSheet .quick-icon{font-size:23px}
+  #quickAddSheet .quick-card strong{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){#quickAddSheet .quick-card,#quickAddSheet .quick-card::after{transition:none}}

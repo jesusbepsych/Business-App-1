@@ -1,8 +1,8 @@
-# Business Ledger — Phase 8, Revision 15
+# Business Ledger — Phase 8, Revision 17
 
-Current build: **Lighter Integrated Session Sheet**. The work-session interface retains one continuous surface, now with a brighter graphite-blue glass palette and an action area that dissolves into the sheet.
+Current build: **Quick Rail Console**. Quick Add now uses the same single-surface, lighter graphite-blue glass system as the refined work-session and invoice interfaces.
 
-Revision 15 removes the remaining footer-panel appearance around Cancel and Save Session while lightly brightening the full session console. Fluid circular dragging and all record-integrity rules remain intact.
+Revision 17 turns the six Quick Add destinations into one compact segmented rail. It removes nested action cards and status labels while preserving every existing creation route.
 
 ## Typography scale refinement
 
