@@ -2788,10 +2788,10 @@
           <span class="quick-time-kicker">QUICK TIMES</span>
           <div class="quick-time-grid" id="sessionQuickTimes" aria-live="polite"></div>
           <button type="button" class="quick-time-manage" id="quickTimeManage" hidden>Done</button>
-          <div class="quick-time-editor" id="quickTimeEditor" hidden>
-            <small id="quickTimeEditorTitle">Set quick time</small>
-            <div><label><span>Start</span><input type="time" id="quickTimeStart" step="300" /></label><label><span>End</span><input type="time" id="quickTimeEnd" step="300" /></label></div>
-            <span><button type="button" class="quick-time-remove" id="quickTimeDelete" hidden>Remove</button><button type="button" id="quickTimeCancel">Cancel</button><button type="button" id="quickTimeSave">Save</button></span>
+        <div class="quick-time-editor" id="quickTimeEditor" hidden>
+            <div class="quick-editor-heading"><div><small id="quickTimeEditorTitle">Set quick time</small><span>Reusable start and end for this client</span></div><b aria-hidden="true">↗</b></div>
+            <div class="quick-editor-fields"><label><span>START</span><input type="time" id="quickTimeStart" step="300" /></label><i aria-hidden="true">→</i><label><span>END</span><input type="time" id="quickTimeEnd" step="300" /></label></div>
+            <div class="quick-editor-actions"><button type="button" class="quick-time-remove" id="quickTimeDelete" hidden>Remove</button><span><button type="button" id="quickTimeCancel">Cancel</button><button type="button" id="quickTimeSave">Save preset</button></span></div>
           </div>
           <span class="quick-time-help">Three presets per client</span>
         </div>

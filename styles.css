@@ -3986,6 +3986,50 @@ html.atrium-lite .analytics-card,html.atrium-lite .analytics-kpi,html.atrium-lit
 @media(max-width:860px){.single-clock-timebar{padding-right:20px;padding-left:20px}.single-clock-editor{padding-right:20px;padding-left:20px}.single-clock-face{padding-right:20px;padding-left:20px}.single-clock-arc{margin-right:20px;margin-left:20px}}
 @media(max-width:540px){.single-clock-timebar{padding-right:15px;padding-left:15px}.single-time-chip{min-width:0;flex:1}.single-time-chip strong{font-size:14px}.single-clock-hint{display:none}.single-clock-editor{padding-right:15px;padding-left:15px}.single-direct-time{font-size:9px}.single-clock-face{padding-right:15px;padding-left:15px}.single-clock-face .paired-clock-dial{width:min(310px,78vw);height:min(310px,78vw)}.single-clock-arc{margin-right:15px;margin-left:15px}}
 @media(prefers-reduced-motion:reduce){.single-time-chip,.single-clock-undo{transition:none}}
+
+/* Revision 23 — compact session console composition and preset editor. */
+@media(min-width:861px){
+  .session-form-sheet .paired-clock-picker{
+    grid-template-columns:minmax(0,.9fr) minmax(350px,.95fr);
+    grid-template-areas:
+      "top top"
+      "time face"
+      "editor face"
+      "quick face"
+      "total total"
+      "note note";
+    column-gap:18px;
+    row-gap:0;
+    align-items:start;
+  }
+  .session-form-sheet .paired-session-top{grid-area:top}
+  .session-form-sheet .single-clock-timebar{grid-area:time;align-self:end}
+  .session-form-sheet .single-clock-editor{grid-area:editor;align-self:start}
+  .session-form-sheet .single-clock-face{grid-area:face;align-self:start;padding-top:18px}
+  .session-form-sheet .quick-time-bay{grid-area:quick;align-self:start;padding:12px 18px 15px;border-top:1px solid rgba(228,240,246,.11);border-bottom:1px solid rgba(228,240,246,.11);box-shadow:inset 0 10px 22px rgba(0,0,0,.045),inset 0 -10px 22px rgba(0,0,0,.045)}
+  .session-form-sheet .quick-time-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .session-form-sheet .quick-time-slot{min-height:68px}
+  .session-form-sheet .single-clock-arc{display:none}
+  .session-form-sheet .paired-session-total{grid-area:total}
+  .session-form-sheet .session-note-disclosure{grid-area:note}
+  .session-form-sheet .single-clock-face .paired-clock-dial{width:min(300px,100%)}
+}
+@media(max-width:860px){
+  .session-form-sheet .paired-clock-picker{grid-template-columns:1fr;grid-template-areas:"top" "time" "editor" "face" "quick" "total" "note";row-gap:0}
+  .session-form-sheet .paired-session-top{grid-area:top}
+  .session-form-sheet .single-clock-timebar{grid-area:time}
+  .session-form-sheet .single-clock-editor{grid-area:editor}
+  .session-form-sheet .single-clock-face{grid-area:face}
+  .session-form-sheet .quick-time-bay{grid-area:quick}
+  .session-form-sheet .paired-session-total{grid-area:total}
+  .session-form-sheet .session-note-disclosure{grid-area:note}
+  .session-form-sheet .single-clock-arc{display:none}
+  .session-form-sheet .quick-time-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+.session-form-sheet .quick-time-editor{gap:11px;padding:12px 13px;border-color:rgba(174,220,250,.28);background:linear-gradient(145deg,rgba(45,74,105,.7),rgba(25,39,69,.76));box-shadow:inset 0 1px rgba(255,255,255,.12),0 10px 26px rgba(14,28,61,.2)}
+.quick-editor-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left}.quick-editor-heading>div{display:grid;gap:3px}.quick-editor-heading small{font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:#eef7ff}.quick-editor-heading span{font-size:8px;color:rgba(222,237,249,.65)}.quick-editor-heading>b{display:grid;place-items:center;width:22px;height:22px;border:1px solid rgba(198,230,255,.2);border-radius:7px;color:#bde5ff;font-size:11px}
+.quick-editor-fields{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:7px}.quick-editor-fields label{display:grid;gap:4px;text-align:left}.quick-editor-fields label span{font-size:7px;font-weight:900;letter-spacing:.12em;color:rgba(220,236,248,.65)}.quick-editor-fields>i{padding-bottom:10px;color:#b9dcf5;font-size:12px;font-style:normal}.quick-editor-fields input{height:37px!important;padding:0 9px!important;border:1px solid rgba(188,222,250,.35)!important;border-radius:9px!important;background:rgba(8,25,50,.35)!important;color:#f4f9ff!important;font-size:12px!important;box-shadow:inset 0 1px rgba(255,255,255,.12)!important}.quick-editor-fields input:focus{border-color:#c5eaff!important;box-shadow:0 0 0 2px rgba(157,217,255,.2),0 0 14px rgba(116,182,255,.16)!important}
+.quick-editor-actions{display:flex;align-items:center;justify-content:space-between;gap:7px}.quick-editor-actions>span{display:flex;gap:6px}.quick-editor-actions button{min-height:29px;padding:0 10px;border:1px solid rgba(193,220,245,.26);border-radius:8px;background:rgba(224,241,255,.08);color:#edf7ff;font-size:8px}.quick-editor-actions #quickTimeSave{border-color:rgba(183,224,255,.55);background:linear-gradient(115deg,rgba(168,218,255,.38),rgba(169,182,255,.35));color:#f8fbff}.quick-editor-actions .quick-time-remove{border:0;background:transparent;color:#ffc0b8;padding-left:0}
   .client-profile-sheet .client-color-picker{gap:9px}
   .client-profile-sheet .client-color-option,.client-profile-sheet .client-color-swatch{width:32px;height:32px}
 }

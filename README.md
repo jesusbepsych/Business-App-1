@@ -1,5 +1,9 @@
 # Business Ledger — Phase 8, Revision 22
 
+## Revision 23 — Session console composition
+
+The work-session console now keeps the clock and its supporting controls in one balanced composition. Quick presets sit directly beneath the time controls in a compact three-slot rail, while the session summary and note remain full-width below. Preset editing now uses a clearer start → end card with dedicated actions. The session model, clock behavior, and validation remain unchanged.
+
 ## Revision 22 — Aurora Frost entry-console extension
 
 Aurora Frost now covers the remaining entry consoles as a surface-only visual layer: work sessions, invoices, mileage, and vehicles join the existing client, expense, and payment treatments. The update changes material, light, borders, text contrast, focus states, and reduced-motion behavior without moving, resizing, or changing any controls or workflow.
