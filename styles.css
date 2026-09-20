@@ -3695,3 +3695,76 @@ html.atrium-lite .analytics-card,html.atrium-lite .analytics-kpi,html.atrium-lit
   #quickAddSheet .quick-card strong{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){#quickAddSheet .quick-card,#quickAddSheet .quick-card::after{transition:none}}
+
+/* Revision 18 — lighter single-surface Client and Vehicle forms */
+.form-sheet.integrated-profile-sheet{width:min(820px,calc(100vw - 28px));max-height:min(900px,calc(100dvh - 24px));padding:0;overflow:hidden auto;background:radial-gradient(circle at 14% 18%,rgba(246,201,112,.075),transparent 30%),radial-gradient(circle at 88% 15%,rgba(132,160,255,.09),transparent 31%),linear-gradient(148deg,rgba(41,57,69,.99),rgba(24,39,50,.995));border-color:rgba(220,236,244,.22);box-shadow:inset 0 1px rgba(255,255,255,.1),0 28px 90px rgba(0,0,0,.38);scrollbar-width:thin;scrollbar-color:rgba(139,192,218,.28) transparent}
+.integrated-profile-sheet .sheet-handle{display:none}
+.integrated-profile-sheet .sheet-head{position:relative;z-index:2;align-items:center;margin:0;padding:23px 25px 19px;border-bottom:1px solid rgba(224,238,245,.115);background:linear-gradient(90deg,rgba(255,255,255,.07),rgba(255,255,255,.025))}
+.integrated-profile-sheet .sheet-head::after{content:"";position:absolute;right:72px;bottom:-1px;left:25px;height:1px;background:linear-gradient(90deg,rgba(247,211,142,.3),rgba(227,240,246,.08),transparent);pointer-events:none}
+.integrated-profile-sheet .sheet-head .eyebrow{margin-bottom:5px;color:rgba(248,215,150,.78)}
+.integrated-profile-sheet .sheet-head h2{color:#f8fbfc;font-size:27px;letter-spacing:-.035em}
+.integrated-profile-sheet .close-btn{width:39px;height:39px;border-color:rgba(226,239,246,.16);background:rgba(255,255,255,.065);color:rgba(248,252,253,.88);box-shadow:inset 0 1px rgba(255,255,255,.045)}
+.integrated-profile-sheet .close-btn:hover{border-color:rgba(240,212,157,.28);background:rgba(255,255,255,.095);color:#fff}
+.integrated-profile-sheet #dynamicForm,.integrated-profile-sheet #formFields{gap:0;min-height:0}
+.integrated-profile-sheet #formFields{background:linear-gradient(155deg,rgba(255,255,255,.018),rgba(8,22,31,.035))}
+.integrated-profile-sheet #formFields>.field,.integrated-profile-sheet #formFields>.field-row,.integrated-profile-sheet #formFields>.client-color-field,.integrated-profile-sheet #formFields>.check-row{margin:0;padding:15px 25px 16px;border:0;border-bottom:1px solid rgba(226,239,245,.105);background:transparent}
+.integrated-profile-sheet #formFields>.field-row{gap:0;padding:0;overflow:hidden}
+.integrated-profile-sheet #formFields>.field-row>.field{min-width:0;margin:0;padding:15px 17px 16px;border-right:1px solid rgba(226,239,245,.105)}
+.integrated-profile-sheet #formFields>.field-row>.field:first-child{padding-left:25px}
+.integrated-profile-sheet #formFields>.field-row>.field:last-child{padding-right:25px;border-right:0}
+.integrated-profile-sheet .field>span,.integrated-profile-sheet .client-color-field legend{color:rgba(246,250,252,.91);font-size:11px;font-weight:780}
+.integrated-profile-sheet .field>span small,.integrated-profile-sheet .field>span em{color:rgba(235,244,248,.52);font-size:9px;font-weight:600}
+.integrated-profile-sheet .field>small,.integrated-profile-sheet .client-color-field>small{color:rgba(235,244,248,.53);font-size:9px;line-height:1.5}
+.integrated-profile-sheet .field input,.integrated-profile-sheet .field select,.integrated-profile-sheet .field textarea{border:1px solid rgba(227,240,246,.145);background:linear-gradient(180deg,rgba(255,255,255,.072),rgba(7,21,30,.085));color:#f8fbfc;box-shadow:inset 0 1px 5px rgba(0,0,0,.11),0 1px rgba(255,255,255,.04);color-scheme:dark}
+.integrated-profile-sheet .field input,.integrated-profile-sheet .field select{min-height:46px}
+.integrated-profile-sheet .field textarea{min-height:92px}
+.integrated-profile-sheet .field input::placeholder,.integrated-profile-sheet .field textarea::placeholder{color:rgba(231,240,245,.42)}
+.integrated-profile-sheet .field select option{background:#253b49;color:#f8fbfc}
+.integrated-profile-sheet .field input:focus,.integrated-profile-sheet .field select:focus,.integrated-profile-sheet .field textarea:focus{border-color:rgba(146,174,255,.52);background:rgba(255,255,255,.075);box-shadow:0 0 0 3px rgba(108,140,255,.1),inset 0 1px 5px rgba(0,0,0,.1)}
+.integrated-profile-sheet .money-input>span{color:rgba(235,244,248,.55)}
+.client-profile-sheet .client-color-picker{gap:11px}
+.client-profile-sheet .client-color-option,.client-profile-sheet .client-color-swatch{width:35px;height:35px}
+.client-profile-sheet .client-color-swatch{border-color:rgba(255,255,255,.13);box-shadow:inset 0 1px rgba(255,255,255,.28),0 5px 14px rgba(0,0,0,.12)}
+.client-profile-sheet .client-color-option input:checked+.client-color-swatch{border-color:rgba(20,34,44,.92);box-shadow:0 0 0 3px #8da6ff,0 7px 17px rgba(0,0,0,.18)}
+.integrated-profile-sheet #formFields>.optional-fields{margin:0;padding:0 25px;border:0;border-bottom:1px solid rgba(226,239,245,.105);border-radius:0;background:transparent;overflow:visible}
+.integrated-profile-sheet .optional-fields>summary{min-height:56px;padding:0;color:rgba(246,250,252,.88);font-size:11px}
+.integrated-profile-sheet .optional-fields>summary span{color:rgba(235,244,248,.48)}
+.integrated-profile-sheet .optional-fields-body{gap:12px;padding:15px 0 17px;border-top:1px solid rgba(226,239,245,.09)}
+.integrated-profile-sheet #formFields>.check-row{display:flex;align-items:center;gap:11px;color:#f8fbfc;cursor:pointer}
+.integrated-profile-sheet .check-row input{width:24px;height:24px;margin:0;flex:0 0 auto;accent-color:#8da6ff}
+.integrated-profile-sheet .check-row>span{display:flex;align-items:baseline;gap:7px;min-width:0;flex-wrap:wrap}
+.integrated-profile-sheet .check-row strong{font-size:11px}
+.integrated-profile-sheet .check-row small{color:rgba(235,244,248,.52);font-size:9px;line-height:1.45}
+.integrated-profile-sheet #formFields>*:last-child{border-bottom:0}
+.integrated-profile-sheet .form-actions{position:relative;margin:0;padding:13px 25px 21px;border:0;background:transparent;box-shadow:none}
+.integrated-profile-sheet .form-actions::before{content:"";position:absolute;top:0;right:25px;left:25px;height:1px;background:linear-gradient(90deg,transparent,rgba(230,242,247,.12),transparent)}
+.integrated-profile-sheet .form-actions .secondary-btn{border-color:rgba(227,240,246,.14);background:rgba(255,255,255,.055);color:rgba(247,251,252,.82)}
+.integrated-profile-sheet .form-actions .primary-btn{min-width:150px;background:linear-gradient(135deg,#a9ebcc,#83d9b6);color:#071b16;box-shadow:0 9px 22px rgba(69,190,146,.14)}
+
+@media(max-width:760px){
+  .form-sheet.integrated-profile-sheet{width:min(690px,calc(100vw - 20px))}
+  .integrated-profile-sheet .sheet-head{padding:20px 20px 17px}
+  .integrated-profile-sheet .sheet-head::after{left:20px}
+  .integrated-profile-sheet #formFields>.field,.integrated-profile-sheet #formFields>.client-color-field,.integrated-profile-sheet #formFields>.check-row{padding-right:20px;padding-left:20px}
+  .integrated-profile-sheet #formFields>.field-row>.field:first-child{padding-left:20px}
+  .integrated-profile-sheet #formFields>.field-row>.field:last-child{padding-right:20px}
+  .integrated-profile-sheet #formFields>.optional-fields{padding-right:20px;padding-left:20px}
+  .integrated-profile-sheet .form-actions{padding-right:20px;padding-left:20px}
+  .integrated-profile-sheet .form-actions::before{right:20px;left:20px}
+}
+@media(max-width:620px){
+  .form-sheet.integrated-profile-sheet{left:0;top:auto;bottom:0;width:100%;max-height:min(92dvh,760px);transform:none;border-radius:26px 26px 0 0}
+  .integrated-profile-sheet .sheet-head{padding:17px 16px 14px}
+  .integrated-profile-sheet .sheet-head::after{right:60px;left:16px}
+  .integrated-profile-sheet .sheet-head h2{font-size:23px}
+  .integrated-profile-sheet #formFields>.field,.integrated-profile-sheet #formFields>.client-color-field,.integrated-profile-sheet #formFields>.check-row{padding:13px 16px 14px}
+  .integrated-profile-sheet #formFields>.field-row{grid-template-columns:1fr}
+  .integrated-profile-sheet #formFields>.field-row>.field,.integrated-profile-sheet #formFields>.field-row>.field:first-child,.integrated-profile-sheet #formFields>.field-row>.field:last-child{grid-column:auto;padding:13px 16px 14px;border-right:0;border-bottom:1px solid rgba(226,239,245,.105)}
+  .integrated-profile-sheet #formFields>.field-row>.field:last-child{border-bottom:0}
+  .integrated-profile-sheet #formFields>.optional-fields{padding-right:16px;padding-left:16px}
+  .integrated-profile-sheet .form-actions{padding:11px 16px calc(15px + env(safe-area-inset-bottom))}
+  .integrated-profile-sheet .form-actions::before{right:16px;left:16px}
+  .integrated-profile-sheet .form-actions .primary-btn{min-width:0;flex:1}
+  .client-profile-sheet .client-color-picker{gap:9px}
+  .client-profile-sheet .client-color-option,.client-profile-sheet .client-color-swatch{width:32px;height:32px}
+}

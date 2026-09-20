@@ -1,8 +1,8 @@
-# Business Ledger — Phase 8, Revision 17
+# Business Ledger — Phase 8, Revision 18
 
-Current build: **Quick Rail Console**. Quick Add now uses the same single-surface, lighter graphite-blue glass system as the refined work-session and invoice interfaces.
+Current build: **Integrated Client + Vehicle Forms**. New/Edit Client and New/Edit Vehicle now use the same single-surface, lighter graphite-blue glass system as the refined work-session, invoice, and Quick Add interfaces.
 
-Revision 17 turns the six Quick Add destinations into one compact segmented rail. It removes nested action cards and status labels while preserving every existing creation route.
+Revision 18 visually integrates each form's header, fields, optional areas, helper copy, and actions into one continuous sheet without changing either record workflow or data model.
 
 ## Typography scale refinement
 

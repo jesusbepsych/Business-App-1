@@ -666,6 +666,9 @@
     const isFormSheet = modal === $('#formSheet');
     $('#formSheet').classList.toggle('expense-compose-sheet', isFormSheet && ui.formMode === 'expense');
     $('#formSheet').classList.toggle('payment-compose-sheet', isFormSheet && ui.formMode === 'payment');
+    $('#formSheet').classList.toggle('client-profile-sheet', isFormSheet && ui.formMode === 'client');
+    $('#formSheet').classList.toggle('vehicle-profile-sheet', isFormSheet && ui.formMode === 'vehicle');
+    $('#formSheet').classList.toggle('integrated-profile-sheet', isFormSheet && (ui.formMode === 'client' || ui.formMode === 'vehicle'));
     ui.modal = modal;
     overlay.hidden = false;
     modal.hidden = false;

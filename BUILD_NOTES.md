@@ -398,3 +398,10 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Removed redundant “Active” labels and nested icon tiles so all six choices scan as one calm, continuous control.
 - Added restrained gold, periwinkle, and mint icon accents, shared dividers, integrated hover/focus feedback, and responsive three-by-two/two-by-three rail layouts.
 - Preserved all six existing creation routes and their underlying forms, validation, defaults, and source-record behavior.
+
+## Revision 18 — Integrated Client + Vehicle forms
+
+- Applied the lighter graphite-blue single-surface system to New/Edit Client and New/Edit Vehicle.
+- Integrated each form's title, fields, helper text, optional sections, primary-vehicle control, and actions into one continuous sheet rather than stacked inner panels.
+- Kept normal inputs as restrained inset wells while dissolving the heavier Billing Details and footer containers into shared dividers and material.
+- Preserved client colors, remembered defaults, billing details, rates, vehicle status, odometer, primary-vehicle behavior, validation, editing, and source-record integrity.
