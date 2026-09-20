@@ -664,10 +664,12 @@
   function openModal(modal) {
     closeModal(false);
     const isFormSheet = modal === $('#formSheet');
+    if (ui.formMode !== 'mileage') { $('#formSubmitBtn').disabled=false; $('#formSubmitBtn').title=''; }
     $('#formSheet').classList.toggle('expense-compose-sheet', isFormSheet && ui.formMode === 'expense');
     $('#formSheet').classList.toggle('payment-compose-sheet', isFormSheet && ui.formMode === 'payment');
     $('#formSheet').classList.toggle('client-profile-sheet', isFormSheet && ui.formMode === 'client');
     $('#formSheet').classList.toggle('vehicle-profile-sheet', isFormSheet && ui.formMode === 'vehicle');
+    $('#formSheet').classList.toggle('mileage-route-sheet', isFormSheet && ui.formMode === 'mileage');
     $('#formSheet').classList.toggle('integrated-profile-sheet', isFormSheet && (ui.formMode === 'client' || ui.formMode === 'vehicle'));
     ui.modal = modal;
     overlay.hidden = false;
@@ -679,6 +681,7 @@
   }
 
   function closeModal(hideOverlay = true) {
+    if (ui.disposeMileageMotion) { ui.disposeMileageMotion(); ui.disposeMileageMotion=null; }
     modals.forEach(item => { if (item) item.hidden = true; });
     resetDetailPanelTheme();
     ui.modal = null;
@@ -2493,6 +2496,80 @@
     return `<option value="">No linked session</option>${businessSessions().slice().sort((a,b)=>`${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`)).map(session=>`<option value="${session.id}" ${session.id===selectedId?'selected':''}>${formatDate(session.date,{month:'short',day:'numeric'})} · ${escapeHtml(clientById(session.clientId)?.displayName || session.clientNameSnapshot || 'Client')} · ${escapeHtml(sessionTimeRangeLabel(session))}</option>`).join('')}`;
   }
 
+  function normalizedRouteLabel(value='') {
+    return String(value).trim().toLocaleLowerCase().replace(/\s+/g,' ');
+  }
+
+  function knownMileageRoute(startLabel,endLabel,existingId=null) {
+    // Labels alone cannot establish driven distance. Provider integration is deferred.
+    return null;
+  }
+
+  function mileageRoutePathIndex(startLabel,endLabel) {
+    const text=`${startLabel}|${endLabel}`;
+    let hash=0;
+    for (let index=0;index<text.length;index+=1) hash=((hash<<5)-hash+text.charCodeAt(index))|0;
+    return Math.abs(hash)%4;
+  }
+
+  function setupMileageRouteConsole(existing=null) {
+    const host=$('#formFields');
+    const startInput=$('[name="startLabel"]',host), endInput=$('[name="endLabel"]',host);
+    const milesInput=$('[name="miles"]',host), clientSelect=$('[name="clientId"]',host);
+    const summary=$('#mileageRouteSummary',host), caption=$('#mileageRouteCaption',host), badge=$('#mileageRouteBadge',host);
+    const submit=$('#formSubmitBtn');
+    const paths=[$('#mileageRoutePathA',host),$('#mileageRoutePathB',host)];
+    const pathShapes=[
+      'M36 108 C136 30 214 168 326 80 S520 25 684 100',
+      'M36 105 C116 150 194 34 310 91 S493 158 684 72',
+      'M36 96 C154 18 230 72 306 122 S491 128 684 52',
+      'M36 84 C142 154 236 141 324 62 S514 38 684 106'
+    ];
+    let targetShape=pathShapes[0].match(/-?\d+(?:\.\d+)?/g).map(Number);
+    let currentShape=targetShape.slice(), frame=0, lastTime=0;
+    const draw=(time)=>{
+      const reduced=prefersReducedMotion.matches;
+      const ease=reduced?1:1-Math.exp(-Math.min(time-lastTime||16,64)/240);
+      lastTime=time;
+      currentShape=currentShape.map((value,index)=>value+(targetShape[index]-value)*ease);
+      let index=0;
+      const d=pathShapes[0].replace(/-?\d+(?:\.\d+)?/g,()=>{
+        const i=index++;
+        return (currentShape[i]+(!reduced && i%2===1 && i>1 && i<currentShape.length-1?Math.sin(time/2900+i*.55)*5:0)).toFixed(2);
+      });
+      paths.forEach(path=>path?.setAttribute('d',d));
+      frame=reduced?0:requestAnimationFrame(draw);
+    };
+    const resume=()=>{cancelAnimationFrame(frame);frame=0;if(!document.hidden)draw(performance.now());};
+    document.addEventListener('visibilitychange',resume);
+    prefersReducedMotion.addEventListener('change',resume);
+    ui.disposeMileageMotion=()=>{cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',resume);prefersReducedMotion.removeEventListener('change',resume);};
+    const syncRoute=()=>{
+      const start=startInput?.value.trim()||'';
+      const end=endInput?.value.trim()||'';
+      const sameExisting=existing && normalizedRouteLabel(existing.startLabel)===normalizedRouteLabel(start) && normalizedRouteLabel(existing.endLabel)===normalizedRouteLabel(end) && Number(existing.miles)>0;
+      const route=sameExisting ? {miles:Number(existing.miles),source:'Recorded route'} : knownMileageRoute(start,end,existing?.id||null);
+      const ready=Boolean(route);
+      if (milesInput) milesInput.value=ready ? String(route.miles) : '';
+      if (summary) summary.textContent=ready ? `${formatMiles(route.miles)} · recorded distance` : (start && end ? 'Route preview · distance not available yet' : 'Choose a start and destination');
+      if (caption) caption.textContent=ready ? `${route.source}. The stored distance will be preserved with this trip.` : (start && end ? 'Automatic routing is not connected in this local preview. No distance will be invented.' : 'The route line will respond as you choose each location.');
+      if (badge) { badge.textContent=ready ? 'Route ready' : (start&&end?'Provider needed':'Plan route'); badge.classList.toggle('ready',ready); }
+      if (submit) { submit.disabled=!ready; submit.title=ready?'':'Automatic routing must be connected before a new trip can be saved.'; }
+      targetShape=pathShapes[mileageRoutePathIndex(start,end)].match(/-?\d+(?:\.\d+)?/g).map(Number);
+      targetShape[1]=90;targetShape[targetShape.length-1]=90;
+      if (!frame) resume();
+      // Work links remain explicit: a destination label is not a client identity.
+    };
+    [startInput,endInput].forEach(input=>input?.addEventListener('input',syncRoute));
+    $$('[data-route-location]',host).forEach(button=>button.addEventListener('click',()=>{
+      if (button.dataset.routeTarget==='start' && startInput) startInput.value=button.dataset.routeLocation;
+      if (button.dataset.routeTarget==='end' && endInput) endInput.value=button.dataset.routeLocation;
+      syncRoute();
+      (button.dataset.routeTarget==='start'?endInput:startInput)?.focus();
+    }));
+    syncRoute();
+  }
+
   function openMileageForm(existingId = null) {
     $('#formSheet').classList.remove('session-form-sheet');
     const existing=existingId ? mileageTripById(existingId) : null;
@@ -2506,16 +2583,26 @@
     const classification=existing?.classification || (priorClassification==='personal' ? 'personal' : 'business');
     const selectedVehicleId=existing?.vehicleId || (vehicles.some(vehicle=>vehicle.id===priorVehicleId) ? priorVehicleId : primary?.id);
     const clients=businessClients();
+    const startValue=existing ? existing.startLabel || '' : recentTrip?.startLabel || '';
+    const endValue=existing?.endLabel || '';
+    const savedLocations=[...new Set(businessMileageTrips().flatMap(trip=>[trip.startLabel,trip.endLabel]).filter(Boolean))].slice(0,5);
+    const destinationOptions=[...clients.map(client=>({label:client.displayName,sub:client.billingAddress||'Client destination',clientId:client.id})),...savedLocations.filter(label=>!clients.some(client=>normalizedRouteLabel(client.displayName)===normalizedRouteLabel(label))).map(label=>({label,sub:'Recent destination',clientId:''}))].slice(0,6);
     ui.formMode='mileage'; ui.formRecordId=existingId;
     $('#formEyebrow').textContent=existing ? 'EDIT MILEAGE' : 'MILEAGE';
-    $('#formTitle').textContent=existing ? `${formatMiles(existing.miles)} trip` : 'New mileage trip';
+    $('#formTitle').textContent=existing ? 'Review route' : 'Where are you heading?';
     $('#formSubmitBtn').textContent=existing ? 'Save changes' : 'Save trip';
-    $('#formFields').innerHTML=`<div class="mileage-type-switch" role="group" aria-label="Trip classification"><button type="button" class="expense-type-option ${classification==='business'?'active':''}" data-mileage-class="business"><span>Business</span><small>Tax-relevant work travel</small></button><button type="button" class="expense-type-option ${classification==='personal'?'active':''}" data-mileage-class="personal"><span>Personal</span><small>Tracked, not business</small></button></div><input type="hidden" name="classification" id="mileageClassification" value="${escapeHtml(classification)}" />
-      <div class="field-row three"><label class="field"><span>Date</span><input name="date" type="date" required value="${escapeHtml(existing?.date || businessToday())}" /></label><label class="field"><span>Vehicle</span><select name="vehicleId" required>${vehicles.map(v=>`<option value="${v.id}" ${selectedVehicleId===v.id?'selected':''}>${escapeHtml(vehicleDisplayName(v))}</option>`).join('')}</select></label><label class="field"><span>Miles</span><input name="miles" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="0.0" value="${escapeHtml(existing?.miles || '')}" /></label></div>
-      <div class="field-row"><label class="field"><span>Start <small>optional</small></span><input name="startLabel" maxlength="120" placeholder="Home / starting point" value="${escapeHtml(existing?.startLabel || '')}" /></label><label class="field"><span>End <small>optional</small></span><input name="endLabel" maxlength="120" placeholder="Client / destination" value="${escapeHtml(existing?.endLabel || '')}" /></label></div>
-      <label class="field" id="mileagePurposeField"><span>Business purpose</span><input name="purpose" maxlength="220" placeholder="e.g. Client session, supplies, business meeting" value="${escapeHtml(existing?.purpose || '')}" /></label>
-      <details class="optional-fields" ${existing?.clientId || existing?.sessionId || existing?.notes ? 'open' : ''}><summary>Link work & add notes <span>optional</span></summary><div class="optional-fields-body"><div class="field-row"><label class="field"><span>Client</span><select name="clientId"><option value="">No linked client</option>${clients.map(c=>`<option value="${c.id}" ${c.id===existing?.clientId?'selected':''}>${escapeHtml(c.displayName)}</option>`).join('')}</select></label><label class="field"><span>Work session</span><select name="sessionId">${mileageSessionOptions(existing?.sessionId || '')}</select></label></div><label class="field"><span>Notes</span><textarea name="notes" rows="3" maxlength="500" placeholder="Parking context, route note, or other detail">${escapeHtml(existing?.notes || '')}</textarea></label></div></details>
-      <label class="check-row"><input name="needsReview" type="checkbox" ${existing?.reviewStatus==='needs_review'?'checked':''} /><span><strong>Needs review</strong><small>Keep this trip in the attention queue until its context is complete.</small></span></label>`;
+    $('#formFields').innerHTML=`<section class="mileage-destination-console">
+      <div class="mileage-route-inputs"><label class="route-location-field"><span>START</span><input name="startLabel" maxlength="120" list="mileageLocationOptions" placeholder="Current location" value="${escapeHtml(startValue)}" /></label><span class="route-direction" aria-hidden="true">→</span><label class="route-location-field destination"><span>DESTINATION</span><input name="endLabel" maxlength="120" list="mileageLocationOptions" placeholder="Choose a client or place" value="${escapeHtml(endValue)}" /></label></div>
+      <datalist id="mileageLocationOptions">${[...new Set(['Current location','Home',...clients.flatMap(client=>[client.displayName,client.billingAddress]).filter(Boolean),...savedLocations])].map(label=>`<option value="${escapeHtml(label)}"></option>`).join('')}</datalist>
+      ${destinationOptions.length?`<div class="route-destination-rail" aria-label="Suggested destinations">${destinationOptions.map(option=>`<button type="button" data-route-target="end" data-route-location="${escapeHtml(option.label)}"><span>${escapeHtml(option.label)}</span><small>${escapeHtml(option.sub)}</small></button>`).join('')}</div>`:''}
+      <div class="mileage-route-stage" aria-hidden="true"><span class="route-node start"></span><svg viewBox="0 0 720 180" preserveAspectRatio="none"><defs><linearGradient id="mileageRouteGradient" x1="0" x2="1"><stop offset="0" stop-color="#7bdfff"/><stop offset=".52" stop-color="#6ea8ff"/><stop offset="1" stop-color="#bda0ff"/></linearGradient><filter id="mileageRouteGlow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path class="mileage-route-path active" id="mileageRoutePathA" d="M36 108 C136 30 214 168 326 80 S520 25 684 100"/><path class="mileage-route-path" id="mileageRoutePathB" d="M36 105 C116 150 194 34 310 91 S493 158 684 72"/></svg><span class="route-car">◆</span><span class="route-node end"></span></div>
+      <div class="mileage-route-result"><span class="mileage-route-badge" id="mileageRouteBadge">Plan route</span><div><strong id="mileageRouteSummary">Choose a start and destination</strong><small id="mileageRouteCaption">The route line will respond as you choose each location.</small></div></div>
+      <input type="hidden" name="miles" value="${escapeHtml(existing?.miles || '')}" />
+      <div class="mileage-context-rail"><div class="mileage-type-switch" role="group" aria-label="Trip classification"><button type="button" class="expense-type-option ${classification==='business'?'active':''}" data-mileage-class="business"><span>Business</span><small>Tax-relevant travel</small></button><button type="button" class="expense-type-option ${classification==='personal'?'active':''}" data-mileage-class="personal"><span>Personal</span><small>Tracked, not business</small></button></div><input type="hidden" name="classification" id="mileageClassification" value="${escapeHtml(classification)}" />
+      <label class="field"><span>Vehicle</span><select name="vehicleId" required>${vehicles.map(v=>`<option value="${v.id}" ${selectedVehicleId===v.id?'selected':''}>${escapeHtml(vehicleDisplayName(v))}</option>`).join('')}</select></label><label class="field"><span>Date</span><input name="date" type="date" required value="${escapeHtml(existing?.date || businessToday())}" /></label></div>
+      <label class="field mileage-purpose" id="mileagePurposeField"><span>Purpose</span><input name="purpose" maxlength="220" placeholder="Client visit, supplies, business meeting…" value="${escapeHtml(existing?.purpose || '')}" /></label>
+      <details class="route-details" ${existing?.clientId || existing?.sessionId || existing?.notes || existing?.reviewStatus==='needs_review' ? 'open' : ''}><summary><span><b>Link work or add details</b><small>Optional context and review controls</small></span><span aria-hidden="true">⌄</span></summary><div class="route-details-body"><div class="field-row"><label class="field"><span>Client</span><select name="clientId"><option value="">No linked client</option>${clients.map(c=>`<option value="${c.id}" ${c.id===existing?.clientId?'selected':''}>${escapeHtml(c.displayName)}</option>`).join('')}</select></label><label class="field"><span>Work session</span><select name="sessionId">${mileageSessionOptions(existing?.sessionId || '')}</select></label></div><label class="field"><span>Notes</span><textarea name="notes" rows="3" maxlength="500" placeholder="Route context or other detail">${escapeHtml(existing?.notes || '')}</textarea></label><label class="check-row"><input name="needsReview" type="checkbox" ${existing?.reviewStatus==='needs_review'?'checked':''} /><span><strong>Needs review</strong><small>Keep this trip in the attention queue.</small></span></label></div></details>
+      </section>`;
     $$('[data-mileage-class]', $('#formFields')).forEach(btn=>btn.addEventListener('click',()=>{ $$('[data-mileage-class]', $('#formFields')).forEach(item=>item.classList.toggle('active',item===btn)); $('#mileageClassification').value=btn.dataset.mileageClass; const purpose=$('#mileagePurposeField'); if(purpose) purpose.hidden=btn.dataset.mileageClass==='personal'; }));
     const mileageSessionSelect = $('[name="sessionId"]', $('#formFields'));
     const mileageClientSelect = $('[name="clientId"]', $('#formFields'));
@@ -2525,6 +2612,7 @@
     });
     if (classification==='personal') $('#mileagePurposeField').hidden=true;
     openModal($('#formSheet'));
+    setupMileageRouteConsole(existing);
   }
 
   function openMileageDetail(id) {

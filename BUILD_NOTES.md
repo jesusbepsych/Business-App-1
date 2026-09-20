@@ -405,3 +405,13 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Integrated each form's title, fields, helper text, optional sections, primary-vehicle control, and actions into one continuous sheet rather than stacked inner panels.
 - Kept normal inputs as restrained inset wells while dissolving the heavier Billing Details and footer containers into shared dividers and material.
 - Preserved client colors, remembered defaults, billing details, rates, vehicle status, odometer, primary-vehicle behavior, validation, editing, and source-record integrity.
+# Phase 8 revision 19 — Destination Route Console
+
+- Replaced the manual mileage-entry grid with a destination-first route console.
+- Added a continuous glowing blue route ribbon with gentle idle movement and interpolated shape changes when either location changes. Animation is cleaned up on close and suspended when hidden; Reduced Motion disables movement.
+- Added destination suggestions from active clients and previously saved locations.
+- No automatic routing provider is connected in this frontend revision. New routes remain explicitly unresolved and cannot be saved. Existing trips preserve their recorded distance only when the route labels remain unchanged; no mileage is inferred from labels.
+- Kept MileageTrip storage, evidence, audit, vehicle snapshots, tax calculations, and client/session relationships intact.
+- Added a lighter one-frame sheet treatment plus reduced-motion and iPad/Safari-safe animation behavior.
+
+Validation: JavaScript syntax check and both Node test suites pass (existing analytics/entry regressions plus focused mileage animation, lifecycle cleanup, reduced-motion, and stored-distance checks). Browser visual verification was unavailable because the browser download timed out. Device-level Safari smoothness remains to be verified on hardware.

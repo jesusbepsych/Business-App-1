@@ -1,8 +1,10 @@
-# Business Ledger — Phase 8, Revision 18
+# Business Ledger — Phase 8, Revision 19
 
-Current build: **Integrated Client + Vehicle Forms**. New/Edit Client and New/Edit Vehicle now use the same single-surface, lighter graphite-blue glass system as the refined work-session, invoice, and Quick Add interfaces.
+Current build: **Destination Route Console**. New/Edit Mileage now uses a destination-led, automatic-routing-ready console with one continuous lighter graphite-blue surface and a responsive animated route ribbon.
 
-Revision 18 visually integrates each form's header, fields, optional areas, helper copy, and actions into one continuous sheet without changing either record workflow or data model.
+This revision implements the frontend only, as agreed during design exploration. Google/Apple Maps, GPS, place search, and automatic distance calculation are NOT connected. New trips cannot be saved until real routing is connected. The ribbon is an illustrative route preview, not a geographic map. Existing trips retain their saved mileage when their route labels are unchanged; changing those labels requires a future route calculation. The app never derives distance from place names or copies another trip's distance.
+
+The lighter single-surface Client and Vehicle forms from Revision 18 remain intact. Mileage preserves its audit trail, vehicle snapshot, tax interpretation, review state, and client/session links.
 
 ## Typography scale refinement
 

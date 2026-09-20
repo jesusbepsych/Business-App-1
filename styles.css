@@ -3255,6 +3255,213 @@ body.taxes-atrium-active .taxes-segments .segment > span {
   border:1px solid rgba(235,247,252,.24);
 }
 
+/* Revision 19 — destination-led mileage console. */
+.form-sheet.mileage-route-sheet {
+  width:min(980px,calc(100vw - 28px));
+  max-height:min(920px,calc(100dvh - 24px));
+  padding:0;
+  overflow:hidden auto;
+  border-color:rgba(221,238,248,.26);
+  background:
+    radial-gradient(circle at 13% 11%,rgba(116,206,245,.12),transparent 29%),
+    radial-gradient(circle at 88% 18%,rgba(151,131,244,.105),transparent 30%),
+    linear-gradient(148deg,rgba(58,78,93,.985),rgba(32,52,66,.992));
+  box-shadow:inset 0 1px rgba(255,255,255,.13),0 30px 95px rgba(0,0,0,.38);
+  scrollbar-width:thin;
+  scrollbar-color:rgba(141,203,234,.34) transparent;
+}
+.mileage-route-sheet .sheet-handle{display:none}
+.mileage-route-sheet .sheet-head{
+  position:relative;
+  z-index:4;
+  align-items:center;
+  margin:0;
+  padding:22px 25px 17px;
+  border:0;
+  background:linear-gradient(90deg,rgba(255,255,255,.065),rgba(255,255,255,.018));
+}
+.mileage-route-sheet .sheet-head::after{
+  content:"";
+  position:absolute;
+  right:74px;
+  bottom:0;
+  left:25px;
+  height:1px;
+  background:linear-gradient(90deg,rgba(116,221,255,.42),rgba(191,167,255,.23),transparent);
+}
+.mileage-route-sheet .sheet-head .eyebrow{margin-bottom:5px;color:rgba(153,225,255,.82)}
+.mileage-route-sheet .sheet-head h2{font-family:Georgia,'Times New Roman',serif;font-size:29px;font-weight:500;letter-spacing:-.035em;color:#f8fbfd}
+.mileage-route-sheet .close-btn{width:39px;height:39px;border-color:rgba(229,241,248,.17);background:rgba(255,255,255,.07);color:#f8fbfd}
+.mileage-route-sheet #dynamicForm,.mileage-route-sheet #formFields{gap:0;min-height:0}
+.mileage-destination-console{position:relative;overflow:hidden}
+.mileage-destination-console::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(113deg,transparent 20%,rgba(255,255,255,.025) 46%,transparent 68%);
+}
+.mileage-route-inputs{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:minmax(0,.8fr) 34px minmax(0,1.2fr);
+  align-items:center;
+  padding:20px 25px 10px;
+}
+.route-location-field{display:grid;gap:6px;min-width:0}
+.route-location-field>span{font-size:9px;font-weight:850;letter-spacing:.15em;color:rgba(195,226,240,.62)}
+.route-location-field input{
+  width:100%;
+  min-height:52px;
+  padding:0 15px;
+  border:1px solid rgba(224,240,248,.17);
+  border-radius:14px;
+  outline:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(8,24,34,.08));
+  color:#f8fbfd;
+  font:700 15px/1.2 inherit;
+  box-shadow:inset 0 1px 6px rgba(2,13,20,.12),0 1px rgba(255,255,255,.045);
+  transition:border-color .22s ease,box-shadow .22s ease,background .22s ease;
+}
+.route-location-field input::placeholder{color:rgba(230,240,245,.44)}
+.route-location-field input:focus{border-color:rgba(115,211,249,.58);background:rgba(255,255,255,.09);box-shadow:0 0 0 3px rgba(80,184,232,.11),inset 0 1px 6px rgba(2,13,20,.1)}
+.route-direction{align-self:end;display:grid;place-items:center;height:52px;color:rgba(158,221,248,.76);font-size:18px}
+.route-destination-rail{
+  position:relative;
+  z-index:2;
+  display:flex;
+  gap:7px;
+  padding:0 25px 10px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.route-destination-rail::-webkit-scrollbar{display:none}
+.route-destination-rail button{
+  flex:0 0 auto;
+  display:grid;
+  gap:2px;
+  min-width:116px;
+  max-width:180px;
+  padding:9px 12px;
+  border:1px solid rgba(224,240,248,.13);
+  border-radius:12px;
+  background:rgba(255,255,255,.045);
+  color:#f7fbfc;
+  text-align:left;
+  font:inherit;
+  cursor:pointer;
+  transition:transform .18s ease,border-color .18s ease,background .18s ease;
+}
+.route-destination-rail button:hover,.route-destination-rail button:focus-visible{transform:translateY(-1px);border-color:rgba(116,211,250,.42);background:rgba(116,211,250,.075)}
+.route-destination-rail span{overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:760;white-space:nowrap}
+.route-destination-rail small{overflow:hidden;text-overflow:ellipsis;color:rgba(228,240,245,.5);font-size:8px;white-space:nowrap}
+.mileage-route-stage{
+  position:relative;
+  height:180px;
+  margin:0 25px;
+  overflow:hidden;
+  border-top:1px solid rgba(229,243,249,.07);
+  border-bottom:1px solid rgba(229,243,249,.07);
+  background:radial-gradient(ellipse at center,rgba(76,164,213,.095),transparent 64%);
+}
+.mileage-route-stage svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.mileage-route-path{
+  fill:none;
+  stroke:url(#mileageRouteGradient);
+  stroke-width:4;
+  stroke-linecap:round;
+  stroke-dasharray:3 10;
+  opacity:0;
+  filter:url(#mileageRouteGlow);
+  transition:opacity .72s cubic-bezier(.2,.75,.2,1);
+  animation:mileageRouteFlow 7.5s linear infinite,mileageRouteBreathe 5.6s ease-in-out infinite;
+}
+.mileage-route-path.active{opacity:.95}
+.route-node{
+  position:absolute;
+  z-index:3;
+  top:50%;
+  width:15px;
+  height:15px;
+  border:3px solid rgba(150,226,255,.92);
+  border-radius:50%;
+  background:#36566a;
+  box-shadow:0 0 0 5px rgba(89,190,235,.12),0 0 20px rgba(89,190,235,.42);
+  transform:translateY(-50%);
+}
+.route-node.start{left:27px}.route-node.end{right:27px;border-color:rgba(200,174,255,.94);box-shadow:0 0 0 5px rgba(167,130,246,.12),0 0 20px rgba(167,130,246,.4)}
+.route-car{
+  position:absolute;
+  z-index:3;
+  top:47%;
+  left:49%;
+  color:#eafaff;
+  font-size:13px;
+  text-shadow:0 0 12px #7bdfff;
+  transform:rotate(18deg);
+  animation:mileageCarFloat 5.6s ease-in-out infinite;
+}
+.mileage-route-result{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  gap:13px;
+  min-height:67px;
+  padding:11px 25px 13px;
+}
+.mileage-route-result>div{display:grid;gap:3px;min-width:0}
+.mileage-route-result strong{color:#f8fbfd;font-size:12px}
+.mileage-route-result small{color:rgba(230,241,246,.56);font-size:9px;line-height:1.45}
+.mileage-route-badge{flex:0 0 auto;padding:6px 9px;border:1px solid rgba(225,239,247,.14);border-radius:999px;background:rgba(255,255,255,.05);color:rgba(235,244,248,.68);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.mileage-route-badge.ready{border-color:rgba(105,229,179,.35);background:rgba(39,137,102,.18);color:#9eebcb}
+.mileage-context-rail{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:minmax(240px,1.25fr) minmax(150px,.75fr) minmax(150px,.75fr);
+  border-top:1px solid rgba(227,241,248,.105);
+  border-bottom:1px solid rgba(227,241,248,.105);
+}
+.mileage-context-rail>.field{margin:0;padding:14px 16px;border-left:1px solid rgba(227,241,248,.105)}
+.mileage-context-rail .field>span,.mileage-purpose>span{font-size:9px;font-weight:800;color:rgba(240,247,250,.73)}
+.mileage-context-rail .field select,.mileage-context-rail .field input,.mileage-purpose input{min-height:42px;border-color:rgba(229,241,248,.13);background:rgba(255,255,255,.055);color:#f8fbfd;color-scheme:dark}
+.mileage-context-rail .field select option{background:#304b5b;color:#fff}
+.mileage-context-rail .mileage-type-switch{gap:0}
+.mileage-context-rail .expense-type-option{min-height:100%;padding:13px 15px;border:0;border-right:1px solid rgba(227,241,248,.105);border-radius:0;background:transparent;box-shadow:none;color:#f8fbfd}
+.mileage-context-rail .expense-type-option.active{background:linear-gradient(145deg,rgba(91,212,180,.15),rgba(91,177,219,.08));box-shadow:inset 0 -2px rgba(103,225,193,.63)}
+.mileage-context-rail .expense-type-option span{font-size:11px}.mileage-context-rail .expense-type-option small{font-size:8px;color:rgba(228,240,245,.52)}
+.mileage-purpose{position:relative;z-index:2;margin:0;padding:14px 25px 15px;border-bottom:1px solid rgba(227,241,248,.105)}
+.route-details{position:relative;z-index:2;margin:0;border:0;background:transparent}
+.route-details>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:0 25px;cursor:pointer;list-style:none;color:#f8fbfd}
+.route-details>summary::-webkit-details-marker{display:none}.route-details>summary>span:first-child{display:grid;gap:2px}.route-details>summary b{font-size:11px}.route-details>summary small{color:rgba(229,240,245,.5);font-size:8px}
+.route-details-body{display:grid;gap:12px;padding:15px 25px 18px;border-top:1px solid rgba(227,241,248,.09);background:rgba(6,21,30,.06)}
+.route-details-body .field>span{color:rgba(241,248,250,.78);font-size:9px}.route-details-body .field input,.route-details-body .field select,.route-details-body .field textarea{border-color:rgba(229,241,248,.13);background:rgba(255,255,255,.05);color:#f8fbfd;color-scheme:dark}.route-details-body .field select option{background:#304b5b;color:#fff}
+.route-details-body .check-row{display:flex;align-items:center;gap:10px}.route-details-body .check-row input{width:22px;height:22px;accent-color:#85d7bd}.route-details-body .check-row span{display:grid;gap:2px}.route-details-body .check-row strong{font-size:10px}.route-details-body .check-row small{color:rgba(229,240,245,.52);font-size:8px}
+.mileage-route-sheet .form-actions{position:relative;margin:0;padding:12px 25px 21px;border:0;background:transparent}
+.mileage-route-sheet .form-actions::before{content:"";position:absolute;top:0;right:25px;left:25px;height:1px;background:linear-gradient(90deg,transparent,rgba(117,214,253,.22),rgba(190,164,255,.16),transparent)}
+.mileage-route-sheet .form-actions .secondary-btn{border-color:rgba(230,242,248,.15);background:rgba(255,255,255,.055);color:rgba(248,252,253,.84)}
+.mileage-route-sheet .form-actions .primary-btn{min-width:150px;background:linear-gradient(135deg,#9fe8d7,#82cdea);color:#08202a;box-shadow:0 10px 24px rgba(62,177,216,.18)}
+.mileage-route-sheet .form-actions .primary-btn:disabled{opacity:.43;box-shadow:none;cursor:not-allowed}
+@keyframes mileageRouteFlow{to{stroke-dashoffset:-130}}
+@keyframes mileageRouteBreathe{0%,100%{filter:url(#mileageRouteGlow);stroke-width:3.7}50%{filter:url(#mileageRouteGlow);stroke-width:4.5}}
+@keyframes mileageCarFloat{0%,100%{transform:translate(-5px,3px) rotate(16deg)}50%{transform:translate(7px,-4px) rotate(20deg)}}
+
+@media(max-width:760px){
+  .form-sheet.mileage-route-sheet{width:min(700px,calc(100vw - 18px))}
+  .mileage-route-inputs{grid-template-columns:1fr;padding:17px 19px 9px;gap:8px}.route-direction{display:none}
+  .route-destination-rail{padding-right:19px;padding-left:19px}.mileage-route-stage{height:145px;margin:0 19px}.mileage-route-result{padding-right:19px;padding-left:19px}
+  .mileage-context-rail{grid-template-columns:1fr 1fr}.mileage-context-rail .mileage-type-switch{grid-column:1/-1;border-bottom:1px solid rgba(227,241,248,.105)}.mileage-context-rail>.field:first-of-type{border-left:0}
+  .mileage-purpose,.route-details>summary,.route-details-body{padding-right:19px;padding-left:19px}.mileage-route-sheet .form-actions{padding-right:19px;padding-left:19px}.mileage-route-sheet .form-actions::before{right:19px;left:19px}
+}
+@media(max-width:520px){
+  .form-sheet.mileage-route-sheet{left:0;top:auto;bottom:0;width:100%;max-height:93dvh;transform:none;border-radius:25px 25px 0 0}.mileage-route-sheet .sheet-head{padding:17px 15px 13px}.mileage-route-sheet .sheet-head::after{right:60px;left:15px}.mileage-route-sheet .sheet-head h2{font-size:23px}
+  .mileage-route-inputs{padding-right:15px;padding-left:15px}.route-destination-rail{padding-right:15px;padding-left:15px}.mileage-route-stage{height:120px;margin:0 15px}.mileage-route-result{align-items:flex-start;padding-right:15px;padding-left:15px}.mileage-context-rail{grid-template-columns:1fr}.mileage-context-rail .mileage-type-switch{grid-column:auto}.mileage-context-rail>.field{border-top:1px solid rgba(227,241,248,.105);border-left:0}.mileage-purpose,.route-details>summary,.route-details-body{padding-right:15px;padding-left:15px}.mileage-route-sheet .form-actions{padding:10px 15px calc(15px + env(safe-area-inset-bottom))}.mileage-route-sheet .form-actions::before{right:15px;left:15px}.mileage-route-sheet .form-actions .primary-btn{flex:1;min-width:0}
+}
+@media(prefers-reduced-motion:reduce){.mileage-route-path,.route-car{animation:none!important}.mileage-route-path{transition:none}}
+
 /* Safari/iPad: same pre-tinted frosted material, no live backdrop sampling. */
 html.atrium-lite .tax-tab,
 html.atrium-lite .tax-tab.active {
@@ -3768,3 +3975,32 @@ html.atrium-lite .analytics-card,html.atrium-lite .analytics-kpi,html.atrium-lit
   .client-profile-sheet .client-color-picker{gap:9px}
   .client-profile-sheet .client-color-option,.client-profile-sheet .client-color-swatch{width:32px;height:32px}
 }
+
+/* Destination Spotlight: continuous illuminated road, unified centered hierarchy. */
+.mileage-route-sheet .sheet-head{background:transparent;padding-bottom:4px;align-items:flex-start}
+.mileage-route-sheet .sheet-head>div{width:100%}
+.mileage-route-sheet .sheet-head::after{display:none}
+.mileage-route-sheet .sheet-head h2{text-align:center;font-size:clamp(27px,3.5vw,43px);margin-top:18px}
+.mileage-route-sheet .close-btn{position:absolute;right:22px;top:21px}
+.mileage-route-inputs{display:flex;flex-direction:column;gap:13px;max-width:760px;margin:auto;padding-top:12px}
+.route-location-field{width:100%}
+.route-location-field:not(.destination){display:flex;align-items:center;justify-content:center;gap:10px}
+.route-location-field:not(.destination) input{width:min(300px,75%);min-height:36px;border:0;background:transparent;box-shadow:none;text-align:center;font-size:15px}
+.route-location-field.destination>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.route-location-field.destination input{border-radius:36px;min-height:64px;font-family:inherit;font-size:22px;font-weight:500;padding:12px 25px}
+.route-direction{display:none}
+.route-destination-rail{justify-content:center}
+.mileage-route-path{stroke-dasharray:none;animation:none;stroke:#9cbdff;stroke-width:2.5;vector-effect:non-scaling-stroke}
+#mileageRoutePathB{opacity:.5;stroke:#dbf1ff;stroke-width:3;stroke-dasharray:10 230;animation:mileageRouteFlow 12s linear infinite}
+.mileage-route-stage{border:0}
+.route-car{display:none}
+.route-node.start{left:calc(5% - 7px)}.route-node.end{right:calc(5% - 7px)}
+.mileage-route-result{justify-content:center;text-align:center}
+.mileage-route-badge{display:none}
+.mileage-route-result strong{font-size:16px}
+.mileage-route-result small{font-size:12px}
+.mileage-context-rail .field>span,.mileage-purpose>span,.route-details-body .field>span{font-size:12px}
+.mileage-context-rail .expense-type-option span,.route-details>summary b{font-size:14px}
+.mileage-context-rail .expense-type-option small,.route-details>summary small{font-size:11px}
+.mileage-route-sheet[hidden] .mileage-route-path{animation-play-state:paused}
+@media(max-width:520px){.route-destination-rail{justify-content:flex-start}.mileage-route-sheet .sheet-head h2{margin-top:24px}.route-location-field.destination input{font-size:18px}}
