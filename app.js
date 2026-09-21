@@ -267,6 +267,41 @@
   let atriumViewportWidth = window.innerWidth;
   let activeFilterMenu = null;
 
+  function enhanceDateInputs(root = document) {
+    if (!root?.querySelectorAll || !document?.createElement) return;
+    $$('input[type="date"]', root).forEach(input => {
+      if (input.dataset.compactDateReady === 'true') {
+        input._syncCompactDate?.();
+        return;
+      }
+      if (!input.parentElement || typeof input.before !== 'function') return;
+
+      const field = input.closest?.('.field');
+      const labelText = field?.querySelector?.(':scope > span')?.textContent?.trim() || 'Date';
+      const control = document.createElement('div');
+      control.className = 'compact-date-control';
+      control.innerHTML = `<span class="compact-date-button" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M7 3v3M17 3v3M4.5 9h15M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/><path d="M8 12h2M14 12h2M8 16h2M14 16h2"/></svg><b class="compact-date-day">—</b></span><span class="compact-date-value">Choose date</span>`;
+      input.before(control);
+      control.appendChild(input);
+      field?.classList.add('compact-date-field');
+      input.dataset.compactDateReady = 'true';
+      if (!input.getAttribute('aria-label')) input.setAttribute('aria-label', labelText);
+      input.title = `Choose ${labelText.toLowerCase()}`;
+
+      const day = $('.compact-date-day', control);
+      const value = $('.compact-date-value', control);
+      const sync = () => {
+        const parts = String(input.value || '').split('-');
+        day.textContent = parts.length === 3 && parts[2] ? String(Number(parts[2])) : '—';
+        value.textContent = input.value ? formatDate(input.value) : 'Choose date';
+      };
+      input._syncCompactDate = sync;
+      input.addEventListener('input', sync);
+      input.addEventListener('change', sync);
+      sync();
+    });
+  }
+
   function readSidebarCollapsedPreference() {
     try {
       const saved = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
@@ -674,6 +709,7 @@
     ui.modal = modal;
     overlay.hidden = false;
     modal.hidden = false;
+    enhanceDateInputs(modal);
     document.body.style.overflow = 'hidden';
     if (modal === $('#commandPalette')) setTimeout(() => $('#commandInput').focus(), 40);
     if (modal === $('#formSheet')) setTimeout(() => $('#dynamicForm input, #dynamicForm select, #dynamicForm textarea')?.focus(), 60);
@@ -3497,7 +3533,10 @@
     syncInvoiceCalendarSelection();
   });
   $('#invoiceIssueDate').addEventListener('change', event => {
-    if (!ui.invoiceFormId) $('#invoiceDueDate').value = addDays(event.target.value, activeBusiness().invoiceSettings?.defaultDueDays ?? 7);
+    if (!ui.invoiceFormId) {
+      $('#invoiceDueDate').value = addDays(event.target.value, activeBusiness().invoiceSettings?.defaultDueDays ?? 7);
+      $('#invoiceDueDate')._syncCompactDate?.();
+    }
   });
   $('#addManualInvoiceLine').addEventListener('click', () => addManualInvoiceRow());
   $('#selectAllInvoiceSessions').addEventListener('click', () => {

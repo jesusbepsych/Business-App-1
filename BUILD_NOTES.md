@@ -1,3 +1,12 @@
+## Revision 25 — Compact Calendar Controls
+
+- Replaced the six visually large date inputs with one reusable compact calendar control across work sessions, payments, expenses, mileage, and invoice issue/due dates.
+- Preserved native date inputs underneath the icon so iPad, iPhone, and desktop browsers continue using their familiar date picker and validation behavior.
+- Kept the chosen date visible beside the icon and synchronized invoice due-date text when the issue date automatically changes it.
+- Rebalanced the work-session header around a wider Client field, compact Date action, and stable Hourly Rate field; also reclaimed space in payment, expense, mileage, and invoice layouts.
+- Added responsive rules for tablet and phone layouts and a compact-calendar regression test.
+- Validation: `node --check app.js` and `node --test tests/*.test.js` pass (4/4 test files).
+
 ## Revision 24 — Clock & Companion
 
 - Single circular clock beside explicit start/end mode and plain time readouts.

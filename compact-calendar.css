@@ -1,0 +1,125 @@
+/* Revision 25: compact, native calendar controls across every entry console. */
+.compact-date-field{min-width:max-content!important}
+.compact-date-control{
+  position:relative;
+  display:grid;
+  grid-template-columns:44px max-content;
+  align-items:center;
+  gap:9px;
+  width:max-content;
+  max-width:100%;
+  min-height:44px;
+}
+.compact-date-button{
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  overflow:hidden;
+  border:1px solid rgba(185,222,246,.44);
+  border-radius:12px;
+  background:linear-gradient(145deg,rgba(179,225,249,.17),rgba(133,142,221,.12));
+  box-shadow:inset 0 1px rgba(255,255,255,.16),0 0 15px rgba(118,199,245,.08);
+  color:#eaf7ff;
+  transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+.compact-date-button svg{
+  width:25px;
+  height:25px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.35;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  opacity:.92;
+}
+.compact-date-day{
+  position:absolute;
+  top:19px;
+  left:0;
+  width:100%;
+  color:#fff;
+  font-size:9px;
+  font-variant-numeric:tabular-nums;
+  line-height:1;
+  text-align:center;
+}
+.compact-date-value{
+  overflow:hidden;
+  color:rgba(246,251,253,.9);
+  font-size:12px;
+  font-weight:750;
+  line-height:1.2;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.compact-date-control input[type="date"]{
+  position:absolute!important;
+  z-index:3;
+  top:0;
+  left:0;
+  width:44px!important;
+  min-width:44px!important;
+  max-width:44px!important;
+  height:44px!important;
+  min-height:44px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  opacity:.001;
+  cursor:pointer;
+  appearance:none;
+  -webkit-appearance:none;
+}
+.compact-date-control input[type="date"]::-webkit-calendar-picker-indicator{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  margin:0;
+  padding:0;
+  opacity:0;
+  cursor:pointer;
+}
+.compact-date-control:focus-within .compact-date-button{
+  border-color:rgba(184,230,255,.92);
+  box-shadow:0 0 0 3px rgba(126,207,252,.16),0 0 20px rgba(118,199,245,.17),inset 0 1px rgba(255,255,255,.2);
+  transform:translateY(-1px);
+}
+
+/* The work-session console gives Client the working room, Date a compact action,
+   and Rate a stable numeric column. */
+#formSheet .companion-picker>.paired-session-top{
+  grid-template-columns:minmax(300px,1fr) max-content minmax(170px,.42fr);
+}
+#formSheet .companion-picker>.paired-session-top .compact-date-field{padding-right:18px;padding-left:18px}
+
+/* Compact dates reclaim horizontal space in the other entry consoles too. */
+.expense-compose-sheet .compose-chips{grid-template-columns:1fr 1.35fr .9fr 1.2fr max-content}
+.payment-compose-sheet .payment-compose-chips{grid-template-columns:1fr 1.5fr .9fr 1fr max-content}
+.mileage-context-rail{grid-template-columns:minmax(240px,1.35fr) minmax(190px,.8fr) max-content}
+.invoice-calendar-basics{grid-template-columns:minmax(220px,1.45fr) minmax(145px,.7fr) max-content max-content}
+.invoice-calendar-basics .compact-date-control{grid-template-columns:44px max-content}
+
+@media(max-width:930px){
+  .invoice-calendar-basics{grid-template-columns:1fr 1fr}
+  .invoice-calendar-basics .compact-date-field{min-width:0!important}
+}
+@media(max-width:700px){
+  #formSheet .companion-picker>.paired-session-top{grid-template-columns:1fr max-content}
+  #formSheet .companion-picker>.paired-session-top .field:first-child{grid-column:1/-1}
+  #formSheet .companion-picker>.paired-session-top .field:last-child{min-width:0}
+  .expense-compose-sheet .compose-chips,.payment-compose-sheet .payment-compose-chips{grid-template-columns:1fr 1fr}
+  .expense-compose-sheet .compose-chips .compact-date-field,.payment-compose-sheet .payment-compose-chips .compact-date-field{grid-column:auto}
+}
+@media(max-width:590px){
+  .invoice-calendar-basics{grid-template-columns:1fr}
+  .compact-date-field{min-width:0!important}
+}
+@media(max-width:520px){
+  #formSheet .companion-picker>.paired-session-top{grid-template-columns:1fr}
+  #formSheet .companion-picker>.paired-session-top .field:first-child{grid-column:auto}
+  .compact-date-control{grid-template-columns:44px minmax(0,1fr);width:100%}
+}
+@media(prefers-reduced-motion:reduce){.compact-date-button{transition:none}}

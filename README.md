@@ -1,6 +1,8 @@
-# Business Ledger — Phase 8, Revision 24
+# Business Ledger — Phase 8, Revision 25
 
-Clock & Companion: circular single dial, explicit start/end mode, undo and five-minute correction, and six named client presets in a three-row scroll area. Deploy clock-companion.css with the other application files. Existing presets are retained.
+Compact Calendar Controls: every entry date now uses the same small calendar icon with a readable selected-date label while retaining the native device date picker. Work-session, payment, expense, mileage, and invoice layouts reclaim the unused input width and rebalance their neighboring controls. Deploy `compact-calendar.css` with the existing application files.
+
+Revision 24's Clock & Companion remains intact: circular single dial, explicit start/end mode, undo and five-minute correction, and six named client presets in a three-row scroll area.
 
 # Business Ledger — Phase 8, Revision 22
 
