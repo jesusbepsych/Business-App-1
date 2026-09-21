@@ -842,9 +842,8 @@
   function analyticsComparison(current,previous,{money=false,hours=false}={}) {
     const delta=current-previous; const pct=previous ? Math.round((delta/Math.abs(previous))*100) : current ? null : 0;
     const direction=delta>0?'up':delta<0?'down':'flat';
-    const value=pct==null?'New activity':`${Math.abs(pct)}% ${direction==='up'?'higher':direction==='down'?'lower':'unchanged'}`;
     const detail=money?formatMoney(Math.abs(delta),activeBusiness().currency):hours?`${(Math.abs(delta)/60).toFixed(1)}h`:`${Math.abs(delta)}`;
-    return {direction,value,detail};
+    return {direction,pct,detail};
   }
 
   function analyticsMonthBuckets(bounds) {
@@ -952,7 +951,7 @@
     const spent=expenses.reduce((n,x)=>n+Number(x.businessCents||0),0); const prevSpent=previousExpenses.reduce((n,x)=>n+Number(x.businessCents||0),0);
     const minutes=sessions.reduce((n,x)=>n+sessionMinutes(x),0); const prevMinutes=previousSessions.reduce((n,x)=>n+sessionMinutes(x),0); const net=received-spent; const prevNet=prevReceived-prevSpent;
     const kpis=[['received','Received',received,prevReceived,'money'],['expenses','Business-use expenses',spent,prevSpent,'money'],['net','Planning margin',net,prevNet,'money'],['hours','Hours logged',minutes,prevMinutes,'hours']];
-    $('#analyticsKpis').innerHTML=kpis.map(([kind,label,current,previous,type])=>{const comp=analyticsComparison(current,previous,{money:type==='money',hours:type==='hours'});const display=type==='hours'?`${(current/60).toFixed(current%60?1:0)}h`:formatMoney(current,activeBusiness().currency);const allTime=ui.analyticsRange==='all';return `<button class="analytics-kpi" data-analytics-evidence="${kind}"><span>${label}</span><strong>${display}</strong><small class="comparison ${allTime?'flat':comp.direction}">${allTime?'All recorded activity':comp.value}<em>${allTime?'No comparison period':`${comp.detail} ${bounds.comparisonLabel}`}</em></small></button>`}).join('');
+    $('#analyticsKpis').innerHTML=kpis.map(([kind,label,current,previous,type])=>{const comp=analyticsComparison(current,previous,{money:type==='money',hours:type==='hours'});const display=type==='hours'?`${(current/60).toFixed(current%60?1:0)}h`:formatMoney(current,activeBusiness().currency);const allTime=ui.analyticsRange==='all';const change=allTime?'—':comp.pct==null?'—':`${comp.direction==='up'?'↑':comp.direction==='down'?'↓':'→'} ${Math.abs(comp.pct)}%`;const prior=allTime?'All recorded activity':`${comp.detail} ${bounds.comparisonLabel}`;return `<button class="analytics-kpi" data-analytics-evidence="${kind}"><span>${label}</span><strong>${display}</strong><small class="comparison ${allTime?'flat':comp.direction}"><span class="comparison-change">${change}</span><em>${prior}</em></small></button>`}).join('');
     $('#analyticsRangeBtn').textContent=analyticsRangeLabel();
     const buckets=analyticsMonthBuckets(bounds); $('#analyticsCashflowChart').innerHTML=analyticsNetFlowChart(buckets); $('#analyticsIncomeExpenseChart').innerHTML=analyticsIncomeExpenseChart(buckets); $('#analyticsExpenseCategoryChart').innerHTML=analyticsExpenseCategoryChart(buckets,expenses);
     const clientMap=new Map(); payments.forEach(payment=>{const c=analyticsPaymentClient(payment);const key=c.id||`name:${c.name}`;const row=clientMap.get(key)||{key,id:c.id,name:c.name,cents:0,count:0,minutes:0,sessions:0};row.cents+=Number(payment.amountCents||0);row.count++;clientMap.set(key,row)});
@@ -1040,16 +1039,11 @@
   }
 
   function pickHomeRecentSessions(sessions) {
-    // Keep the card genuinely "recent" while randomizing what appears and in what order.
-    const pool = sessions.slice().sort((a,b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`)).slice(0,12);
-    if (pool.length <= 4) return randomSample(pool, 4);
-    let chosen = randomSample(pool, 4);
-    let signature = chosen.map(item => item.id).sort().join('|');
-    for (let attempts = 0; attempts < 5 && signature === homeRecentSignature; attempts += 1) {
-      chosen = randomSample(pool, 4);
-      signature = chosen.map(item => item.id).sort().join('|');
-    }
-    return chosen;
+    // Keep the card chronological: newest date first, then newest start time.
+    return sessions.slice().sort((a,b) => {
+      const dateCompare=String(b.date||'').localeCompare(String(a.date||''));
+      return dateCompare || String(b.startTime||'').localeCompare(String(a.startTime||''));
+    }).slice(0,4);
   }
 
   function renderRandomHomeSessions(sessions = businessSessions(), animate = true) {
@@ -1104,13 +1098,7 @@
 
   function startHomeRecentRotation() {
     clearInterval(homeRecentRotationTimer);
-    homeRecentRotationTimer = setInterval(() => {
-      if (ui.activeView !== 'home' || ui.homeTab !== 'snapshot' || document.hidden || ui.modal) return;
-      const recentHost = $('#recentSessions');
-      if (recentHost?.matches(':hover') || recentHost?.contains(document.activeElement)) return;
-      if (businessSessions().length < 2) return;
-      renderRandomHomeSessions(businessSessions(), true);
-    }, 9000);
+    homeRecentRotationTimer = null;
   }
 
   function stopHomeRecentRotation() { clearInterval(homeRecentRotationTimer); homeRecentRotationTimer=null; }

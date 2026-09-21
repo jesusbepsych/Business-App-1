@@ -1,3 +1,12 @@
+## Revision 29 — Recent Activity + KPI Comparison
+
+- Home Latest sessions now selects and renders the four newest work sessions in descending date/time order.
+- Removed the prior randomized rotation so the Recent Work card remains stable and trustworthy.
+- Removed repeated Analytics KPI “New activity” text.
+- Added compact ↑/↓/→ percentage comparisons against the selected prior period; the prior-period detail line now inherits the same green/red/neutral semantic color.
+- Expense increases are shown in restrained red, while expense decreases are green; positive movement for received income, margin, and hours remains green.
+- Validation: `node --check app.js` and `node --test tests/*.test.js` pass (4/4 test files).
+
 ## Revision 28 — Roadmap Display Cleanup
 
 - Removed the Home “BUILD ROADMAP / Phase 8 — Dashboard & analytics” panel.

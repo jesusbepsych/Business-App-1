@@ -1,4 +1,6 @@
-# Business Ledger — Phase 8, Revision 28
+# Business Ledger — Phase 8, Revision 29
+
+Recent Activity + KPI Comparison refinement: Home now presents the four latest sessions in stable chronological order, newest date/time first. Analytics KPI cards now use compact directional arrows and percentage comparisons against the prior period, with the prior-period detail line carrying the same semantic color. The repeated “New activity” label has been removed.
 
 Roadmap Display Cleanup: removed the in-app Build Roadmap panel and the Phase 8 active status banner from Home. These were presentation-only reminders; the roadmap and analytics behavior remain unchanged.
 
