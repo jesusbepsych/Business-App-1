@@ -1,3 +1,10 @@
+## Revision 28 — Roadmap Display Cleanup
+
+- Removed the Home “BUILD ROADMAP / Phase 8 — Dashboard & analytics” panel.
+- Removed the Home “Phase 8 is now active” status banner.
+- Kept the roadmap as project documentation rather than permanent in-app UI; analytics tabs, chart interactions, source traceability, and all data workflows remain unchanged.
+- Validation: `node --check app.js` and `node --test tests/*.test.js` pass (4/4 test files).
+
 ## Revision 27 — Analytics Interaction Depth
 
 - Business Flow is now inspection-only: tapping or dragging follows the line without opening a month-detail interface.

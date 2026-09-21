@@ -1,4 +1,8 @@
-# Business Ledger — Phase 8, Revision 27
+# Business Ledger — Phase 8, Revision 28
+
+Roadmap Display Cleanup: removed the in-app Build Roadmap panel and the Phase 8 active status banner from Home. These were presentation-only reminders; the roadmap and analytics behavior remain unchanged.
+
+Revision 27's chart-only scrubbing, supported-device haptics, stacked expense-category graph, and four-item analytics pagination remain active.
 
 Analytics Interaction Depth removes month-detail launches from the line charts and makes chart contact an inspection-only gesture. Business Flow, Income vs Expenses, and the new monthly Expense Category Breakdown support touch/pen scrubbing; subtle browser haptics pulse as the selected month changes when the device supports vibration.
 

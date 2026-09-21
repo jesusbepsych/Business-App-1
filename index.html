@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase8-r27-analytics-interaction-depth" />
+  <link rel="stylesheet" href="styles.css?v=phase8-r28-roadmap-display-cleanup" />
   <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
   <link rel="stylesheet" href="compact-calendar.css?v=r26" />
@@ -73,8 +73,6 @@
             <button class="primary-btn" id="quickAddBtn"><span>＋</span> Add</button>
           </div>
 
-          <div class="status-strip" role="status"><span class="status-dot"></span><span><strong>Phase 8 is now active.</strong> Analytics interpret the same work and financial records without creating new transactions; every figure remains traceable to its source.</span></div>
-
           <div class="segment-control home-segments gold-segment-bar" role="tablist" aria-label="Home sections">
             <button class="segment active" data-home-tab="snapshot" role="tab" aria-selected="true">Snapshot</button>
             <button class="segment" data-home-tab="analytics" role="tab" aria-selected="false">Analytics</button>
@@ -102,11 +100,6 @@
             </article>
           </div>
 
-          <article class="panel-card roadmap-card">
-            <div class="panel-title-row"><div><p class="eyebrow">BUILD ROADMAP</p><h2>Phase 8 — Dashboard & analytics</h2></div><span class="quiet-badge green">Active</span></div>
-            <div class="progress-track"><div class="progress-fill phase-eight"></div></div>
-            <div class="roadmap-steps"><span class="done">Foundation</span><span class="done">Work</span><span class="done">Money</span><span class="done">Expenses</span><span class="done">Mileage</span><span class="done">Tax layer</span><span class="done">Evidence</span><span class="current">Analytics</span></div>
-          </article>
           </div>
 
           <div class="home-tab analytics-tab" data-home-panel="analytics">
@@ -391,6 +384,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase8-r27-analytics-interaction-depth"></script>
+  <script src="app.js?v=phase8-r28-roadmap-display-cleanup"></script>
 </body>
 </html>
