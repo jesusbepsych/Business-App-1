@@ -1,3 +1,13 @@
+# Revision 30 — Custom Analytics Period
+
+- Replaced the Last 3/6/12 months, Year to date, and All time menu with compact From month/year and To month/year selectors in the Business Pulse toolbar.
+- The selected inclusive period now drives KPI totals, all analytics charts, ranked income and expense data, and range-scoped invoice health.
+- The initial period remains the latest six months. A current-month end includes records through today; a historical end includes the entire selected month.
+- KPI trend arrows now compare the selected ending calendar month against the immediately preceding calendar month, independent of the selected range length.
+- Each KPI names both compared months and displays the prior-month value; the larger number remains the total for the full chosen analytics period.
+- Reversed From/To input is corrected automatically, pagination resets when the period changes, and future ending months are capped at the current business month.
+- Validation: `node --check app.js` and `node --test tests/*.test.js` pass (4/4 test files), including custom-boundary and month-over-month regression coverage.
+
 ## Revision 29 — Recent Activity + KPI Comparison
 
 - Home Latest sessions now selects and renders the four newest work sessions in descending date/time order.

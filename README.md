@@ -1,4 +1,12 @@
-# Business Ledger — Phase 8, Revision 29
+# Business Ledger — Phase 8, Revision 30
+
+Custom Analytics Period replaces the preset range menu with compact, themed From and To month/year controls. The chosen boundaries filter the KPI totals, charts, income sources, expense categories, and invoice-health records as one inclusive range. The initial view remains the most recent six months.
+
+KPI comparisons are now true calendar month-over-month signals: each arrow and percentage compares the selected ending month with the immediately previous month. The large KPI value still represents the complete chosen range, and the comparison line explicitly names both months plus the prior-month value so the two scopes cannot be confused.
+
+If the ending month is the current month, its analytics include activity through today; a historical ending month includes that complete month. Invalid From/To ordering is corrected automatically at the boundary the user changes.
+
+Revision 29's stable Recent Work ordering and compact semantic KPI styling remain active.
 
 Recent Activity + KPI Comparison refinement: Home now presents the four latest sessions in stable chronological order, newest date/time first. Analytics KPI cards now use compact directional arrows and percentage comparisons against the prior period, with the prior-period detail line carrying the same semantic color. The repeated “New activity” label has been removed.
 

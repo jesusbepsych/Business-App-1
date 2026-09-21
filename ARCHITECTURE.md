@@ -304,7 +304,9 @@ Analytics are pure derived projections and are never persisted as transactions o
 - client workload reads Work Sessions independently of payment status;
 - invoice health reads issued Invoice snapshots plus linked Payment totals.
 
-Ranges include 3, 6, and 12 months, year to date, and all time. Rolling ranges compare to the immediately preceding equal-length period. Year to date compares to the same elapsed dates in the prior year. All-time totals intentionally omit a misleading comparison.
+The Analytics period is an inclusive user-selected `From` month/year through `To` month/year. It defaults to the latest six months. A historical ending month includes its complete calendar month, while the current ending month is capped at the business's current date. The main KPI numbers and every analytics projection use this full selected range.
+
+KPI trend context is deliberately narrower and stable: the selected ending calendar month is compared with the immediately preceding calendar month. Each card names both months and shows the prior-month value so the range total and monthly comparison cannot be mistaken for the same scope. Percentage change is omitted when the previous month is zero because no finite percentage exists.
 
 Every aggregate retains a drill-through predicate and opens the Phase 7 evidence surface with the exact contributing records. Charts are inline SVG with keyboard-selectable month targets; they add no network dependency and remain static under the Safari/iPad lite profile.
 ## Phase 8 chart refinement

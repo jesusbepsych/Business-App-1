@@ -244,7 +244,7 @@
   function mostRecentRecord(records, dateField = 'createdAt') {
     return (records || []).slice().sort((a,b) => `${b?.[dateField] || ''}${b?.createdAt || ''}`.localeCompare(`${a?.[dateField] || ''}${a?.createdAt || ''}`))[0] || null;
   }
-  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsRange: '6m', analyticsClientPage: 1, analyticsExpensePage: 1, analyticsPageSize: 4, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null, taxTab: 'overview', taxYear: null, mileageFilter: 'all', mileagePage: 1, mileagePageSize: 7 };
+  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsStartMonth: '', analyticsEndMonth: '', analyticsClientPage: 1, analyticsExpensePage: 1, analyticsPageSize: 4, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expensePage: 1, expensePageSize: 7, invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null, taxTab: 'overview', taxYear: null, mileageFilter: 'all', mileagePage: 1, mileagePageSize: 7 };
   let homeRecentRotationTimer = null;
   let homeRecentSignature = '';
   let homeRecentSwapTimer = null;
@@ -820,25 +820,67 @@
     return new Date(Date.UTC(year||1970,(month||1)-1,day||1));
   }
 
-  function analyticsRangeBounds(key=ui.analyticsRange) {
-    const today=businessToday(); const end=parseDateOnlyUtc(today); let start;
-    if (key==='ytd') start=new Date(Date.UTC(end.getUTCFullYear(),0,1));
-    else if (key==='all') {
-      const dates=[...businessPayments().map(x=>x.receivedDate),...businessExpenses().map(x=>x.date),...businessSessions().map(x=>x.date),...businessInvoices().map(x=>x.issueDate)].filter(Boolean).sort();
-      start=parseDateOnlyUtc(dates[0]||`${end.getUTCFullYear()}-01-01`);
-    } else {
-      const months=Number(String(key).replace('m',''))||6;
-      start=new Date(Date.UTC(end.getUTCFullYear(),end.getUTCMonth()-(months-1),1));
-    }
-    const days=Math.max(1,Math.round((end-start)/86400000)+1); let previousStart,previousEnd,comparisonLabel='vs prior period';
-    if(key==='ytd'){previousStart=new Date(Date.UTC(end.getUTCFullYear()-1,0,1));previousEnd=new Date(Date.UTC(end.getUTCFullYear()-1,end.getUTCMonth(),end.getUTCDate()));comparisonLabel='vs same period last year';}
-    else if(key==='all'){previousStart=null;previousEnd=null;comparisonLabel='all recorded activity';}
-    else {previousEnd=new Date(start.getTime()-86400000);previousStart=new Date(previousEnd.getTime()-(days-1)*86400000);}
-    return {start:dateOnlyFromDate(start),end:today,previousStart:previousStart?dateOnlyFromDate(previousStart):'',previousEnd:previousEnd?dateOnlyFromDate(previousEnd):'',comparisonLabel};
+  const ANALYTICS_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function monthKeyOffset(monthKey,offset) {
+    const [year,month]=String(monthKey||businessToday().slice(0,7)).split('-').map(Number);
+    const date=new Date(Date.UTC(year,(month||1)-1+offset,1));
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`;
+  }
+
+  function ensureAnalyticsPeriod() {
+    const currentMonth=businessToday().slice(0,7);
+    ui.analyticsEndMonth ||= currentMonth;
+    ui.analyticsStartMonth ||= monthKeyOffset(ui.analyticsEndMonth,-5);
+    if(ui.analyticsEndMonth>currentMonth)ui.analyticsEndMonth=currentMonth;
+    if(ui.analyticsStartMonth>ui.analyticsEndMonth)ui.analyticsStartMonth=ui.analyticsEndMonth;
+  }
+
+  function analyticsMonthEnd(monthKey) {
+    const [year,month]=monthKey.split('-').map(Number);
+    return dateOnlyFromDate(new Date(Date.UTC(year,month,0)));
+  }
+
+  function analyticsRangeBounds() {
+    ensureAnalyticsPeriod();
+    const today=businessToday();
+    return {start:`${ui.analyticsStartMonth}-01`,end:ui.analyticsEndMonth===today.slice(0,7)?today:analyticsMonthEnd(ui.analyticsEndMonth)};
+  }
+
+  function analyticsTrendBounds(bounds) {
+    const month=bounds.end.slice(0,7); const previousMonth=monthKeyOffset(month,-1);
+    const currentStart=`${month}-01`; const currentEnd=bounds.end;
+    const previousStart=`${previousMonth}-01`; const previousEnd=analyticsMonthEnd(previousMonth);
+    const label=key=>{const [year,number]=key.split('-').map(Number);return `${ANALYTICS_MONTHS[number-1]} ${year}`};
+    return {currentStart,currentEnd,previousStart,previousEnd,currentLabel:label(month),previousLabel:label(previousMonth)};
+  }
+
+  function analyticsRecordYears() {
+    const currentYear=Number(businessToday().slice(0,4));
+    const years=[...businessPayments().map(x=>x.receivedDate),...businessExpenses().map(x=>x.date),...businessSessions().map(x=>x.date),...businessInvoices().map(x=>x.issueDate)].filter(Boolean).map(value=>Number(value.slice(0,4))).filter(Number.isFinite);
+    const first=Math.min(currentYear-5,...years); const out=[];
+    for(let year=first;year<=currentYear;year+=1)out.push(year);
+    return out;
+  }
+
+  function syncAnalyticsPeriodControls() {
+    ensureAnalyticsPeriod(); const years=analyticsRecordYears();
+    const monthOptions=ANALYTICS_MONTHS.map((label,index)=>`<option value="${String(index+1).padStart(2,'0')}">${label}</option>`).join('');
+    const yearOptions=years.map(year=>`<option value="${year}">${year}</option>`).join('');
+    const [fromYear,fromMonth]=ui.analyticsStartMonth.split('-'); const [toYear,toMonth]=ui.analyticsEndMonth.split('-');
+    [['#analyticsFromMonth',monthOptions,fromMonth],['#analyticsToMonth',monthOptions,toMonth],['#analyticsFromYear',yearOptions,fromYear],['#analyticsToYear',yearOptions,toYear]].forEach(([selector,options,value])=>{const control=$(selector);if(!control)return;control.innerHTML=options;control.value=value});
+  }
+
+  function updateAnalyticsPeriod(changedBoundary) {
+    const from=`${$('#analyticsFromYear').value}-${$('#analyticsFromMonth').value}`;
+    const to=`${$('#analyticsToYear').value}-${$('#analyticsToMonth').value}`;
+    ui.analyticsStartMonth=from; ui.analyticsEndMonth=to;
+    if(from>to){if(changedBoundary==='from')ui.analyticsEndMonth=from;else ui.analyticsStartMonth=to}
+    const currentMonth=businessToday().slice(0,7);if(ui.analyticsEndMonth>currentMonth)ui.analyticsEndMonth=currentMonth;if(ui.analyticsStartMonth>ui.analyticsEndMonth)ui.analyticsStartMonth=ui.analyticsEndMonth;
+    ui.analyticsClientPage=1;ui.analyticsExpensePage=1;renderAnalytics();
   }
 
   function dateInBounds(value,start,end) { return Boolean(value && value>=start && value<=end); }
-  function analyticsRangeLabel(key=ui.analyticsRange) { return ({'3m':'Last 3 months','6m':'Last 6 months','12m':'Last 12 months',ytd:'Year to date',all:'All time'})[key]||'Last 6 months'; }
   function analyticsComparison(current,previous,{money=false,hours=false}={}) {
     const delta=current-previous; const pct=previous ? Math.round((delta/Math.abs(previous))*100) : current ? null : 0;
     const direction=delta>0?'up':delta<0?'down':'flat';
@@ -942,17 +984,21 @@
 
   function renderAnalytics() {
     const host=$('[data-home-panel="analytics"]'); if(!host)return;
-    const bounds=analyticsRangeBounds(); const inCurrent=v=>dateInBounds(v,bounds.start,bounds.end); const inPrevious=v=>Boolean(bounds.previousStart&&dateInBounds(v,bounds.previousStart,bounds.previousEnd));
-    const payments=businessPayments().filter(x=>inCurrent(x.receivedDate)); const previousPayments=businessPayments().filter(x=>inPrevious(x.receivedDate));
-    const expenses=businessExpenses().filter(x=>inCurrent(x.date)); const previousExpenses=businessExpenses().filter(x=>inPrevious(x.date));
-    const sessions=businessSessions().filter(x=>inCurrent(x.date)); const previousSessions=businessSessions().filter(x=>inPrevious(x.date));
+    const bounds=analyticsRangeBounds(); const trend=analyticsTrendBounds(bounds); const inCurrent=v=>dateInBounds(v,bounds.start,bounds.end);
+    syncAnalyticsPeriodControls();
+    const payments=businessPayments().filter(x=>inCurrent(x.receivedDate));
+    const expenses=businessExpenses().filter(x=>inCurrent(x.date));
+    const sessions=businessSessions().filter(x=>inCurrent(x.date));
     const invoices=businessInvoices().filter(x=>inCurrent(x.issueDate));
-    const received=payments.reduce((n,x)=>n+Number(x.amountCents||0),0); const prevReceived=previousPayments.reduce((n,x)=>n+Number(x.amountCents||0),0);
-    const spent=expenses.reduce((n,x)=>n+Number(x.businessCents||0),0); const prevSpent=previousExpenses.reduce((n,x)=>n+Number(x.businessCents||0),0);
-    const minutes=sessions.reduce((n,x)=>n+sessionMinutes(x),0); const prevMinutes=previousSessions.reduce((n,x)=>n+sessionMinutes(x),0); const net=received-spent; const prevNet=prevReceived-prevSpent;
-    const kpis=[['received','Received',received,prevReceived,'money'],['expenses','Business-use expenses',spent,prevSpent,'money'],['net','Planning margin',net,prevNet,'money'],['hours','Hours logged',minutes,prevMinutes,'hours']];
-    $('#analyticsKpis').innerHTML=kpis.map(([kind,label,current,previous,type])=>{const comp=analyticsComparison(current,previous,{money:type==='money',hours:type==='hours'});const display=type==='hours'?`${(current/60).toFixed(current%60?1:0)}h`:formatMoney(current,activeBusiness().currency);const allTime=ui.analyticsRange==='all';const change=allTime?'—':comp.pct==null?'—':`${comp.direction==='up'?'↑':comp.direction==='down'?'↓':'→'} ${Math.abs(comp.pct)}%`;const prior=allTime?'All recorded activity':`${comp.detail} ${bounds.comparisonLabel}`;return `<button class="analytics-kpi" data-analytics-evidence="${kind}"><span>${label}</span><strong>${display}</strong><small class="comparison ${allTime?'flat':comp.direction}"><span class="comparison-change">${change}</span><em>${prior}</em></small></button>`}).join('');
-    $('#analyticsRangeBtn').textContent=analyticsRangeLabel();
+    const received=payments.reduce((n,x)=>n+Number(x.amountCents||0),0); const spent=expenses.reduce((n,x)=>n+Number(x.businessCents||0),0); const minutes=sessions.reduce((n,x)=>n+sessionMinutes(x),0); const net=received-spent;
+    const trendPayments=businessPayments().filter(x=>dateInBounds(x.receivedDate,trend.currentStart,trend.currentEnd)); const previousPayments=businessPayments().filter(x=>dateInBounds(x.receivedDate,trend.previousStart,trend.previousEnd));
+    const trendExpenses=businessExpenses().filter(x=>dateInBounds(x.date,trend.currentStart,trend.currentEnd)); const previousExpenses=businessExpenses().filter(x=>dateInBounds(x.date,trend.previousStart,trend.previousEnd));
+    const trendSessions=businessSessions().filter(x=>dateInBounds(x.date,trend.currentStart,trend.currentEnd)); const previousSessions=businessSessions().filter(x=>dateInBounds(x.date,trend.previousStart,trend.previousEnd));
+    const monthReceived=trendPayments.reduce((n,x)=>n+Number(x.amountCents||0),0); const previousReceived=previousPayments.reduce((n,x)=>n+Number(x.amountCents||0),0);
+    const monthSpent=trendExpenses.reduce((n,x)=>n+Number(x.businessCents||0),0); const previousSpent=previousExpenses.reduce((n,x)=>n+Number(x.businessCents||0),0);
+    const monthMinutes=trendSessions.reduce((n,x)=>n+sessionMinutes(x),0); const previousMinutes=previousSessions.reduce((n,x)=>n+sessionMinutes(x),0);
+    const kpis=[['received','Received',received,monthReceived,previousReceived,'money'],['expenses','Business-use expenses',spent,monthSpent,previousSpent,'money'],['net','Planning margin',net,monthReceived-monthSpent,previousReceived-previousSpent,'money'],['hours','Hours logged',minutes,monthMinutes,previousMinutes,'hours']];
+    $('#analyticsKpis').innerHTML=kpis.map(([kind,label,total,currentMonth,previousMonth,type])=>{const comp=analyticsComparison(currentMonth,previousMonth,{money:type==='money',hours:type==='hours'});const display=type==='hours'?`${(total/60).toFixed(total%60?1:0)}h`:formatMoney(total,activeBusiness().currency);const previousDisplay=type==='hours'?`${(previousMonth/60).toFixed(previousMonth%60?1:0)}h`:formatMoney(previousMonth,activeBusiness().currency);const change=comp.pct==null?'—':`${comp.direction==='up'?'↑':comp.direction==='down'?'↓':'→'} ${Math.abs(comp.pct)}%`;const prior=`${trend.currentLabel} vs ${trend.previousLabel} · Prior ${previousDisplay}`;return `<button class="analytics-kpi" data-analytics-evidence="${kind}"><span>${label}</span><strong>${display}</strong><small class="comparison ${comp.direction}"><span class="comparison-change">${change}</span><em>${prior}</em></small></button>`}).join('');
     const buckets=analyticsMonthBuckets(bounds); $('#analyticsCashflowChart').innerHTML=analyticsNetFlowChart(buckets); $('#analyticsIncomeExpenseChart').innerHTML=analyticsIncomeExpenseChart(buckets); $('#analyticsExpenseCategoryChart').innerHTML=analyticsExpenseCategoryChart(buckets,expenses);
     const clientMap=new Map(); payments.forEach(payment=>{const c=analyticsPaymentClient(payment);const key=c.id||`name:${c.name}`;const row=clientMap.get(key)||{key,id:c.id,name:c.name,cents:0,count:0,minutes:0,sessions:0};row.cents+=Number(payment.amountCents||0);row.count++;clientMap.set(key,row)});
     sessions.forEach(session=>{const client=clientById(session.clientId);const name=client?.displayName||session.clientNameSnapshot||'Unassigned work';const key=client?.id||session.clientId||`name:${name}`;const row=clientMap.get(key)||{key,id:client?.id||session.clientId||'',name,cents:0,count:0,minutes:0,sessions:0};row.minutes+=sessionMinutes(session);row.sessions++;clientMap.set(key,row)});
@@ -3409,9 +3455,8 @@
   });
   navButtons.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
   $$('[data-home-tab]').forEach(btn => btn.addEventListener('click',()=>{ closeFilterMenu(); ui.homeTab=btn.dataset.homeTab; syncHomeTabs(); }));
-  $('#analyticsRangeBtn').addEventListener('click',event=>openFilterMenu(event.currentTarget,[
-    {value:'3m',label:'Last 3 months'},{value:'6m',label:'Last 6 months'},{value:'12m',label:'Last 12 months'},{value:'ytd',label:'Year to date'},{value:'all',label:'All time'}
-  ],ui.analyticsRange,value=>{ui.analyticsRange=value;ui.analyticsClientPage=1;ui.analyticsExpensePage=1;renderAnalytics();}));
+  ['#analyticsFromMonth','#analyticsFromYear'].forEach(selector=>$(selector).addEventListener('change',()=>updateAnalyticsPeriod('from')));
+  ['#analyticsToMonth','#analyticsToYear'].forEach(selector=>$(selector).addEventListener('change',()=>updateAnalyticsPeriod('to')));
   $$('[data-go-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.goView)));
   $('#quickAddBtn').addEventListener('click', () => openModal($('#quickAddSheet')));
   $('#mobileAddBtn').addEventListener('click', () => openModal($('#quickAddSheet')));

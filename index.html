@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase8-r29-recent-order-kpi-comparison" />
+  <link rel="stylesheet" href="styles.css?v=phase8-r30-custom-analytics-period" />
   <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
   <link rel="stylesheet" href="compact-calendar.css?v=r26" />
@@ -105,7 +105,11 @@
           <div class="home-tab analytics-tab" data-home-panel="analytics">
             <div class="analytics-toolbar">
               <div><p class="eyebrow">BUSINESS PULSE</p><h2>Patterns behind the ledger</h2><p>Trends and comparisons derived from source records—not a second set of books.</p></div>
-              <button class="filter-pill analytics-range-btn" id="analyticsRangeBtn" type="button" aria-haspopup="menu" aria-expanded="false">Last 6 months</button>
+              <div class="analytics-period-control" role="group" aria-label="Analytics period">
+                <label class="analytics-period-boundary"><span>From</span><span class="analytics-period-fields"><select id="analyticsFromMonth" aria-label="Analytics start month"></select><select id="analyticsFromYear" aria-label="Analytics start year"></select></span></label>
+                <span class="analytics-period-arrow" aria-hidden="true">→</span>
+                <label class="analytics-period-boundary"><span>To</span><span class="analytics-period-fields"><select id="analyticsToMonth" aria-label="Analytics end month"></select><select id="analyticsToYear" aria-label="Analytics end year"></select></span></label>
+              </div>
             </div>
 
             <div class="analytics-kpi-grid" id="analyticsKpis"></div>
@@ -384,6 +388,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase8-r29-recent-order-kpi-comparison"></script>
+  <script src="app.js?v=phase8-r30-custom-analytics-period"></script>
 </body>
 </html>
