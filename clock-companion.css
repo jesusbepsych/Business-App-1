@@ -1,0 +1,64 @@
+/* Revision 24: Clock & Companion. Scoped geometry overrides. */
+#formSheet.session-form-sheet{width:min(1020px,calc(100vw - 28px));max-height:calc(100dvh - 24px);bottom:12px;padding:0}
+#formSheet.session-form-sheet .sheet-head{padding:16px 24px 12px}
+#formSheet .companion-picker{display:grid;grid-template-columns:minmax(270px,.85fr) minmax(350px,1.15fr);grid-template-areas:"top top" "face time" "face quick" "edit note" "total total";gap:0;align-items:start;padding:0}
+#formSheet .companion-picker>.paired-session-top{grid-area:top;grid-template-columns:1.4fr 1fr 1fr;margin:0}
+#formSheet .companion-picker>.paired-session-top .field{grid-column:auto;padding:10px 16px}
+#formSheet .companion-picker>.single-clock-face{grid-area:face;padding:18px 18px 12px;gap:8px}
+#formSheet .companion-picker .single-clock-dial{width:clamp(240px,29vw,300px);height:auto;aspect-ratio:1/1;min-width:0;min-height:0;box-sizing:border-box;flex-shrink:0;border-color:#9bd9ff;background:radial-gradient(circle at 40% 30%,rgba(165,215,255,.14),rgba(19,35,64,.65));box-shadow:inset 0 0 0 3px rgba(180,206,255,.13),0 0 18px rgba(140,205,255,.15);touch-action:none}
+#formSheet .companion-picker .paired-clock-center{background:transparent;border:0;box-shadow:none;top:62%;padding:0;min-width:0;min-height:0}
+#formSheet .companion-picker .paired-clock-center strong{font-size:18px}
+#formSheet .companion-picker .paired-clock-center small{color:#d1e8ff}
+#formSheet .companion-picker .paired-clock-hand{transition:none;background:#a9ddff;filter:drop-shadow(0 0 4px #87b8ee)}
+#formSheet .companion-picker .paired-clock-hand span{background:#d0eaff}
+#formSheet .companion-picker .paired-clock-numbers span{font-size:12px}
+#formSheet .companion-picker .paired-period-toggle{width:144px;margin:0}
+#formSheet .companion-picker .paired-period-toggle button{min-height:36px;font-size:12px}
+#formSheet .companion-picker .paired-period-toggle button.active{background:rgba(157,208,255,.28);color:#fff}
+#formSheet .companion-picker>.single-clock-timebar{grid-area:time;display:grid;gap:14px;margin:0;padding:18px 22px 12px;border:0;align-self:start}
+.companion-mode{display:flex;padding:4px;border:1px solid #acd9ff66;border-radius:13px;background:#192e4933}
+.companion-mode button{flex:1;min-height:42px;border:0;border-radius:9px;background:transparent;color:#d1e3f8;font:inherit;font-size:14px;cursor:pointer;transition:background .16s ease,box-shadow .16s ease}
+.companion-mode button.active{color:#142c44;background:linear-gradient(115deg,#ace4ff,#b6bfff);box-shadow:0 0 12px #98d0ff30}
+.companion-readouts{display:flex;align-items:center;gap:24px}.companion-readouts>div{display:grid;gap:4px}.companion-readouts small{color:#d1deee;font-size:12px}.companion-readouts strong{font-size:21px;font-variant-numeric:tabular-nums}.companion-readouts>span{color:#b7cfeb}
+#formSheet .companion-picker>.single-clock-editor{grid-area:edit;display:flex;justify-content:center;gap:8px;padding:4px 16px 16px;align-self:center}
+#singleClockEditor button{min-height:42px;padding:0 13px;border:1px solid #b4d4ef66;border-radius:12px;background:#c0deff12;color:#f2f7ff;font:inherit;font-size:12px;cursor:pointer}
+#singleClockEditor button:disabled{opacity:.4;cursor:default}
+#formSheet .companion-picker>.quick-time-bay{grid-area:quick;padding:0 22px 12px;display:grid;gap:8px;border:0;box-shadow:none;align-self:start;text-align:left}
+.companion-presets-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.companion-presets-head strong{font-size:14px}.companion-presets-head button{min-height:36px;background:transparent;border:0;color:#d8ebff;cursor:pointer;font:inherit;font-size:12px}.companion-presets-head button:disabled{opacity:.4}
+#formSheet .companion-picker .quick-time-grid{display:flex;flex-direction:column;gap:8px;height:244px;max-height:244px;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:#c1d8fa80 transparent;border:0;border-radius:0;box-shadow:none;background:transparent;padding:0 5px 0 0}
+#formSheet .companion-picker .quick-time-slot{flex:0 0 76px;min-height:76px;height:76px;box-sizing:border-box;border:1px solid #b9d7f566;border-radius:12px;overflow:hidden;background:linear-gradient(110deg,#b8dfff16,#32466c30)}
+#formSheet .companion-picker .quick-time-slot.filled>button:first-child{height:100%;padding:10px 56px 10px 16px;display:grid;grid-template-columns:1fr auto;grid-template-rows:22px 18px 5px;gap:2px 12px;align-content:center}
+#formSheet .companion-picker .quick-time-slot small{display:none}
+#formSheet .companion-picker .quick-time-slot strong{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;grid-column:1}
+#formSheet .companion-picker .quick-time-slot span{font-size:12px;color:#d9e9f8;grid-column:1;white-space:nowrap}
+.preset-duration{grid-column:1;display:block;width:100%;height:3px;border-radius:4px;background:#0b234733;overflow:hidden}.preset-duration b{display:block;height:100%;min-width:3px;background:#a5dcff;border-radius:4px}
+#formSheet .companion-picker .quick-time-slot em{grid-column:2;grid-row:1/3;align-self:center;font-style:normal;font-size:12px;color:#d6e6f9}
+#formSheet .companion-picker .quick-time-edit{width:40px;height:44px;right:6px;border:0;background:transparent;font-size:20px;color:#d8ecff}
+#formSheet .companion-picker .quick-time-slot.empty{padding:10px 16px;place-items:start;align-content:center;gap:6px;cursor:pointer}
+#formSheet .companion-picker .quick-time-help{font-size:10px;color:#d1deee}
+#formSheet .companion-picker .quick-time-editor{padding:12px;gap:10px;background:linear-gradient(135deg,#517b9ccc,#485477cc);border:1px solid #b9dfff77;box-shadow:inset 0 1px #e6f2ff33}
+#formSheet .companion-picker .quick-time-editor>div{display:flex;justify-content:space-between;gap:8px}
+#formSheet .companion-picker .quick-editor-fields>label{flex:1;min-width:0}
+#formSheet .companion-picker .quick-time-editor input{height:42px!important;font-size:14px!important;color-scheme:dark}
+#formSheet .companion-picker .quick-time-editor label span{font-size:11px}
+#formSheet .companion-picker .quick-time-editor button{min-height:40px;font-size:12px}
+#formSheet .companion-picker .quick-time-editor [hidden]{display:none}
+#formSheet .companion-picker>.session-note-disclosure{grid-area:note;margin:0 22px 12px;border:1px solid #c1daf644;border-radius:12px;align-self:center}
+#formSheet .companion-picker .session-note-disclosure>summary{min-height:44px;background:transparent}
+#formSheet .companion-picker .session-note-disclosure b{font-size:13px}
+#formSheet .companion-picker .session-note-disclosure small{display:none}
+#formSheet .companion-picker>.paired-session-total{grid-area:total;padding:10px 24px;grid-template-columns:1fr 1px 1fr auto}
+#formSheet .companion-picker .paired-session-total small{font-size:10px}
+#formSheet .companion-picker .paired-session-total strong{font-size:20px}
+#formSheet.session-form-sheet .form-actions{padding:10px 24px 16px}
+@media(max-width:700px){
+#formSheet.session-form-sheet{width:calc(100vw - 16px)}
+#formSheet .companion-picker{grid-template-columns:1fr;grid-template-areas:"top" "time" "face" "edit" "quick" "note" "total"}
+#formSheet .companion-picker>.paired-session-top{grid-template-columns:1fr 1fr}
+#formSheet .companion-picker>.paired-session-top .field:first-child{grid-column:1/-1}
+#formSheet .companion-picker .single-clock-dial{width:min(270px,70vw);height:auto}
+#formSheet .companion-picker>.single-clock-face{padding-top:4px}
+#formSheet .companion-picker .paired-session-total{grid-template-columns:1fr 1px 1fr}
+#formSheet .companion-picker .paired-session-total em{display:none}
+}
+@media(prefers-reduced-motion:reduce){.companion-mode button{transition:none}}

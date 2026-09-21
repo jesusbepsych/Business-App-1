@@ -1,3 +1,13 @@
+## Revision 24 — Clock & Companion
+
+- Single circular clock beside explicit start/end mode and plain time readouts.
+- Undo and five-minute nudge controls; preset undo restores both times.
+- Six named presets per workspace/client, with three rows visible in an independently scrollable list. Existing presets retained.
+- Preset editor supports naming, start/end entry, and copying current session times.
+- Dedicated clock-companion.css must be deployed with the app.
+- JavaScript syntax and all three automated test files pass, including six-preset persistence/reload, cap, client isolation and pair undo.
+- Browser visual verification could not run: Chromium download failed with network HTTP 502. iPad/Safari appearance and touch interaction still require device review.
+
 ## Typography scale refinement
 
 All explicit interface typography has been increased slightly while preserving the existing hierarchy: compact labels receive about +1px, normal interface text about +7%, and large display/title text about +5%. Compact text-bearing controls receive minor breathing-room adjustments to avoid crowding. No business logic or data model behavior changed.

@@ -228,17 +228,17 @@
   }
   function quickTimesForClient(clientId) {
     const slots = sessionQuickTimes[data.activeBusinessId]?.[clientId];
-    return Array.from({ length: 3 }, (_, index) => {
+    return Array.from({ length: 6 }, (_, index) => {
       const slot = Array.isArray(slots) ? slots[index] : null;
       return slot && timeToMinutes(slot.startTime) != null && timeToMinutes(slot.endTime) != null && slot.startTime !== slot.endTime
-        ? { startTime: slot.startTime, endTime: slot.endTime }
+        ? { startTime: slot.startTime, endTime: slot.endTime, ...(slot.name ? { name: String(slot.name).slice(0,40) } : {}) }
         : null;
     });
   }
   function saveQuickTimesForClient(clientId, slots) {
     if (!data.activeBusinessId || !clientId) return;
     sessionQuickTimes[data.activeBusinessId] ||= {};
-    sessionQuickTimes[data.activeBusinessId][clientId] = Array.from({ length: 3 }, (_, index) => slots[index] || null);
+    sessionQuickTimes[data.activeBusinessId][clientId] = Array.from({ length: 6 }, (_, index) => slots[index] || null);
     try { localStorage.setItem(SESSION_QUICK_TIMES_KEY, JSON.stringify(sessionQuickTimes)); } catch (error) { console.warn('Could not save session quick times.', error); }
   }
   function mostRecentRecord(records, dateField = 'createdAt') {
@@ -2761,7 +2761,7 @@
     const initialEnd = existing?.endTime || (timeToMinutes(priorEnd) != null ? priorEnd : '');
     $('#formSheet').classList.add('session-form-sheet');
     $('#formFields').innerHTML = `
-      <section class="paired-clock-picker" id="sessionClockPicker" data-client-color="${clientColorKey(selectedClient)}">
+      <section class="paired-clock-picker companion-picker" id="sessionClockPicker" data-client-color="${clientColorKey(selectedClient)}">
       <div class="paired-session-top">
         <label class="field"><span>Client</span><select ${clientLocked ? 'disabled' : 'name="clientId"'} id="sessionClient" required><option value="">Choose client</option>${clients.map(c => `<option value="${c.id}" data-rate="${c.defaultRateCents || 0}" data-color="${clientColorKey(c)}" ${c.id === selectedClientId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select>${clientLocked ? `<input type="hidden" name="clientId" value="${escapeHtml(existing.clientId)}" /><small>Client is locked while this session is attached to ${escapeHtml(invoiceById(existing.invoiceId)?.number || 'an invoice')}.</small>` : ''}</label>
         <label class="field"><span>Date</span><input name="date" type="date" required value="${existing?.date || today}" /></label>
@@ -2769,15 +2769,14 @@
       </div>
         <input type="hidden" name="startTime" id="clockStartInput" value="${initialStart}" />
         <input type="hidden" name="endTime" id="clockEndInput" value="${initialEnd}" />
-        <div class="single-clock-timebar" aria-label="Session times">
-          <button type="button" class="single-time-chip active" data-clock-target="start"><span>START</span><strong id="clockStartLabel">${clockTimeLabel(initialStart)}</strong></button>
-          <span class="single-time-arrow" aria-hidden="true">→</span>
-          <button type="button" class="single-time-chip" data-clock-target="end"><span>END</span><strong id="clockEndLabel">${clockTimeLabel(initialEnd)}</strong></button>
-          <span class="single-clock-hint">Tap a time to adjust</span>
+        <div class="single-clock-timebar" aria-label="Choose time to edit">
+          <div class="companion-mode"><button type="button" data-clock-target="start" class="active">Set start</button><button type="button" data-clock-target="end">Set end</button></div>
+          <div class="companion-readouts"><div><small>Start time</small><strong id="clockStartLabel">${clockTimeLabel(initialStart)}</strong></div><span aria-hidden="true">→</span><div><small>End time</small><strong id="clockEndLabel">${clockTimeLabel(initialEnd)}</strong></div></div>
         </div>
         <div class="single-clock-editor" id="singleClockEditor">
-          <label class="single-direct-time"><span>Precise correction</span><input type="time" id="singleDirectTime" step="300" aria-label="Edit selected session time" /></label>
-          <button type="button" id="singleClockUndo" class="single-clock-undo" hidden>Undo last change</button>
+          <button type="button" id="singleClockUndo" disabled>↶ Undo</button>
+          <button type="button" data-clock-nudge="-5" aria-label="Subtract five minutes">− 5 min</button>
+          <button type="button" data-clock-nudge="5" aria-label="Add five minutes">+ 5 min</button>
         </div>
         <div class="single-clock-face" data-clock-face="single">
           <span class="paired-clock-kicker" id="singleClockTargetLabel">START TIME</span>
@@ -2785,17 +2784,17 @@
           <div class="paired-period-toggle" aria-label="Selected time AM or PM"><button type="button" data-face-period="single-AM">AM</button><button type="button" data-face-period="single-PM">PM</button></div>
         </div>
         <div class="quick-time-bay">
-          <span class="quick-time-kicker">QUICK TIMES</span>
-          <div class="quick-time-grid" id="sessionQuickTimes" aria-live="polite"></div>
+          <div class="companion-presets-head"><strong>Client presets</strong><button type="button" id="quickTimeAdd">＋ Add preset</button></div>
+          <div class="quick-time-grid" id="sessionQuickTimes" tabindex="0" role="region" aria-label="Client presets, scroll for more"></div>
           <button type="button" class="quick-time-manage" id="quickTimeManage" hidden>Done</button>
         <div class="quick-time-editor" id="quickTimeEditor" hidden>
             <div class="quick-editor-heading"><div><small id="quickTimeEditorTitle">Set quick time</small><span>Reusable start and end for this client</span></div><b aria-hidden="true">↗</b></div>
-            <div class="quick-editor-fields"><label><span>START</span><input type="time" id="quickTimeStart" step="300" /></label><i aria-hidden="true">→</i><label><span>END</span><input type="time" id="quickTimeEnd" step="300" /></label></div>
-            <div class="quick-editor-actions"><button type="button" class="quick-time-remove" id="quickTimeDelete" hidden>Remove</button><span><button type="button" id="quickTimeCancel">Cancel</button><button type="button" id="quickTimeSave">Save preset</button></span></div>
+            <label class="preset-name"><span>Name · optional</span><input id="quickTimeName" maxlength="40" placeholder="e.g. Morning session" /></label><div class="quick-editor-fields"><label><span>START</span><input type="time" id="quickTimeStart" step="300" /></label><i aria-hidden="true">→</i><label><span>END</span><input type="time" id="quickTimeEnd" step="300" /></label></div>
+            <button type="button" id="quickTimeUseCurrent">Use current session times</button><div class="quick-editor-actions"><button type="button" class="quick-time-remove" id="quickTimeDelete" hidden>Remove</button><span><button type="button" id="quickTimeCancel">Cancel</button><button type="button" id="quickTimeSave">Save preset</button></span></div>
           </div>
-          <span class="quick-time-help">Three presets per client</span>
+          <span class="quick-time-help">Up to six per client · scroll for more</span>
         </div>
-        <div class="single-clock-arc" aria-hidden="true"><span></span></div>
+
         <div class="paired-session-total" id="clockDuration"><span><small>SESSION LENGTH</small><strong id="sessionDurationValue">Select both times</strong></span><i></i><span><small>SESSION VALUE</small><strong id="sessionValue">—</strong></span><em>Snaps to 5 min</em></div>
         <details class="session-note-disclosure" ${existing?.notes ? 'open' : ''}><summary><span><b>Session note</b><small>Optional billing context or reminder</small></span><span aria-hidden="true">⌄</span></summary><div><textarea name="notes" rows="3" maxlength="500" placeholder="Brief work note or billing context…">${escapeHtml(existing?.notes || '')}</textarea></div></details>
       </section>`;
@@ -2817,6 +2816,7 @@
   function initSingleClockTimePicker(initialStart = '', initialEnd = '', initialClientId = '') {
     const picker=$('#sessionClockPicker'); if(!picker) return {switchClient(){},updateSummary(){}};
     const inputs={start:$('#clockStartInput'),end:$('#clockEndInput')};
+    inputs.start.value=initialStart;inputs.end.value=initialEnd;
     const faces={dial:$('#singleClockDial'),ticks:$('#singleClockTicks'),numbers:$('#singleClockNumbers'),hand:$('#singleClockHand'),readout:$('#singleClockReadout')};
     let active='start', activeClientId=initialClientId, previous=null, dragging=false, pointerId=null, lastAngle=0, dragMinutes=0, editingSlot=null;
     const valueFor=target=>inputs[target].value||'';
@@ -2831,38 +2831,51 @@
       $('#clockStartLabel').textContent=clockTimeLabel(start);$('#clockEndLabel').textContent=clockTimeLabel(end);
       $('#sessionDurationValue').textContent=minutes?durationExactLabel(minutes):start||end?'Choose the other time':'Select both times';
       const rate=Number($('#sessionRate')?.value||0);$('#sessionValue').textContent=minutes&&Number.isFinite(rate)?formatMoney(Math.round(minutes/60*rate*100),activeBusiness().currency):'—';$('#clockDuration').classList.toggle('ready',Boolean(minutes));
-      renderQuickTimes();
     }
     function render(){
       const value=valueFor(active)||currentRoundedTime(),total=timeToMinutes(value)??0,angle=(total%720)/720*360;
       faces.hand.style.transform=`translateX(-50%) rotate(${angle}deg)`;faces.readout.textContent=clockTimeLabel(value);faces.dial.setAttribute('aria-valuetext',clockTimeLabel(value));
       $('#singleClockTargetLabel').textContent=`${labelFor(active)} TIME`;$('#singleClockCenterLabel').textContent=labelFor(active);
-      $('#singleDirectTime').value=value;
-      $$('[data-clock-target]',picker).forEach(btn=>btn.classList.toggle('active',btn.dataset.clockTarget===active));
+      faces.dial.setAttribute('aria-label',`Set ${active} time`);
+      faces.dial.setAttribute('aria-valuemin','0');faces.dial.setAttribute('aria-valuemax','1439');faces.dial.setAttribute('aria-valuenow',String(total));
+      $$('[data-clock-target]',picker).forEach(btn=>{btn.classList.toggle('active',btn.dataset.clockTarget===active);btn.setAttribute('aria-pressed',String(btn.dataset.clockTarget===active));});
       $$('[data-face-period]',picker).forEach(btn=>btn.classList.toggle('active',btn.dataset.facePeriod.endsWith(periodFor(value))));
       updateSummary();
     }
     function angleFor(event){const rect=faces.dial.getBoundingClientRect(),x=event.clientX-(rect.left+rect.width/2),y=event.clientY-(rect.top+rect.height/2);let a=Math.atan2(x,-y)*180/Math.PI;return a<0?a+360:a;}
-    function setTime(value,remember=true){if(!value)return;if(remember&&inputs[active].value!==value)previous={target:active,value:inputs[active].value};inputs[active].value=value;render();$('#singleClockUndo').hidden=!previous;}
+    function setTime(value,remember=true){if(!value)return;if(remember&&inputs[active].value!==value)previous={target:active,value:inputs[active].value};inputs[active].value=value;render();$('#singleClockUndo').disabled=!previous;}
     const move=event=>{if(!dragging||(pointerId!=null&&event.pointerId!==pointerId))return;if(event.cancelable)event.preventDefault();const a=angleFor(event);let delta=a-lastAngle;if(delta>180)delta-=360;if(delta<-180)delta+=360;dragMinutes=(dragMinutes+delta*2+1440)%1440;lastAngle=a;setTime(minutesToTime(Math.round(dragMinutes/5)*5),false);};
-    const finish=event=>{if(!dragging)return;if(event?.type==='pointerup')move(event);dragging=false;pointerId=null;faces.dial.classList.remove('is-adjusting');document.removeEventListener?.('pointermove',move);document.removeEventListener?.('pointerup',finish);document.removeEventListener?.('pointercancel',finish);};
+    const finish=event=>{if(!dragging||(event?.pointerId!=null&&event.pointerId!==pointerId))return;if(event?.type==='pointerup')move(event);dragging=false;pointerId=null;faces.dial.classList.remove('is-adjusting');document.removeEventListener?.('pointermove',move);document.removeEventListener?.('pointerup',finish);document.removeEventListener?.('pointercancel',finish);};
     faces.dial.addEventListener('pointerdown',event=>{if(event.cancelable)event.preventDefault();const a=angleFor(event),value=valueFor(active)||currentRoundedTime();previous={target:active,value:inputs[active].value};dragging=true;pointerId=event.pointerId;lastAngle=a;dragMinutes=(Math.round((a/360*720)/5)*5%720)+(periodFor(value)==='PM'?720:0);faces.dial.classList.add('is-adjusting');setTime(minutesToTime(dragMinutes),false);try{faces.dial.setPointerCapture?.(event.pointerId)}catch(error){}document.addEventListener('pointermove',move,{passive:false});document.addEventListener('pointerup',finish);document.addEventListener('pointercancel',finish);});
     faces.dial.addEventListener('pointermove',move,{passive:false});
     faces.dial.addEventListener('pointerup',finish);
     faces.dial.addEventListener('pointercancel',finish);
     faces.dial.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key))return;event.preventDefault();if(event.key==='Enter'||event.key===' '){faces.dial.blur();return;}setTime(addMinutesToTime(valueFor(active)||currentRoundedTime(),event.key==='ArrowLeft'?-5:event.key==='ArrowRight'?5:event.key==='ArrowUp'?60:-60));});
     $$('[data-clock-target]',picker).forEach(btn=>btn.addEventListener('click',()=>{active=btn.dataset.clockTarget;render();}));
-    $('#singleDirectTime').addEventListener('change',event=>setTime(event.target.value));
-    $('#singleClockUndo').addEventListener('click',()=>{if(!previous)return;const target=previous.target;const value=previous.value;previous=null;active=target;inputs[target].value=value;render();$('#singleClockUndo').hidden=true;});
+    $$('[data-clock-nudge]',picker).forEach(btn=>btn.addEventListener('click',()=>setTime(addMinutesToTime(valueFor(active)||currentRoundedTime(),Number(btn.dataset.clockNudge)))));
+    $('#singleClockUndo').addEventListener('click',()=>{if(!previous)return;const restore=previous;previous=null;active=restore.target;if(restore.both){inputs.start.value=restore.both.start;inputs.end.value=restore.both.end;}else{inputs[restore.target].value=restore.value;}render();$('#singleClockUndo').disabled=true;});
     $$('[data-face-period]',picker).forEach(btn=>btn.addEventListener('click',()=>{const value=valueFor(active)||currentRoundedTime(),minutes=timeToMinutes(value)??0;setTime(minutesToTime(minutes%720+(btn.dataset.facePeriod.endsWith('PM')?720:0)));}));
-    function applyTimes(start,end){previous={target:active,value:inputs[active].value};inputs.start.value=start;inputs.end.value=end;render();$('#singleClockUndo').hidden=false;}
-    function openQuickEditor(index){if(!activeClientId){showToast('Choose a client before saving a quick time.');return;}editingSlot=index;const slot=quickTimesForClient(activeClientId)[index];$('#quickTimeEditorTitle').textContent=slot?`Edit quick time ${index+1}`:`Set quick time ${index+1}`;$('#quickTimeStart').value=slot?.startTime||inputs.start.value||'';$('#quickTimeEnd').value=slot?.endTime||inputs.end.value||'';$('#quickTimeDelete').hidden=!slot;$('#quickTimeEditor').hidden=false;$('#quickTimeManage').hidden=false;}
+    function applyTimes(start,end){previous={target:active,both:{start:inputs.start.value,end:inputs.end.value}};inputs.start.value=start;inputs.end.value=end;render();$('#singleClockUndo').disabled=false;}
+    function openQuickEditor(index){if(!activeClientId){showToast('Choose a client before saving a quick time.');return;}editingSlot=index;const slot=quickTimesForClient(activeClientId)[index];$('#quickTimeEditorTitle').textContent=slot?`Edit quick time ${index+1}`:`Set quick time ${index+1}`;$('#quickTimeStart').value=slot?.startTime||inputs.start.value||'';$('#quickTimeEnd').value=slot?.endTime||inputs.end.value||'';$('#quickTimeName').value=slot?.name||'';$('#quickTimeDelete').hidden=!slot;$('#quickTimeEditor').hidden=false;$('#quickTimeManage').hidden=true;$('#quickTimeStart').focus();}
     function closeQuickEditor(){editingSlot=null;$('#quickTimeEditor').hidden=true;$('#quickTimeManage').hidden=true;}
-    function renderQuickTimes(switching=false){const host=$('#sessionQuickTimes');if(!host)return;if(switching)host.classList.add('is-switching');const slots=activeClientId?quickTimesForClient(activeClientId):[null,null,null];host.innerHTML=slots.map((slot,index)=>slot?`<div class="quick-time-slot filled"><button type="button" data-quick-apply="${index}"><small>QUICK ${index+1}</small><strong>${clockTimeLabel(slot.startTime)}</strong><span>→ ${clockTimeLabel(slot.endTime)}</span></button><button type="button" class="quick-time-edit" data-quick-edit="${index}" aria-label="Edit quick time ${index+1}">✎</button></div>`:`<button type="button" class="quick-time-slot empty" data-quick-edit="${index}" ${activeClientId?'':'disabled'}><small>QUICK ${index+1}</small><strong>＋ Set time</strong></button>`).join('');$$('[data-quick-apply]',host).forEach(btn=>btn.addEventListener('click',()=>{const slot=quickTimesForClient(activeClientId)[Number(btn.dataset.quickApply)];if(slot)applyTimes(slot.startTime,slot.endTime);}));$$('[data-quick-edit]',host).forEach(btn=>btn.addEventListener('click',()=>openQuickEditor(Number(btn.dataset.quickEdit))));if(switching)setTimeout(()=>host.classList.remove('is-switching'),260);}
+    function renderQuickTimes(switching=false){
+      const host=$('#sessionQuickTimes');if(!host)return;
+      const scroll=host.scrollTop||0;
+      const slots=activeClientId?quickTimesForClient(activeClientId):Array(6).fill(null);
+      let count=Math.max(3,slots.reduce((n,slot,i)=>slot?i+1:n,0));
+      host.innerHTML=slots.slice(0,count).map((slot,index)=>slot?`<div class="quick-time-slot filled"><button type="button" data-quick-apply="${index}"><small>QUICK ${index+1}</small><strong>${escapeHtml(slot.name||`Preset ${index+1}`)}</strong><span>${clockTimeLabel(slot.startTime)} – ${clockTimeLabel(slot.endTime)}</span><i class="preset-duration"><b style="width:${Math.min(100,minutesBetween(slot.startTime,slot.endTime)/1440*100)}%"></b></i><em>${durationExactLabel(minutesBetween(slot.startTime,slot.endTime))}</em></button><button type="button" class="quick-time-edit" data-quick-edit="${index}" aria-label="Edit preset ${index+1}">✎</button></div>`:`<button type="button" class="quick-time-slot empty" data-quick-edit="${index}" ${activeClientId?'':'disabled'}><small>QUICK ${index+1}</small><strong>＋ Create preset</strong><span>Save a frequent time range</span></button>`).join('');
+      host.scrollTop=switching?0:scroll;
+      $('#quickTimeAdd').disabled=!activeClientId||slots.every(Boolean);
+      $$('[data-quick-apply]',host).forEach(btn=>btn.addEventListener('click',()=>{const slot=quickTimesForClient(activeClientId)[Number(btn.dataset.quickApply)];if(slot)applyTimes(slot.startTime,slot.endTime);}));
+      $$('[data-quick-edit]',host).forEach(btn=>btn.addEventListener('click',()=>openQuickEditor(Number(btn.dataset.quickEdit))));
+      if(switching){host.classList.add('is-switching');setTimeout(()=>host.classList.remove('is-switching'),260);}
+    }
+    $('#quickTimeAdd').addEventListener('click',()=>{const index=quickTimesForClient(activeClientId).findIndex(slot=>!slot);if(index>=0)openQuickEditor(index);});
+    $('#quickTimeUseCurrent').addEventListener('click',()=>{$('#quickTimeStart').value=inputs.start.value;$('#quickTimeEnd').value=inputs.end.value;});
     function switchClient(clientId){activeClientId=clientId;closeQuickEditor();renderQuickTimes(true);}
     $('#quickTimeCancel').addEventListener('click',closeQuickEditor);$('#quickTimeManage').addEventListener('click',closeQuickEditor);
     $('#quickTimeDelete').addEventListener('click',()=>{if(editingSlot==null)return;const slots=quickTimesForClient(activeClientId);slots[editingSlot]=null;saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time removed.');});
-    $('#quickTimeSave').addEventListener('click',()=>{const start=$('#quickTimeStart').value,end=$('#quickTimeEnd').value;if(timeToMinutes(start)==null||timeToMinutes(end)==null||start===end){showToast('Choose two different times for this quick entry.');return;}const slots=quickTimesForClient(activeClientId);slots[editingSlot]={startTime:start,endTime:end};saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time saved for this client.');});
+    $('#quickTimeSave').addEventListener('click',()=>{const start=$('#quickTimeStart').value,end=$('#quickTimeEnd').value;if(timeToMinutes(start)==null||timeToMinutes(end)==null||start===end){showToast('Choose two different times for this quick entry.');return;}const slots=quickTimesForClient(activeClientId);const name=$('#quickTimeName').value.trim();slots[editingSlot]={startTime:start,endTime:end,...(name?{name}: {})};saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time saved for this client.');});
     clockMarks();render();renderQuickTimes();return {switchClient,updateSummary};
   }
 

@@ -1,3 +1,7 @@
+# Business Ledger — Phase 8, Revision 24
+
+Clock & Companion: circular single dial, explicit start/end mode, undo and five-minute correction, and six named client presets in a three-row scroll area. Deploy clock-companion.css with the other application files. Existing presets are retained.
+
 # Business Ledger — Phase 8, Revision 22
 
 ## Revision 23 — Session console composition
