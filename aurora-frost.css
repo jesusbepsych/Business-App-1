@@ -3,16 +3,16 @@
   --aurora-text:#f5f8ff;
   --aurora-muted:#d1deee;
   color:var(--aurora-text);
-  border-color:rgba(173,209,255,.8);
+  border-color:rgba(173,209,255,.68);
   background:
-    radial-gradient(ellipse at 0% 20%,rgba(76,195,240,.22),transparent 55%),
-    radial-gradient(ellipse at 100% 70%,rgba(161,131,237,.24),transparent 57%),
-    linear-gradient(125deg,rgba(91,122,153,.9),rgba(62,82,113,.94) 53%,rgba(85,91,131,.92));
-  box-shadow:inset 1px 0 0 rgba(175,239,255,.85),inset -1px 0 0 rgba(213,183,255,.82),
-    inset 0 1px 0 rgba(239,247,255,.7),inset 0 -1px 0 rgba(193,209,255,.5),
-    -3px 0 12px rgba(80,206,255,.2),3px 0 12px rgba(176,137,249,.2),0 24px 70px rgba(5,13,30,.4);
-  -webkit-backdrop-filter:blur(18px) saturate(1.12);
-  backdrop-filter:blur(18px) saturate(1.12);
+    radial-gradient(ellipse at 0% 20%,rgba(76,195,240,.18),transparent 55%),
+    radial-gradient(ellipse at 100% 70%,rgba(161,131,237,.19),transparent 57%),
+    linear-gradient(125deg,rgba(82,112,143,.92),rgba(56,75,105,.95) 53%,rgba(76,83,119,.94));
+  box-shadow:inset 1px 0 0 rgba(175,239,255,.68),inset -1px 0 0 rgba(213,183,255,.66),
+    inset 0 1px 0 rgba(239,247,255,.56),inset 0 -1px 0 rgba(193,209,255,.4),
+    -3px 0 12px rgba(80,206,255,.15),3px 0 12px rgba(176,137,249,.15),0 24px 70px rgba(5,13,30,.44);
+  -webkit-backdrop-filter:blur(18px) saturate(1.06);
+  backdrop-filter:blur(18px) saturate(1.06);
   scrollbar-color:rgba(178,204,244,.55) transparent;
 }
 /* Reflections belong to the complete console, not separate header/footer plates. */
@@ -72,9 +72,9 @@ html.atrium-lite #formSheet:is(.client-profile-sheet,.expense-compose-sheet,.pay
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
   background:
-    radial-gradient(ellipse at 0% 20%,rgba(80,198,245,.18),transparent 55%),
-    radial-gradient(ellipse at 100% 70%,rgba(163,135,236,.23),transparent 57%),
-    linear-gradient(125deg,rgba(79,111,145,.98),rgba(61,79,110,.985) 53%,rgba(80,85,125,.985));
+    radial-gradient(ellipse at 0% 20%,rgba(80,198,245,.14),transparent 55%),
+    radial-gradient(ellipse at 100% 70%,rgba(163,135,236,.18),transparent 57%),
+    linear-gradient(125deg,rgba(72,102,134,.985),rgba(55,72,102,.99) 53%,rgba(73,78,116,.99));
 }
 @media(prefers-reduced-motion:reduce){
   #formSheet:is(.client-profile-sheet,.expense-compose-sheet,.payment-compose-sheet) :is(input,select,textarea,button,summary){transition:none}
@@ -88,16 +88,16 @@ html.atrium-lite #formSheet:is(.client-profile-sheet,.expense-compose-sheet,.pay
   --aurora-text:#f5f8ff;
   --aurora-muted:#d1deee;
   color:var(--aurora-text);
-  border-color:rgba(173,209,255,.8);
+  border-color:rgba(173,209,255,.68);
   background:
-    radial-gradient(ellipse at 0% 18%,rgba(76,195,240,.2),transparent 54%),
-    radial-gradient(ellipse at 100% 74%,rgba(161,131,237,.23),transparent 57%),
-    linear-gradient(125deg,rgba(91,122,153,.91),rgba(62,82,113,.95) 53%,rgba(85,91,131,.93));
-  box-shadow:inset 1px 0 0 rgba(175,239,255,.85),inset -1px 0 0 rgba(213,183,255,.82),
-    inset 0 1px 0 rgba(239,247,255,.7),inset 0 -1px 0 rgba(193,209,255,.5),
-    -3px 0 12px rgba(80,206,255,.2),3px 0 12px rgba(176,137,249,.2),0 24px 70px rgba(5,13,30,.4);
-  -webkit-backdrop-filter:blur(18px) saturate(1.12);
-  backdrop-filter:blur(18px) saturate(1.12);
+    radial-gradient(ellipse at 0% 18%,rgba(76,195,240,.16),transparent 54%),
+    radial-gradient(ellipse at 100% 74%,rgba(161,131,237,.18),transparent 57%),
+    linear-gradient(125deg,rgba(82,112,143,.93),rgba(56,75,105,.96) 53%,rgba(76,83,119,.95));
+  box-shadow:inset 1px 0 0 rgba(175,239,255,.68),inset -1px 0 0 rgba(213,183,255,.66),
+    inset 0 1px 0 rgba(239,247,255,.56),inset 0 -1px 0 rgba(193,209,255,.4),
+    -3px 0 12px rgba(80,206,255,.15),3px 0 12px rgba(176,137,249,.15),0 24px 70px rgba(5,13,30,.44);
+  -webkit-backdrop-filter:blur(18px) saturate(1.06);
+  backdrop-filter:blur(18px) saturate(1.06);
   scrollbar-color:rgba(178,204,244,.55) transparent;
 }
 #formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(.sheet-head,#formFields,.form-actions),
@@ -148,9 +148,9 @@ html.atrium-lite #invoiceSheet.invoice-sheet {
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
   background:
-    radial-gradient(ellipse at 0% 18%,rgba(80,198,245,.17),transparent 54%),
-    radial-gradient(ellipse at 100% 74%,rgba(163,135,236,.21),transparent 57%),
-    linear-gradient(125deg,rgba(79,111,145,.98),rgba(61,79,110,.985) 53%,rgba(80,85,125,.985));
+    radial-gradient(ellipse at 0% 18%,rgba(80,198,245,.13),transparent 54%),
+    radial-gradient(ellipse at 100% 74%,rgba(163,135,236,.17),transparent 57%),
+    linear-gradient(125deg,rgba(72,102,134,.985),rgba(55,72,102,.99) 53%,rgba(73,78,116,.99));
 }
 @media(prefers-reduced-motion:reduce){
   #formSheet:is(.session-form-sheet,.vehicle-profile-sheet,.mileage-route-sheet) :is(input,select,textarea,button,summary),

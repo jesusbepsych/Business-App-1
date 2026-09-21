@@ -1,3 +1,22 @@
+## Revision 27 — Analytics Interaction Depth
+
+- Business Flow is now inspection-only: tapping or dragging follows the line without opening a month-detail interface.
+- Income vs Expenses now has the same touch/pen scrub behavior, with simultaneous income and expense markers and no tap-to-detail transition.
+- Added restrained haptic pulses as the scrubber crosses into a new month through the standard browser vibration API. Unsupported browsers continue with visual scrubbing without errors.
+- Added a range-aware monthly stacked Expense Category Breakdown using business-use expense amounts and the app's real expense categories.
+- Added four-row pagination to Received Income by Source and Expense Mix while leaving their donut summaries based on the complete filtered dataset.
+- Changing the Analytics range resets both ranked lists to page one, and every chart/list continues to derive from the same selected range.
+- Validation: `node --check app.js` and `node --test tests/*.test.js` pass (4/4 test files).
+
+## Revision 26 — Calendar Badge + Aurora Dim
+
+- Stabilized the day number inside every compact calendar icon with a fixed 18 × 11 px badge, fixed 9 px type, tabular numerals, a consistent line box, and disabled iOS text autosizing.
+- Centered one- and two-digit dates within the same internal calendar area so selecting days 1–9 no longer changes or compresses the icon.
+- Slightly dimmed Aurora Frost across Client, Expense, Payment, Work Session, Vehicle, Mileage, and Invoice entry surfaces.
+- Reduced cyan/lavender wash intensity, saturation, and edge glow while retaining readable text, focus states, and the established glass material.
+- Updated the static Safari/iPad frost profile to match the same quieter brightness.
+- Validation: `node --check app.js` and `node --test tests/*.test.js` pass.
+
 ## Revision 25 — Compact Calendar Controls
 
 - Replaced the six visually large date inputs with one reusable compact calendar control across work sessions, payments, expenses, mileage, and invoice issue/due dates.

@@ -8,10 +8,10 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase8-r23-session-console-composition" />
-  <link rel="stylesheet" href="aurora-frost.css?v=phase8-r22-aurora-frost-all-entry-consoles" />
+  <link rel="stylesheet" href="styles.css?v=phase8-r27-analytics-interaction-depth" />
+  <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
-  <link rel="stylesheet" href="compact-calendar.css?v=r25" />
+  <link rel="stylesheet" href="compact-calendar.css?v=r26" />
 </head>
 <body class="home-atrium-active">
 
@@ -144,7 +144,12 @@
               <div class="analytics-chart" id="analyticsIncomeExpenseChart"></div>
             </article>
 
-            <div class="phase-next-note analytics-note"><span>↳</span><div><strong>Analytics explain; source records decide.</strong><small>Open any chart, metric, client, category, or invoice state to see the exact records contributing to it.</small></div></div>
+            <article class="analytics-card analytics-category-stack-card">
+              <div class="analytics-card-head"><div><p class="eyebrow">CATEGORY BREAKDOWN</p><h2>Monthly expense composition</h2></div><span class="muted-chip">Business use</span></div>
+              <div class="analytics-chart" id="analyticsExpenseCategoryChart"></div>
+            </article>
+
+            <div class="phase-next-note analytics-note"><span>↳</span><div><strong>Analytics explain; source records decide.</strong><small>Scrub charts to inspect values without leaving Analytics. Metrics, source rows, categories, and invoice states remain traceable to their exact records.</small></div></div>
           </div>
         </div>
       </section>
@@ -386,6 +391,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase8-r25-compact-calendar-controls"></script>
+  <script src="app.js?v=phase8-r27-analytics-interaction-depth"></script>
 </body>
 </html>

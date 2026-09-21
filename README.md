@@ -1,6 +1,16 @@
-# Business Ledger — Phase 8, Revision 25
+# Business Ledger — Phase 8, Revision 27
 
-Compact Calendar Controls: every entry date now uses the same small calendar icon with a readable selected-date label while retaining the native device date picker. Work-session, payment, expense, mileage, and invoice layouts reclaim the unused input width and rebalance their neighboring controls. Deploy `compact-calendar.css` with the existing application files.
+Analytics Interaction Depth removes month-detail launches from the line charts and makes chart contact an inspection-only gesture. Business Flow, Income vs Expenses, and the new monthly Expense Category Breakdown support touch/pen scrubbing; subtle browser haptics pulse as the selected month changes when the device supports vibration.
+
+The category chart stacks the app's actual business-use expense categories by month and follows the selected Analytics date range. Received Income by Source and Expense Mix now show four ranked rows per page with compact, visible paging controls. All summary values remain derived from the existing payment and expense source records.
+
+Revision 26's stable calendar badges and quieter Aurora Frost surfaces remain active.
+
+# Business Ledger — Phase 8, Revision 26
+
+Calendar Badge + Aurora Dim refinement: single-digit and double-digit calendar days now render inside the same fixed, centered badge with stable typography. Aurora Frost entry surfaces have also been gently darkened and desaturated, with quieter luminous edges, while preserving their glass character and all existing layouts.
+
+Revision 25's compact calendar controls remain active across work sessions, payments, expenses, mileage, and invoice issue/due dates.
 
 Revision 24's Clock & Companion remains intact: circular single dial, explicit start/end mode, undo and five-minute correction, and six named client presets in a three-row scroll area.
 

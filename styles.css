@@ -3855,6 +3855,32 @@ html.atrium-lite .analytics-card,html.atrium-lite .analytics-kpi,html.atrium-lit
 @media(prefers-reduced-motion:reduce){.chart-scrubber,.donut-slice{transition:none}}
 .analytics-rank-row .rank-track i,.analytics-rank-row .rank-track.expense i{background:var(--slice-color,#75bfe7);box-shadow:0 0 11px rgba(117,191,231,.24)}
 
+/* Revision 27 — tactile chart scrubbing, category stacks, and compact ranking pages. */
+.scrubbable-chart .chart-hit,.scrubbable-chart .stacked-month{cursor:crosshair}
+.chart-scrubber>circle.income{fill:#72deb0;stroke:#102531;stroke-width:3;filter:drop-shadow(0 0 7px rgba(114,222,176,.66))}
+.chart-scrubber>circle.expense{fill:#efb66c;stroke:#102531;stroke-width:3;filter:drop-shadow(0 0 7px rgba(239,182,108,.58))}
+.comparison-tooltip .scrub-income{fill:#8be8bf;font-size:8px;font-weight:700}
+.comparison-tooltip .scrub-expense{fill:#f5c17e;font-size:8px;font-weight:700}
+.analytics-category-stack-card{margin-bottom:12px}
+.analytics-category-stack-card .analytics-chart{min-height:245px}
+.category-stack-svg{overflow:visible}
+.category-stack{shape-rendering:geometricPrecision;filter:drop-shadow(0 4px 8px rgba(0,0,0,.13))}
+.stacked-hit{fill:transparent;pointer-events:all}
+.stacked-scrubber>line{stroke:rgba(227,243,249,.3)}
+.category-stack-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 15px;padding:3px 12px 0;color:rgba(232,241,246,.68);font-size:9px}
+.category-stack-legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.category-stack-legend i{width:8px;height:8px;border-radius:3px;background:var(--category-color);box-shadow:0 0 9px color-mix(in srgb,var(--category-color) 40%,transparent)}
+.analytics-ranking{max-height:none;overflow:visible}
+.analytics-pagination{display:grid;grid-template-columns:32px 1fr 32px;align-items:center;gap:8px;margin-top:3px;padding:6px 7px;border-top:1px solid rgba(224,239,247,.075)}
+.analytics-pagination button{display:grid;place-items:center;width:30px;height:30px;padding:0;border:1px solid rgba(205,229,242,.13);border-radius:10px;background:rgba(255,255,255,.035);color:rgba(240,247,250,.84);font:inherit;font-size:17px;cursor:pointer;transition:background .16s ease,border-color .16s ease,opacity .16s ease}
+.analytics-pagination button:hover:not(:disabled),.analytics-pagination button:focus-visible{border-color:rgba(157,215,245,.3);background:rgba(128,194,228,.09);outline:none}
+.analytics-pagination button:disabled{opacity:.28;cursor:default}
+.analytics-pagination>span{display:flex;align-items:baseline;justify-content:center;gap:4px;color:rgba(229,239,244,.58);font-size:9px;font-variant-numeric:tabular-nums}
+.analytics-pagination>span strong{color:rgba(247,251,253,.9);font-size:11px}
+.analytics-pagination small{margin-left:4px;color:rgba(225,236,242,.4);font-size:8px}
+@media(max-width:680px){.analytics-category-stack-card .analytics-chart{overflow-x:auto}.category-stack-legend{justify-content:flex-start;padding-right:4px;padding-left:4px}.analytics-pagination{grid-template-columns:36px 1fr 36px}.analytics-pagination button{width:34px;height:34px}}
+@media(prefers-reduced-motion:reduce){.analytics-pagination button{transition:none}.category-stack{filter:none}}
+
 /* Revision 17 — Quick Rail console */
 #quickAddSheet{width:min(1040px,calc(100vw - 32px));padding:0;overflow:hidden;background:radial-gradient(circle at 18% 12%,rgba(245,199,107,.085),transparent 28%),radial-gradient(circle at 86% 16%,rgba(128,154,255,.11),transparent 31%),linear-gradient(148deg,rgba(49,65,82,.985),rgba(30,44,58,.992));border-color:rgba(225,238,246,.24);box-shadow:inset 0 1px rgba(255,255,255,.12),0 30px 90px rgba(0,0,0,.4)}
 #quickAddSheet .sheet-handle{display:none}
