@@ -1,4 +1,10 @@
-# Business Ledger — Phase 8, Revision 31
+# Business Ledger — Phase 8, Revision 32
+
+Visible Share Bars implements the approved text-free version of Option 2 for both Received Income by Source and Expense Mix. Every full track represents the complete selected-range total; the colored fill represents the row’s actual share, and a restrained smoked texture leaves the remaining portion visually legible without displaying percentage or “remainder” copy.
+
+Share calculations always use the complete filtered dataset across every pagination page. A leading category is no longer automatically rendered as 100% merely because it is the largest visible item, equal 50/50 categories produce equal half-width fills, and zero-dollar sources retain a fully visible neutral track alongside their workload context.
+
+Revision 31's stable four-row card footprint, full-width rankings, range-total badges, and simplified KPI language remain active.
 
 Analytics Composition refinement simplifies KPI context to the color-matched phrase “from last month,” while preserving the true selected-end-month versus previous-calendar-month calculation introduced in Revision 30.
 

@@ -1,3 +1,13 @@
+# Revision 32 — Visible Share Bars
+
+- Implemented the approved Option 2 bar treatment without percentage labels or `remainder` text.
+- Changed income-source and expense-category fills from largest-item normalization to true share-of-range-total calculation.
+- Each complete bar track now represents 100% of the selected range across all pagination pages.
+- Added a restrained smoked diagonal texture and subtle inner edge to the unfilled track so the remaining share stays visually readable.
+- Kept each row’s existing amount, context, source drill-through, color assignment, totals, pagination, and fixed card height unchanged.
+- Added regression coverage for a 66.7% income share, equal 50/50 expense categories, absence of percentage copy, and removal of largest-item normalization.
+- Validation: `node --check app.js` and `node --test tests/*.test.js` pass (4/4 test files).
+
 # Revision 31 — Analytics Composition Refinement
 
 - Simplified every KPI comparison caption to `from last month`; it inherits the same semantic green, red, or neutral color as its arrow and percentage.
