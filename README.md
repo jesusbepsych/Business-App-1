@@ -1,4 +1,18 @@
-# Business Ledger — Phase 8, Revision 32
+# Business Ledger — Phase 8, Revision 35
+
+Adaptive Billing Health gives the collection ring a state-aware treatment: above 80% radiates green, 50–80% radiates orange, and below 50% uses a gentle red pulse. Workspaces without issued billing data remain neutral rather than appearing unhealthy.
+
+Outstanding, Overdue, and Paid status labels now consistently use orange, red, and green respectively, while monetary and count values remain white. Reduced Motion replaces the critical pulse with a static red radiance.
+
+Revision 34's Net Received label and Revision 33's share percentages remain active.
+
+The Analytics KPI previously labeled “Planning margin” is now labeled “Net Received.” Its calculation remains unchanged: received income minus saved business-use expenses for the selected range.
+
+Revision 33's share percentage labels and Revision 32's true-share bars remain active.
+
+Share Percentage Labels adds a compact percentage beside every income source and expense-category name. Income percentages inherit the linked client's saved color when available, while expense percentages use the established orange accent. Each value is calculated against the complete selected-range total across every pagination page.
+
+Revision 32's true-share bars, visible remainder tracks, fixed card footprint, totals, and pagination remain active.
 
 Visible Share Bars implements the approved text-free version of Option 2 for both Received Income by Source and Expense Mix. Every full track represents the complete selected-range total; the colored fill represents the row’s actual share, and a restrained smoked texture leaves the remaining portion visually legible without displaying percentage or “remainder” copy.
 

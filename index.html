@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase8-r32-visible-share-bars" />
+  <link rel="stylesheet" href="styles.css?v=phase8-r35-adaptive-billing-health" />
   <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
   <link rel="stylesheet" href="compact-calendar.css?v=r26" />
@@ -190,8 +190,8 @@
 
           <div class="money-metric-grid">
             <article class="metric-card compact-metric"><div class="metric-head"><span>Received</span><span class="muted-chip money-chip-cash">Cash in</span></div><strong class="metric-value" id="moneyReceivedTotal">$0</strong><span class="metric-caption">From recorded payments</span></article>
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Outstanding</span><span class="muted-chip money-chip-invoices">Invoices</span></div><strong class="metric-value" id="moneyOutstandingTotal">$0</strong><span class="metric-caption">Still due on sent invoices</span></article>
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Overdue</span><span class="muted-chip">Attention</span></div><strong class="metric-value" id="moneyOverdueCount">0</strong><span class="metric-caption">Invoices with balance past due</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span class="semantic-outstanding">Outstanding</span><span class="muted-chip money-chip-invoices">Invoices</span></div><strong class="metric-value" id="moneyOutstandingTotal">$0</strong><span class="metric-caption">Still due on sent invoices</span></article>
+            <article class="metric-card compact-metric"><div class="metric-head"><span class="semantic-overdue">Overdue</span><span class="muted-chip">Attention</span></div><strong class="metric-value" id="moneyOverdueCount">0</strong><span class="metric-caption">Invoices with balance past due</span></article>
           </div>
 
           <div class="segment-control money-segments gold-segment-bar" role="tablist" aria-label="Money sections">
@@ -388,6 +388,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase8-r32-visible-share-bars"></script>
+  <script src="app.js?v=phase8-r35-adaptive-billing-health"></script>
 </body>
 </html>

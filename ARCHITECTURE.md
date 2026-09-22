@@ -298,7 +298,7 @@ Analytics are pure derived projections and are never persisted as transactions o
 
 - received income reads `payments.amountCents` by `receivedDate`;
 - business spending reads `expenses.businessCents` by expense `date`;
-- planning margin is received income minus business-use spending for the same range and is not presented as reconciled bank cash or taxable profit;
+- Net Received is received income minus business-use spending for the same range and is not presented as reconciled bank cash or taxable profit;
 - hours and uninvoiced value read Work Session date/time/rate facts;
 - client/source income reads Payment client/invoice relationships and saved snapshots;
 - client workload reads Work Sessions independently of payment status;
@@ -309,11 +309,13 @@ The Analytics period is an inclusive user-selected `From` month/year through `To
 KPI trend context is deliberately narrower and stable: the selected ending calendar month is compared with the immediately preceding calendar month. Each card names both months and shows the prior-month value so the range total and monthly comparison cannot be mistaken for the same scope. Percentage change is omitted when the previous month is zero because no finite percentage exists.
 
 Every aggregate retains a drill-through predicate and opens the Phase 7 evidence surface with the exact contributing records. Charts are inline SVG with keyboard-selectable month targets; they add no network dependency and remain static under the Safari/iPad lite profile.
+
+Billing Health derives its visual state from the issued-invoice collection rate without persisting a separate health record: above 80% is healthy, 50–80% is watch, and below 50% is critical. With no billed amount, the ring is neutral. The red critical pulse is presentation-only and is replaced by a static glow under Reduced Motion.
 ## Phase 8 chart refinement
 
 The Business Flow graph now plots monthly `payments.amountCents − expenses.businessCents`. Its currency domain always includes zero and expands proportionally to the selected range, including negative movement. Pointer tracking uses the rendered SVG path for continuous visual interpolation; the displayed tooltip anchors to the nearest source month. A horizontal drag suppresses the subsequent click so scrubbing does not unintentionally open evidence.
 
-Income vs Expenses plots the two underlying monthly series separately. Client/source income and expense categories use full-width share bars based on the same filtered rollups. A track represents the complete selected-range total and its colored fill represents the row amount divided by that total; the unfilled portion remains visually present through a quiet smoked texture. The denominator always includes the full filtered dataset rather than only the current page. Each ranking card exposes its complete selected-range total in the header, shows four items per page, and keeps a stable four-row visual footprint so shorter final pages do not reflow neighboring content. Drill-through records remain unabridged.
+Income vs Expenses plots the two underlying monthly series separately. Client/source income and expense categories use full-width share bars based on the same filtered rollups. A track represents the complete selected-range total and its colored fill represents the row amount divided by that total; the unfilled portion remains visually present through a quiet smoked texture. A compact percentage beside each row name exposes the same share numerically: linked income sources use the client's saved color, unlinked sources use the analytics fallback palette, and expense percentages use the orange expense accent. The denominator always includes the full filtered dataset rather than only the current page. Each ranking card exposes its complete selected-range total in the header, shows four items per page, and keeps a stable four-row visual footprint so shorter final pages do not reflow neighboring content. Drill-through records remain unabridged.
 
 All chart models are rebuilt from the current Analytics range on every render. No chart data is persisted.
 

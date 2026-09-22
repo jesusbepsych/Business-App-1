@@ -1,3 +1,25 @@
+# Revision 35 — Adaptive Billing Health
+
+- Added green radiance above 80% collected, orange radiance from 50–80%, and a restrained red pulse below 50%.
+- Added a neutral no-billing state so an empty workspace is not falsely marked unhealthy.
+- Added a Reduced Motion fallback that keeps the critical state red without animation.
+- Standardized visible Outstanding, Overdue, and Paid status labels to orange, red, and green while keeping their values white.
+- Added regression coverage for critical, watch, and healthy collection states.
+
+# Revision 34 — Net Received Label
+
+- Renamed the Analytics “Planning margin” KPI to “Net Received.”
+- Applied the same label to its evidence/detail view for consistency.
+- Left the underlying received-income-minus-business-expenses calculation unchanged.
+
+# Revision 33 — Share Percentage Labels
+
+- Added the precise selected-range share beside every income source and expense-category name.
+- Income-source percentages inherit the linked client's saved color; unlinked sources retain the analytics palette fallback.
+- Expense percentages use the established orange accent while their existing category bar colors remain unchanged.
+- Percentages use the full filtered total across all pages and show one decimal only when needed.
+- Preserved row geometry, amounts, remainder tracks, drill-through behavior, pagination, and fixed card height.
+
 # Revision 32 — Visible Share Bars
 
 - Implemented the approved Option 2 bar treatment without percentage labels or `remainder` text.
