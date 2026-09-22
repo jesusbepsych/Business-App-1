@@ -1,4 +1,10 @@
-# Business Ledger — Phase 8, Revision 30
+# Business Ledger — Phase 8, Revision 31
+
+Analytics Composition refinement simplifies KPI context to the color-matched phrase “from last month,” while preserving the true selected-end-month versus previous-calendar-month calculation introduced in Revision 30.
+
+Received Income by Source and Expense Mix now use full-width ranked bars without donut charts. Each card presents its selected-range total in a restrained header badge, and the reclaimed horizontal space gives labels, bars, and values a more proportional layout. Their four-row ranking region keeps a fixed visual footprint, with pagination anchored at the bottom so short final pages no longer resize the cards or shift surrounding content.
+
+Revision 30's custom From/To month-and-year analytics period remains active.
 
 Custom Analytics Period replaces the preset range menu with compact, themed From and To month/year controls. The chosen boundaries filter the KPI totals, charts, income sources, expense categories, and invoice-health records as one inclusive range. The initial view remains the most recent six months.
 

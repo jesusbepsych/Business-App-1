@@ -313,7 +313,7 @@ Every aggregate retains a drill-through predicate and opens the Phase 7 evidence
 
 The Business Flow graph now plots monthly `payments.amountCents − expenses.businessCents`. Its currency domain always includes zero and expands proportionally to the selected range, including negative movement. Pointer tracking uses the rendered SVG path for continuous visual interpolation; the displayed tooltip anchors to the nearest source month. A horizontal drag suppresses the subsequent click so scrubbing does not unintentionally open evidence.
 
-Income vs Expenses plots the two underlying monthly series separately. Composition donuts reuse the already-filtered client/source and expense-category rollups. When a donut would exceed five named slices, smaller slices are grouped as a visual `Other` segment only; detail rankings and drill-through records remain unabridged.
+Income vs Expenses plots the two underlying monthly series separately. Client/source income and expense categories use full-width ranked bars based on the same filtered rollups. Each ranking card exposes its complete selected-range total in the header, shows four items per page, and keeps a stable four-row visual footprint so shorter final pages do not reflow neighboring content. Drill-through records remain unabridged.
 
 All chart models are rebuilt from the current Analytics range on every render. No chart data is persisted.
 

@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase8-r30-custom-analytics-period" />
+  <link rel="stylesheet" href="styles.css?v=phase8-r31-analytics-composition-refinement" />
   <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
   <link rel="stylesheet" href="compact-calendar.css?v=r26" />
@@ -127,12 +127,12 @@
 
             <div class="analytics-secondary-grid">
               <article class="analytics-card">
-                <div class="analytics-card-head"><div><p class="eyebrow">CLIENTS & SOURCES</p><h2>Received income by source</h2></div><span class="muted-chip">Payments</span></div>
-                <div class="analytics-composition"><div class="analytics-donut" id="analyticsIncomePie"></div><div class="analytics-ranking" id="analyticsClients"></div></div>
+                <div class="analytics-card-head"><div><p class="eyebrow">CLIENTS & SOURCES</p><h2>Received income by source</h2></div><span class="analytics-total-chip"><small>Range total</small><strong id="analyticsIncomeTotal">$0</strong></span></div>
+                <div class="analytics-composition"><div class="analytics-ranking" id="analyticsClients"></div></div>
               </article>
               <article class="analytics-card">
-                <div class="analytics-card-head"><div><p class="eyebrow">EXPENSE MIX</p><h2>Where business money went</h2></div><span class="muted-chip">Business use</span></div>
-                <div class="analytics-composition"><div class="analytics-donut" id="analyticsExpensePie"></div><div class="analytics-ranking" id="analyticsExpenses"></div></div>
+                <div class="analytics-card-head"><div><p class="eyebrow">EXPENSE MIX</p><h2>Where business money went</h2></div><span class="analytics-total-chip expense"><small>Range total</small><strong id="analyticsExpenseTotal">$0</strong></span></div>
+                <div class="analytics-composition"><div class="analytics-ranking" id="analyticsExpenses"></div></div>
               </article>
             </div>
 
@@ -388,6 +388,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase8-r30-custom-analytics-period"></script>
+  <script src="app.js?v=phase8-r31-analytics-composition-refinement"></script>
 </body>
 </html>

@@ -1,3 +1,13 @@
+# Revision 31 — Analytics Composition Refinement
+
+- Simplified every KPI comparison caption to `from last month`; it inherits the same semantic green, red, or neutral color as its arrow and percentage.
+- Kept the underlying KPI comparison anchored to the selected ending month versus the immediately preceding calendar month.
+- Removed the two donut charts from Received Income by Source and Expense Mix.
+- Reallocated the full card width to the ranked labels, bars, and values, with wider proportional progress tracks.
+- Added compact selected-range total badges to both composition-card headers.
+- Stabilized both ranking regions at a four-row visual footprint and anchored pagination to the bottom, preventing short final pages from shrinking the cards or shifting adjacent content.
+- Validation: `node --check app.js` and `node --test tests/*.test.js` pass (4/4 test files).
+
 # Revision 30 — Custom Analytics Period
 
 - Replaced the Last 3/6/12 months, Year to date, and All time menu with compact From month/year and To month/year selectors in the Business Pulse toolbar.
