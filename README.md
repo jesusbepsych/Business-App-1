@@ -1,14 +1,8 @@
-# Business Ledger — Phase 8, Revision 37
+# Business Ledger — Phase 8, Revision 39
 
-Mosaic Render + Delivery Fix addresses the case where the category chart appeared unchanged. The browser entry point now loads uniquely named Revision 37 JavaScript and CSS assets, preventing an older cached app bundle from silently surviving deployment.
+Continuous Category Columns replaces the measured-mosaic treatment. Each month is one unified glass column whose uninterrupted colored sections show the exact contribution from each expense category. The former $250 tile subdivisions and block key have been removed.
 
-The chart itself now uses one continuous $250 unit grid per month instead of restarting the unit count for every category. Category colors fill through those global units, and the final partial unit retains a visible full-block outline. Consequently, even a month containing less than $250 is visibly presented as a partial mosaic block rather than resembling the former continuous stack.
-
-Revision 36's exact monthly totals, category rollups, scrubbing, haptics, source authority, responsiveness, and Reduced Motion behavior remain active.
-
-Measured Mosaic Columns replaces the former continuous expense-category stacks. Every complete glass block represents $250 of saved business-use expense value; partial blocks preserve exact remainders rather than rounding source data.
-
-Each month now carries an exact total above its column. Touch, pen, and mouse scrubbing retain the existing value tooltip and haptics while softly isolating the inspected month. The selected-range filtering, category rollups, accessibility label, responsive behavior, and source-record authority remain unchanged.
+Each month retains an exact total above its column. Touch, pen, and mouse scrubbing retain the existing value tooltip and haptics while softly isolating the inspected month. Selected-range filtering, category rollups, accessibility labeling, responsive behavior, and source-record authority remain unchanged.
 
 Revision 35's adaptive Billing Health and semantic invoice colors remain active.
 
@@ -266,9 +260,9 @@ Phase 8 expands Home with a calm analytics workspace. It adds selectable ranges,
 
 This refinement adds proportional currency axes, a continuously scrubbable monthly net-movement chart, a separate Income vs Expenses trend, and small traceable donut charts for income sources and expense categories. Every visualization responds to the Analytics date-range control and remains derived from authoritative source records.
 
-## Temporary mosaic review data
+## Temporary category-column review data
 
-This revision intentionally opens Analytics with a six-month virtual review fixture so the measured-mosaic chart can be judged on iPad without running the Node test harness. The fixture includes income plus categorized expenses from April through September 2026. It affects Analytics presentation only and is not saved.
+This revision intentionally opens Analytics with a six-month virtual review fixture so the continuous category-column chart can be judged on iPad without running the Node test harness. The fixture includes income plus categorized expenses from April through September 2026. It affects Analytics presentation only and is not saved.
 
 After design approval, remove `data-analytics-sample="true"` from the `<body>` element in `index.html`. The existing live-record path resumes immediately; no migration or cleanup is required.
 

@@ -538,6 +538,15 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Added six months of temporary virtual income and expense fixtures for direct iPad review. They are activated only by `data-analytics-sample="true"` on `<body>`, are never written to localStorage, and never enter the ledger, backups, or evidence history.
 - To finish review and return Analytics to live records, remove `data-analytics-sample="true"` from `<body>` (or set `ANALYTICS_REVIEW_SAMPLE_DATA` to `false`).
 - Added unique R38 browser asset names so the deployment cannot silently combine this HTML with an older cached mosaic script or stylesheet.
+
+## Revision 39 — Continuous luminous category columns
+
+- Replaced the $250 block towers with unified monthly glass columns composed of uninterrupted category segments.
+- Removed the block-unit key and tile/partial-block visual language while preserving exact source values and monthly totals.
+- Rebalanced column width, category sheen, selected-month radiance, plot spacing, and the legend for a cleaner composition.
+- Preserved touch, pen, and mouse scrubbing, month-transition haptics, selected-range filtering, responsive behavior, Reduced Motion support, and source-record traceability.
+- Kept the temporary six-month review fixture presentation-only and excluded from localStorage, evidence, backups, and the ledger.
+- Added unique R39 browser asset names and regression checks so a deployment cannot silently reuse the earlier mosaic assets.
 # Phase 8 revision 19 — Destination Route Console
 
 - Replaced the manual mileage-entry grid with a destination-first route console.
