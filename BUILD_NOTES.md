@@ -1,3 +1,11 @@
+# Revision 37 — Mosaic Render + Delivery Fix
+
+- Confirmed that Revision 36 contained the mosaic renderer, then removed the two conditions that could make it appear unchanged.
+- Switched the deployed entry point to uniquely named Revision 37 CSS and JavaScript assets to bypass stale HTML-asset cache combinations.
+- Rebuilt blocks as a continuous $250 grid for each month rather than restarting the grid inside every expense category.
+- Added a full-unit glass outline around the exact partial top fill, making low-value months visibly mosaic-based while keeping their true height clear.
+- Preserved exact category fragments inside each unit, the proportional currency axis, totals, scrubbing, haptics, filtering, and source data.
+
 # Revision 36 — Measured Mosaic Columns
 
 - Replaced continuous stacked expense bars with $250 measured mosaic units.

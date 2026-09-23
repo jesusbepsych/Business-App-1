@@ -1,4 +1,10 @@
-# Business Ledger — Phase 8, Revision 36
+# Business Ledger — Phase 8, Revision 37
+
+Mosaic Render + Delivery Fix addresses the case where the category chart appeared unchanged. The browser entry point now loads uniquely named Revision 37 JavaScript and CSS assets, preventing an older cached app bundle from silently surviving deployment.
+
+The chart itself now uses one continuous $250 unit grid per month instead of restarting the unit count for every category. Category colors fill through those global units, and the final partial unit retains a visible full-block outline. Consequently, even a month containing less than $250 is visibly presented as a partial mosaic block rather than resembling the former continuous stack.
+
+Revision 36's exact monthly totals, category rollups, scrubbing, haptics, source authority, responsiveness, and Reduced Motion behavior remain active.
 
 Measured Mosaic Columns replaces the former continuous expense-category stacks. Every complete glass block represents $250 of saved business-use expense value; partial blocks preserve exact remainders rather than rounding source data.
 
