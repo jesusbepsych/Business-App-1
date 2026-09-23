@@ -311,6 +311,8 @@ KPI trend context is deliberately narrower and stable: the selected ending calen
 Every aggregate retains a drill-through predicate and opens the Phase 7 evidence surface with the exact contributing records. Charts are inline SVG with keyboard-selectable month targets; they add no network dependency and remain static under the Safari/iPad lite profile.
 
 Billing Health derives its visual state from the issued-invoice collection rate without persisting a separate health record: above 80% is healthy, 50–80% is watch, and below 50% is critical. With no billed amount, the ring is neutral. The red critical pulse is presentation-only and is replaced by a static glow under Reduced Motion.
+
+The Expense Category Breakdown renders each monthly category total as consecutive $250 mosaic units on the same proportional currency axis used by the other analytics charts. A final unit may be partial and its height is computed from the exact remaining cents. Unit gaps are inset within the monetary height rather than added to it, so the top of every column still aligns to its exact monthly total. These SVG blocks are derived presentation only and do not quantize, mutate, or persist expense values.
 ## Phase 8 chart refinement
 
 The Business Flow graph now plots monthly `payments.amountCents − expenses.businessCents`. Its currency domain always includes zero and expands proportionally to the selected range, including negative movement. Pointer tracking uses the rendered SVG path for continuous visual interpolation; the displayed tooltip anchors to the nearest source month. A horizontal drag suppresses the subsequent click so scrubbing does not unintentionally open evidence.

@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=phase8-r35-adaptive-billing-health" />
+  <link rel="stylesheet" href="styles.css?v=phase8-r36-measured-mosaic-columns" />
   <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
   <link rel="stylesheet" href="compact-calendar.css?v=r26" />
@@ -142,7 +142,7 @@
             </article>
 
             <article class="analytics-card analytics-category-stack-card">
-              <div class="analytics-card-head"><div><p class="eyebrow">CATEGORY BREAKDOWN</p><h2>Monthly expense composition</h2></div><span class="muted-chip">Business use</span></div>
+              <div class="analytics-card-head"><div><p class="eyebrow">CATEGORY BREAKDOWN</p><h2>Measured monthly spend</h2></div><span class="mosaic-unit-key"><i aria-hidden="true"></i><span>1 block = $250</span></span></div>
               <div class="analytics-chart" id="analyticsExpenseCategoryChart"></div>
             </article>
 
@@ -388,6 +388,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=phase8-r35-adaptive-billing-health"></script>
+  <script src="app.js?v=phase8-r36-measured-mosaic-columns"></script>
 </body>
 </html>

@@ -1,3 +1,12 @@
+# Revision 36 — Measured Mosaic Columns
+
+- Replaced continuous stacked expense bars with $250 measured mosaic units.
+- Rendered exact partial-height blocks for category remainders, avoiding visual or financial rounding.
+- Added exact monthly totals, a visible $250 block key, refined glass outlines, and proportional currency-axis alignment.
+- Preserved category colors, selected-range filtering, grouped overflow categories, chart scrubbing, haptics, and full-total tooltips.
+- Added a focused inspected-month state that quiets neighboring columns during pointer or touch interaction.
+- Added responsive and Reduced Motion treatments plus regression coverage for exact partial blocks and interaction hooks.
+
 # Revision 35 — Adaptive Billing Health
 
 - Added green radiance above 80% collected, orange radiance from 50–80%, and a restrained red pulse below 50%.

@@ -1,4 +1,10 @@
-# Business Ledger — Phase 8, Revision 35
+# Business Ledger — Phase 8, Revision 36
+
+Measured Mosaic Columns replaces the former continuous expense-category stacks. Every complete glass block represents $250 of saved business-use expense value; partial blocks preserve exact remainders rather than rounding source data.
+
+Each month now carries an exact total above its column. Touch, pen, and mouse scrubbing retain the existing value tooltip and haptics while softly isolating the inspected month. The selected-range filtering, category rollups, accessibility label, responsive behavior, and source-record authority remain unchanged.
+
+Revision 35's adaptive Billing Health and semantic invoice colors remain active.
 
 Adaptive Billing Health gives the collection ring a state-aware treatment: above 80% radiates green, 50–80% radiates orange, and below 50% uses a gentle red pulse. Workspaces without issued billing data remain neutral rather than appearing unhealthy.
 
