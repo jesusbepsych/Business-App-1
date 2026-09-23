@@ -547,6 +547,14 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Preserved touch, pen, and mouse scrubbing, month-transition haptics, selected-range filtering, responsive behavior, Reduced Motion support, and source-record traceability.
 - Kept the temporary six-month review fixture presentation-only and excluded from localStorage, evidence, backups, and the ledger.
 - Added unique R39 browser asset names and regression checks so a deployment cannot silently reuse the earlier mosaic assets.
+
+## Revision 40 — Passive aligned category columns
+
+- Matched the expense-category card to the established Analytics smoked-glass surface instead of using a brighter blue-tinted panel.
+- Replaced endpoint-based line-chart positioning with equal categorical slots, keeping the first and last columns inside the plot and separating them from currency labels.
+- Tightened bar width, totals, axis typography, plot clipping, and legend spacing for reliable iPad sizing.
+- Removed all pointer, scrub, selected-month, and haptic behavior from this specific chart. Business Flow and Income vs Expenses retain their existing interactions.
+- Added unique R40 browser assets and regression coverage for the passive chart behavior.
 # Phase 8 revision 19 — Destination Route Console
 
 - Replaced the manual mileage-entry grid with a destination-first route console.

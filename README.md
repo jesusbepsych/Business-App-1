@@ -1,8 +1,8 @@
-# Business Ledger — Phase 8, Revision 39
+# Business Ledger — Phase 8, Revision 40
 
-Continuous Category Columns replaces the measured-mosaic treatment. Each month is one unified glass column whose uninterrupted colored sections show the exact contribution from each expense category. The former $250 tile subdivisions and block key have been removed.
+Continuous Category Columns replaces the measured-mosaic treatment. Each month is one unified glass column whose uninterrupted colored sections show the exact contribution from each expense category. The former $250 tile subdivisions and block key have been removed. Revision 40 centers months within categorical plot slots, matches the card to the established Analytics glass theme, and makes this chart intentionally non-interactive.
 
-Each month retains an exact total above its column. Touch, pen, and mouse scrubbing retain the existing value tooltip and haptics while softly isolating the inspected month. Selected-range filtering, category rollups, accessibility labeling, responsive behavior, and source-record authority remain unchanged.
+Each month retains an exact total above its column. Business Flow and Income vs Expenses retain touch, pen, and mouse scrubbing with haptics; the Expense Category Breakdown is now a passive overview. Selected-range filtering, category rollups, accessibility labeling, responsive behavior, and source-record authority remain unchanged.
 
 Revision 35's adaptive Billing Health and semantic invoice colors remain active.
 
