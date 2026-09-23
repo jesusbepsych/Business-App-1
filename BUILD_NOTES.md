@@ -528,6 +528,16 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Integrated each form's title, fields, helper text, optional sections, primary-vehicle control, and actions into one continuous sheet rather than stacked inner panels.
 - Kept normal inputs as restrained inset wells while dissolving the heavier Billing Details and footer containers into shared dividers and material.
 - Preserved client colors, remembered defaults, billing details, rates, vehicle status, odometer, primary-vehicle behavior, validation, editing, and source-record integrity.
+
+## Revision 38 — Luminous measured-mosaic review build
+
+- Rebuilt the expense-category chart as true $250 tile towers rather than a conventional stacked bar with superficial separators.
+- Each unit now has independent spacing, a glass highlight, a luminous outline, and exact partial-fill behavior. Category boundaries may share a unit when required to preserve exact accounting values.
+- Restored the approved category language: Food amber, Gas blue, Parking green, Car coral, Subscriptions violet, and Misc silver.
+- Added a soft selected-column enclosure while scrubbing; haptic month transitions and traceability behavior remain unchanged.
+- Added six months of temporary virtual income and expense fixtures for direct iPad review. They are activated only by `data-analytics-sample="true"` on `<body>`, are never written to localStorage, and never enter the ledger, backups, or evidence history.
+- To finish review and return Analytics to live records, remove `data-analytics-sample="true"` from `<body>` (or set `ANALYTICS_REVIEW_SAMPLE_DATA` to `false`).
+- Added unique R38 browser asset names so the deployment cannot silently combine this HTML with an older cached mosaic script or stylesheet.
 # Phase 8 revision 19 — Destination Route Console
 
 - Replaced the manual mileage-entry grid with a destination-first route console.

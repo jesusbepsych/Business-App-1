@@ -266,6 +266,12 @@ Phase 8 expands Home with a calm analytics workspace. It adds selectable ranges,
 
 This refinement adds proportional currency axes, a continuously scrubbable monthly net-movement chart, a separate Income vs Expenses trend, and small traceable donut charts for income sources and expense categories. Every visualization responds to the Analytics date-range control and remains derived from authoritative source records.
 
+## Temporary mosaic review data
+
+This revision intentionally opens Analytics with a six-month virtual review fixture so the measured-mosaic chart can be judged on iPad without running the Node test harness. The fixture includes income plus categorized expenses from April through September 2026. It affects Analytics presentation only and is not saved.
+
+After design approval, remove `data-analytics-sample="true"` from the `<body>` element in `index.html`. The existing live-record path resumes immediately; no migration or cleanup is required.
+
 # Entry Memory + Expense Category Refinement
 
 Successful new entries now remember their recurring selections per workspace. New expenses reopen with the last submitted classification and category; the same principle also carries forward relevant selections for payments, sessions, invoices, mileage, clients, and vehicles. On the first use after this update, compatible choices are inferred from the newest existing record. Explicit launch context—such as recording a payment from a specific invoice—continues to take priority. Abandoned forms and edits do not change these defaults.
