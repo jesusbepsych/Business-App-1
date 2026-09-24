@@ -1,8 +1,8 @@
-# Business Ledger — Phase 8, Revision 40
+# Business Ledger — Phase 8, Revision 41
 
-Continuous Category Columns replaces the measured-mosaic treatment. Each month is one unified glass column whose uninterrupted colored sections show the exact contribution from each expense category. The former $250 tile subdivisions and block key have been removed. Revision 40 centers months within categorical plot slots, matches the card to the established Analytics glass theme, and makes this chart intentionally non-interactive.
+Continuous Category Columns replaces the measured-mosaic treatment. Each month is one unified glass column whose uninterrupted colored sections show the exact contribution from each expense category. The former $250 tile subdivisions and block key have been removed. Revision 41 adds smooth value tooltips to individual category sections without dimming or selecting the rest of the chart.
 
-Each month retains an exact total above its column. Business Flow and Income vs Expenses retain touch, pen, and mouse scrubbing with haptics; the Expense Category Breakdown is now a passive overview. Selected-range filtering, category rollups, accessibility labeling, responsive behavior, and source-record authority remain unchanged.
+Each month retains an exact total above its column. Business Flow and Income vs Expenses retain touch, pen, and mouse scrubbing with haptics. Expense Category Breakdown exposes category values through hover, keyboard focus, or a brief touch tooltip without becoming a selectable chart. Selected-range filtering, category rollups, accessibility labeling, responsive behavior, and source-record authority remain unchanged.
 
 Revision 35's adaptive Billing Health and semantic invoice colors remain active.
 
@@ -262,7 +262,7 @@ This refinement adds proportional currency axes, a continuously scrubbable month
 
 ## Temporary category-column review data
 
-This revision intentionally opens Analytics with a six-month virtual review fixture so the continuous category-column chart can be judged on iPad without running the Node test harness. The fixture includes income plus categorized expenses from April through September 2026. It affects Analytics presentation only and is not saved.
+This revision intentionally opens Analytics with a six-month, seeded synthetic review fixture so the complete Analytics workspace can be judged on iPad without running the Node test harness. It varies active income sources, payment sizes and methods, expense categories and merchants, mixed-use amounts, session durations, rates, and uninvoiced work across April through September 2026. The randomization is deterministic, so figures remain stable while the user explores the interface. It affects presentation only and is not saved.
 
 After design approval, remove `data-analytics-sample="true"` from the `<body>` element in `index.html`. The existing live-record path resumes immediately; no migration or cleanup is required.
 

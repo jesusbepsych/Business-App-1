@@ -555,6 +555,14 @@ This build intentionally restarts the Corporate Atrium visual layer from the cle
 - Tightened bar width, totals, axis typography, plot clipping, and legend spacing for reliable iPad sizing.
 - Removed all pointer, scrub, selected-month, and haptic behavior from this specific chart. Business Flow and Income vs Expenses retain their existing interactions.
 - Added unique R40 browser assets and regression coverage for the passive chart behavior.
+
+## Revision 41 — Category tooltips and varied synthetic review data
+
+- Added a smooth category-segment tooltip showing month, category, and exact amount on hover, keyboard focus, or touch.
+- Kept the rest of the chart at full opacity; tooltip interaction does not select a month, dim neighboring categories, or trigger haptics.
+- Replaced the linear review fixture with deterministic seeded variation across five income sources, eight expense categories, merchants, payment methods, mixed-use ratios, work sessions, rates, and session billing states.
+- Extended the presentation-only review fixture to Analytics workload calculations and evidence previews while keeping every synthetic record out of localStorage and the source ledger.
+- Added unique R41 browser assets and regression coverage for tooltip markup, bindings, non-dimming behavior, varied sources, and storage isolation.
 # Phase 8 revision 19 — Destination Route Console
 
 - Replaced the manual mileage-entry grid with a destination-first route console.
