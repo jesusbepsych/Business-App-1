@@ -1,4 +1,6 @@
-# Business Ledger — Phase 8, Revision 41
+# Business Ledger — Phase 8, Revision 42
+
+Revision 42 streamlines the Expenses ledger into a date-first reading order: Date → Merchant / Expense → Amount → Category → Receipt. Classification remains visible beneath the amount, so the duplicate Use column has been removed. The Receipt column now starts collapsed and expands in place from its compact header control.
 
 Continuous Category Columns replaces the measured-mosaic treatment. Each month is one unified glass column whose uninterrupted colored sections show the exact contribution from each expense category. The former $250 tile subdivisions and block key have been removed. Revision 41 adds smooth value tooltips to individual category sections without dimming or selecting the rest of the chart.
 

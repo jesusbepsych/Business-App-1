@@ -583,3 +583,9 @@ Validation: JavaScript syntax check and both Node test suites pass (existing ana
 - Rebalanced the work-session console around the single clock so the supporting controls stay in the same working area.
 - Converted quick presets into a compact three-slot rail and improved the preset editor with clearer start/end entry and actions.
 - Preserved all session data, clock gestures, quick-time scoping, validation, and calculations.
+# Revision 42 — Expense ledger order
+
+- Reordered Expenses to Date → Merchant / Expense → Amount → Category → Receipt.
+- Removed the redundant Use column while retaining Personal, Mixed, and Business context beneath Amount.
+- Added a closed-by-default Receipt rail that expands and collapses in place without affecting expense-detail navigation.
+- Added responsive and reduced-motion handling for the new ledger layout.
