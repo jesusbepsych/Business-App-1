@@ -1,3 +1,9 @@
+# Revision 47 — Expanded Business Flow chart
+
+- Removed the redundant `BUSINESS FLOW` eyebrow from the card header.
+- Reduced the calculation selector to only `Business` or `All`; the full descriptions remain inside its menu and accessible label.
+- Increased the net-flow chart canvas from 250 to 360 units so the curve, axes, and scrub area use the card's previously empty lower space.
+
 # Revision 46 — Compact net-flow selector
 
 - Reduced the net-flow selector to a small `Subtract: Business/All` control that fits the original legend footprint.
