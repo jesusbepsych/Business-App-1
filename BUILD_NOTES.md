@@ -615,6 +615,24 @@ Validation: JavaScript syntax check and both Node test suites pass (existing ana
 - Both sub-filters are optional, default to All, reset pagination, and combine with search and primary filters.
 - Active sub-filters are reflected through a small luminous indicator and accessible labels.
 
+## Revision 48 — Inclusive multi-select filters
+
+- Converted the Sessions client sub-filter from one client at a time to any combination of clients.
+- Converted the Expenses category sub-filter from one category at a time to any combination of categories.
+- Selections within either sub-filter use inclusive OR matching, while search and the existing primary status/classification filter continue to combine with them using AND matching.
+- Kept selections live while the panel remains open, added explicit Clear and Done actions, selection counts, pagination resets, and accessible pressed states.
+- Rebuilt only the expense-category chooser as a compact two-column Aurora Frost panel with clearer hierarchy, scroll containment, and stronger selected states.
+
+## Revision 49 — Search-first receipt archive
+
+- Kept one search field as the sole receipt-discovery control; no new filter panel was added.
+- Expanded receipt matching across merchant, category, amount, date, description, business purpose, filename, Business/Mixed/Personal classification, file type, and review state.
+- Added combined-term and plain-language date searches such as `Target September`, `business gas`, `this month`, `last month`, and `needs review`.
+- Organized idle browsing automatically into year sections and collapsible month groups, with the newest relevant month open by default.
+- Added compact month/year receipt counts and spending totals without duplicating or moving source records.
+- Added progressive month loading through an intersection sentinel, with an accessible manual fallback.
+- Added native search suggestions using recent searches, frequently occurring merchants, categories, and useful date phrases.
+
 ## Revision 44 — Core ledger boundary
 
 - Retired Taxes, Mileage, and Vehicles together from permanent navigation, Quick Add, command search, forms, details, dashboard attention items, derived counters, and runtime handlers.

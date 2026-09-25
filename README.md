@@ -1,4 +1,8 @@
-# Business Ledger — Phase 8, Revision 44
+# Business Ledger — Phase 8, Revision 49
+
+Revision 49 turns Records into a search-first receipt archive. The single search field now combines merchant, category, date, amount, classification, purpose, filename, and review-state matching. Browsing is organized automatically by year and collapsible month, with progressive loading for long histories and no separate filter panel.
+
+Revision 48 adds inclusive multi-select filters for session clients and expense categories. Multiple choices within a sub-filter are shown together, while the existing search and primary status/classification filters continue to narrow those results.
 
 Revision 44 retires Taxes, Mileage, and Vehicles as one coordinated product change. The permanent workspace is now:
 

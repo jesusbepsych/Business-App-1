@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles-r47-expanded-flow-chart.css" />
+  <link rel="stylesheet" href="styles-r49-smart-receipt-archive.css" />
   <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
   <link rel="stylesheet" href="compact-calendar.css?v=r26" />
@@ -229,7 +229,7 @@
       <section class="view records-atrium-view" data-page="records">
         <div class="content-wrap records-atrium-content">
           <div class="page-heading records-heading"><div><p class="eyebrow">RECORDS</p><h1>Receipt evidence, without the filing cabinet.</h1><p class="subtitle">Receipts stay linked to the expense that created them. Search the evidence here; open the expense for full context.</p></div><button class="secondary-btn" id="exportBackupFromRecords">Export local backup</button></div>
-          <div class="records-toolbar"><div class="mini-search"><span>⌕</span><input id="receiptSearch" placeholder="Search receipts, merchants, categories" /></div><span class="quiet-badge" id="receiptCount">0 receipts</span></div>
+          <div class="records-toolbar"><div class="mini-search receipt-smart-search"><span>⌕</span><input id="receiptSearch" type="search" list="receiptSearchSuggestions" autocomplete="off" placeholder="Search merchant, month, category, amount…" aria-label="Search receipt archive" /><datalist id="receiptSearchSuggestions"></datalist></div><span class="quiet-badge" id="receiptCount">0 receipts</span></div>
           <div class="receipt-vault-grid" id="receiptVault"></div>
           <div class="records-local-note"><span>i</span><p>Receipt files are stored locally in this browser for the prototype. The JSON backup exports structured financial records, but does not yet package the receipt file bytes.</p></div>
         </div>
@@ -336,6 +336,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app-r47-expanded-flow-chart.js"></script>
+  <script src="app-r49-smart-receipt-archive.js"></script>
 </body>
 </html>
