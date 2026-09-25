@@ -1,3 +1,9 @@
+# Revision 46 — Compact net-flow selector
+
+- Reduced the net-flow selector to a small `Subtract: Business/All` control that fits the original legend footprint.
+- Kept the full calculation descriptions inside the selection menu and in the control's accessible label.
+- Removed the larger repeated sentence from the chart header so the chart retains its prior visual space.
+
 # Revision 45 — Net-flow basis selector
 
 - Converted the Business Flow legend into a compact selector with two calculations: Received minus business expenses and Received minus all expenses.

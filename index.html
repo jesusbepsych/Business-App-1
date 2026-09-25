@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles-r45-net-flow-selector.css" />
+  <link rel="stylesheet" href="styles-r46-compact-net-selector.css" />
   <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
   <link rel="stylesheet" href="compact-calendar.css?v=r26" />
@@ -115,7 +115,7 @@
 
             <div class="analytics-primary-grid">
               <article class="analytics-card analytics-cashflow-card">
-                <div class="analytics-card-head"><div><p class="eyebrow">BUSINESS FLOW</p><h2>Monthly net movement</h2></div><button class="analytics-net-basis-btn" id="analyticsNetBasisBtn" type="button" aria-haspopup="menu" aria-expanded="false"><span class="net-indicator" aria-hidden="true"></span><span id="analyticsNetBasisLabel">Received minus business expenses</span><span class="selector-chevron" aria-hidden="true">⌄</span></button></div>
+                <div class="analytics-card-head"><div><p class="eyebrow">BUSINESS FLOW</p><h2>Monthly net movement</h2></div><button class="analytics-net-basis-btn" id="analyticsNetBasisBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Net movement calculation: received minus business expenses"><span class="net-indicator" aria-hidden="true"></span><span class="net-basis-prefix">Subtract</span><strong id="analyticsNetBasisLabel">Business</strong><span class="selector-chevron" aria-hidden="true">⌄</span></button></div>
                 <div class="analytics-chart" id="analyticsCashflowChart"></div>
               </article>
               <article class="analytics-card analytics-invoice-card">
@@ -336,6 +336,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app-r45-net-flow-selector.js"></script>
+  <script src="app-r46-compact-net-selector.js"></script>
 </body>
 </html>
