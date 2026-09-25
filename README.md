@@ -1,4 +1,6 @@
-# Business Ledger — Phase 8, Revision 50
+# Business Ledger — Phase 8, Revision 51
+
+Revision 51 removes the prototype-only brand/version block and local-preview status card from the desktop sidebar, then tightens the remaining workspace, navigation, settings, and profile spacing. On portrait layouts, the center Quick Add action now uses the same warm gold treatment as the Home add action; landscape and desktop styling remain unchanged.
 
 Revision 50 visually separates the dark month disclosure control from the receipt content it opens. Expanded receipt fields and receipt panes now use the lighter translucent Frosted Window Bay material established by the Clients view, while all Revision 49 search and archive behavior remains unchanged.
 

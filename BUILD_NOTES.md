@@ -1,3 +1,11 @@
+# Revision 51 — Production sidebar + portrait Quick Add
+
+- Removed the internal Business Ledger / Phase 8 identity block from the sidebar.
+- Removed the Local preview / Cloud adapter ready status card and its obsolete click binding.
+- Rebalanced sidebar spacing around the business switcher, primary navigation, Settings, and owner profile.
+- Applied the established warm gold Add treatment to the center mobile action in portrait orientation only.
+- Preserved the existing landscape and desktop Quick Add presentation.
+
 # Revision 47 — Expanded Business Flow chart
 
 - Removed the redundant `BUSINESS FLOW` eyebrow from the card header.

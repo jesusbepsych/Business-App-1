@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles-r50-receipt-glass-separation.css" />
+  <link rel="stylesheet" href="styles-r51-sidebar-quick-add.css" />
   <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
   <link rel="stylesheet" href="compact-calendar.css?v=r26" />
@@ -27,11 +27,6 @@
   <div class="app-shell" id="appShell">
     <aside class="sidebar" id="primarySidebar" aria-label="Primary navigation">
       <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-controls="primarySidebar" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><span aria-hidden="true">‹</span></button>
-      <div class="brand-row">
-        <div class="brand-mark" aria-hidden="true">B</div>
-        <div class="brand-copy"><strong>Business Ledger</strong><span>Phase 8 · Analytics</span></div>
-      </div>
-
       <button class="business-switcher" id="businessSwitcher" aria-haspopup="dialog">
         <span class="business-icon" id="businessInitials">PF</span>
         <span class="business-text"><strong id="businessName">Play It Forward</strong><small id="businessType">Sole proprietor</small></span>
@@ -47,7 +42,6 @@
 
       <div class="sidebar-spacer"></div>
       <div class="sidebar-footer">
-        <button class="sync-chip" id="syncChip" aria-label="Open sync status"><span class="sync-dot local"></span><span><strong>Local preview</strong><small>Cloud adapter ready</small></span></button>
         <button class="nav-item" id="openSettings"><span class="nav-icon">⚙</span><span>Settings</span></button>
         <div class="profile-chip"><div class="avatar">JG</div><div><strong>Local owner</strong><span>Sign-in layer reserved</span></div></div>
       </div>
@@ -336,6 +330,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app-r50-receipt-glass-separation.js"></script>
+  <script src="app-r51-sidebar-quick-add.js"></script>
 </body>
 </html>
