@@ -8,7 +8,7 @@
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles-r44-core-ledger.css" />
+  <link rel="stylesheet" href="styles-r45-net-flow-selector.css" />
   <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
   <link rel="stylesheet" href="compact-calendar.css?v=r26" />
@@ -115,7 +115,7 @@
 
             <div class="analytics-primary-grid">
               <article class="analytics-card analytics-cashflow-card">
-                <div class="analytics-card-head"><div><p class="eyebrow">BUSINESS FLOW</p><h2>Monthly net movement</h2></div><div class="analytics-legend"><span class="net">Received minus business use</span></div></div>
+                <div class="analytics-card-head"><div><p class="eyebrow">BUSINESS FLOW</p><h2>Monthly net movement</h2></div><button class="analytics-net-basis-btn" id="analyticsNetBasisBtn" type="button" aria-haspopup="menu" aria-expanded="false"><span class="net-indicator" aria-hidden="true"></span><span id="analyticsNetBasisLabel">Received minus business expenses</span><span class="selector-chevron" aria-hidden="true">⌄</span></button></div>
                 <div class="analytics-chart" id="analyticsCashflowChart"></div>
               </article>
               <article class="analytics-card analytics-invoice-card">
@@ -218,7 +218,7 @@
           <div class="money-tab" data-money-panel="expenses">
             <div class="money-list-head expense-list-head">
               <div><p class="eyebrow">EXPENSE LEDGER</p><h2>Money spent</h2><div class="expense-summary-line"><span id="expenseMonthTotal">$0 this month</span><span id="expenseBusinessTotal">$0 business portion</span></div></div>
-              <div class="expense-head-actions"><button class="subfilter-trigger expense-category-trigger" id="expenseCategorySubfilterBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Filter expenses by category" title="Filter by category"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="11" cy="18" r="2"/></svg></button><button class="filter-pill" id="expenseFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All expenses</button><button class="primary-btn compact-action" id="addExpenseBtn">＋ Expense</button></div>
+              <div class="expense-head-actions"><button class="subfilter-trigger expense-category-trigger" id="expenseCategorySubfilterBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Filter expenses by category" title="Filter by category"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="11" cy="18" r="2"/></svg></button><button class="filter-pill" id="expenseFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All expenses</button></div>
             </div>
             <div class="data-card" id="expensesContainer"></div>
           </div>
@@ -336,6 +336,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app-r44-core-ledger.js"></script>
+  <script src="app-r45-net-flow-selector.js"></script>
 </body>
 </html>

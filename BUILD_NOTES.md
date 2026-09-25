@@ -1,3 +1,9 @@
+# Revision 45 — Net-flow basis selector
+
+- Converted the Business Flow legend into a compact selector with two calculations: Received minus business expenses and Received minus all expenses.
+- Kept the existing business-expense calculation as the default and left the other analytics views on their established business-use basis.
+- Removed the redundant Expense action beside the expense filters while retaining the primary Expense action in the Money header.
+
 # Revision 37 — Mosaic Render + Delivery Fix
 
 - Confirmed that Revision 36 contained the mosaic renderer, then removed the two conditions that could make it appear unchanged.
