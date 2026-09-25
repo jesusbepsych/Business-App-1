@@ -1,275 +1,52 @@
-# Business Ledger — Phase 8, Revision 42
+# Business Ledger — Phase 8, Revision 44
 
-Revision 42 streamlines the Expenses ledger into a date-first reading order: Date → Merchant / Expense → Amount → Category → Receipt. Classification remains visible beneath the amount, so the duplicate Use column has been removed. The Receipt column now starts collapsed and expands in place from its compact header control.
+Revision 44 retires Taxes, Mileage, and Vehicles as one coordinated product change. The permanent workspace is now:
 
-Continuous Category Columns replaces the measured-mosaic treatment. Each month is one unified glass column whose uninterrupted colored sections show the exact contribution from each expense category. The former $250 tile subdivisions and block key have been removed. Revision 41 adds smooth value tooltips to individual category sections without dimming or selecting the rest of the chart.
+**Home · Work · Money · Records**
 
-Each month retains an exact total above its column. Business Flow and Income vs Expenses retain touch, pen, and mouse scrubbing with haptics. Expense Category Breakdown exposes category values through hover, keyboard focus, or a brief touch tooltip without becoming a selectable chart. Selected-range filtering, category rollups, accessibility labeling, responsive behavior, and source-record authority remain unchanged.
-
-Revision 35's adaptive Billing Health and semantic invoice colors remain active.
-
-Adaptive Billing Health gives the collection ring a state-aware treatment: above 80% radiates green, 50–80% radiates orange, and below 50% uses a gentle red pulse. Workspaces without issued billing data remain neutral rather than appearing unhealthy.
-
-Outstanding, Overdue, and Paid status labels now consistently use orange, red, and green respectively, while monetary and count values remain white. Reduced Motion replaces the critical pulse with a static red radiance.
-
-Revision 34's Net Received label and Revision 33's share percentages remain active.
-
-The Analytics KPI previously labeled “Planning margin” is now labeled “Net Received.” Its calculation remains unchanged: received income minus saved business-use expenses for the selected range.
-
-Revision 33's share percentage labels and Revision 32's true-share bars remain active.
-
-Share Percentage Labels adds a compact percentage beside every income source and expense-category name. Income percentages inherit the linked client's saved color when available, while expense percentages use the established orange accent. Each value is calculated against the complete selected-range total across every pagination page.
-
-Revision 32's true-share bars, visible remainder tracks, fixed card footprint, totals, and pagination remain active.
-
-Visible Share Bars implements the approved text-free version of Option 2 for both Received Income by Source and Expense Mix. Every full track represents the complete selected-range total; the colored fill represents the row’s actual share, and a restrained smoked texture leaves the remaining portion visually legible without displaying percentage or “remainder” copy.
-
-Share calculations always use the complete filtered dataset across every pagination page. A leading category is no longer automatically rendered as 100% merely because it is the largest visible item, equal 50/50 categories produce equal half-width fills, and zero-dollar sources retain a fully visible neutral track alongside their workload context.
-
-Revision 31's stable four-row card footprint, full-width rankings, range-total badges, and simplified KPI language remain active.
-
-Analytics Composition refinement simplifies KPI context to the color-matched phrase “from last month,” while preserving the true selected-end-month versus previous-calendar-month calculation introduced in Revision 30.
-
-Received Income by Source and Expense Mix now use full-width ranked bars without donut charts. Each card presents its selected-range total in a restrained header badge, and the reclaimed horizontal space gives labels, bars, and values a more proportional layout. Their four-row ranking region keeps a fixed visual footprint, with pagination anchored at the bottom so short final pages no longer resize the cards or shift surrounding content.
-
-Revision 30's custom From/To month-and-year analytics period remains active.
-
-Custom Analytics Period replaces the preset range menu with compact, themed From and To month/year controls. The chosen boundaries filter the KPI totals, charts, income sources, expense categories, and invoice-health records as one inclusive range. The initial view remains the most recent six months.
-
-KPI comparisons are now true calendar month-over-month signals: each arrow and percentage compares the selected ending month with the immediately previous month. The large KPI value still represents the complete chosen range, and the comparison line explicitly names both months plus the prior-month value so the two scopes cannot be confused.
-
-If the ending month is the current month, its analytics include activity through today; a historical ending month includes that complete month. Invalid From/To ordering is corrected automatically at the boundary the user changes.
-
-Revision 29's stable Recent Work ordering and compact semantic KPI styling remain active.
-
-Recent Activity + KPI Comparison refinement: Home now presents the four latest sessions in stable chronological order, newest date/time first. Analytics KPI cards now use compact directional arrows and percentage comparisons against the prior period, with the prior-period detail line carrying the same semantic color. The repeated “New activity” label has been removed.
-
-Roadmap Display Cleanup: removed the in-app Build Roadmap panel and the Phase 8 active status banner from Home. These were presentation-only reminders; the roadmap and analytics behavior remain unchanged.
-
-Revision 27's chart-only scrubbing, supported-device haptics, stacked expense-category graph, and four-item analytics pagination remain active.
-
-Analytics Interaction Depth removes month-detail launches from the line charts and makes chart contact an inspection-only gesture. Business Flow, Income vs Expenses, and the new monthly Expense Category Breakdown support touch/pen scrubbing; subtle browser haptics pulse as the selected month changes when the device supports vibration.
-
-The category chart stacks the app's actual business-use expense categories by month and follows the selected Analytics date range. Received Income by Source and Expense Mix now show four ranked rows per page with compact, visible paging controls. All summary values remain derived from the existing payment and expense source records.
-
-Revision 26's stable calendar badges and quieter Aurora Frost surfaces remain active.
-
-# Business Ledger — Phase 8, Revision 26
-
-Calendar Badge + Aurora Dim refinement: single-digit and double-digit calendar days now render inside the same fixed, centered badge with stable typography. Aurora Frost entry surfaces have also been gently darkened and desaturated, with quieter luminous edges, while preserving their glass character and all existing layouts.
-
-Revision 25's compact calendar controls remain active across work sessions, payments, expenses, mileage, and invoice issue/due dates.
-
-Revision 24's Clock & Companion remains intact: circular single dial, explicit start/end mode, undo and five-minute correction, and six named client presets in a three-row scroll area.
-
-# Business Ledger — Phase 8, Revision 22
-
-## Revision 23 — Session console composition
-
-The work-session console now keeps the clock and its supporting controls in one balanced composition. Quick presets sit directly beneath the time controls in a compact three-slot rail, while the session summary and note remain full-width below. Preset editing now uses a clearer start → end card with dedicated actions. The session model, clock behavior, and validation remain unchanged.
-
-## Revision 22 — Aurora Frost entry-console extension
-
-Aurora Frost now covers the remaining entry consoles as a surface-only visual layer: work sessions, invoices, mileage, and vehicles join the existing client, expense, and payment treatments. The update changes material, light, borders, text contrast, focus states, and reduced-motion behavior without moving, resizing, or changing any controls or workflow.
-
-Current revision: **Single Session Clock**. Work-session entry now uses one clock: Start and End remain visible as selectable chips, and the same dial edits whichever chip is active. A native time input provides precise correction and an Undo action restores the previous clock adjustment. Quick client presets still apply both times together. The saved session data model and validation are unchanged.
-
-Current revision: **Aurora Frost** for Client, Expense and Payment forms (including edit mode). Surface-only overrides live in `aurora-frost.css`; deploy this file alongside the existing files. Layout, sizing, workflow and record logic are unchanged. Cool glass, cyan/lavender edge light, restrained reflections, periwinkle primary actions, and readable focus states carry through expanded details. Client swatch colors are preserved. iPad/Safari uses static frost without live backdrop sampling. Previous revision notes follow.
-
-Current build: **Destination Route Console**. New/Edit Mileage now uses a destination-led, automatic-routing-ready console with one continuous lighter graphite-blue surface and a responsive animated route ribbon.
-
-This revision implements the frontend only, as agreed during design exploration. Google/Apple Maps, GPS, place search, and automatic distance calculation are NOT connected. New trips cannot be saved until real routing is connected. The ribbon is an illustrative route preview, not a geographic map. Existing trips retain their saved mileage when their route labels are unchanged; changing those labels requires a future route calculation. The app never derives distance from place names or copies another trip's distance.
-
-The lighter single-surface Client and Vehicle forms from Revision 18 remain intact. Mileage preserves its audit trail, vehicle snapshot, tax interpretation, review state, and client/session links.
-
-## Typography scale refinement
-
-All explicit interface typography has been increased slightly while preserving the existing hierarchy: compact labels receive about +1px, normal interface text about +7%, and large display/title text about +5%. Compact text-bearing controls receive minor breathing-room adjustments to avoid crowding. No business logic or data model behavior changed.
-
-# Phase 5 — Taxes / Mileage + Vehicles Alpha
-
-This checkpoint adds a fifth permanent destination: **Home → Work → Money → Taxes → Records**. The new Taxes area begins with Mileage + Vehicle Tracking and is intentionally designed as the future home for Phase 6 tax interpretation.
-
-## Active Phase 5 behavior
-- Vehicle profiles with year/make/model, optional nickname, active/inactive status, optional odometer, notes, and one primary vehicle.
-- Mileage source records with date, vehicle, miles, Business/Personal classification, optional start/end labels, business purpose, client/session linkage, notes, and Needs Review state.
-- Mileage filters for All / Business / Personal / Needs Review and seven-record pagination.
-- Tax summary metrics for this-month business miles, all-time business miles, primary vehicle, and review count.
-- Vehicle summary cards with linked trip count, business miles, and odometer.
-- Edit/delete/detail flows for trips and vehicles, including audit events and snapshot preservation when linked work/vehicles are later removed.
-- Home Attention now includes mileage records that need review.
-- Global search now finds Taxes, mileage trips, and vehicles.
-- Quick Add includes Mileage.
-- Schema version 7 migrates existing Phase 4 local data without changing invoices, payments, expenses, receipts, clients, or sessions.
-
-## Design rules
-- Mileage is a source record, **not an expense**. A trip can later be interpreted by tax logic without pretending money left the account.
-- Phase 5 records driving facts and business context; it does **not** decide tax deductibility or compute a mileage deduction.
-- Client/session links are optional and keep snapshots so history remains understandable after linked records are removed.
-- The Taxes page uses the existing Corporate Atrium + Frosted Window Bays system and the Safari/iPad no-flash profile.
-
-## Suggested Phase 5 test
-1. Open Taxes and add a vehicle; confirm the first active vehicle becomes Primary.
-2. Add a Business mileage trip with a purpose and verify it appears in Trip history and summary miles.
-3. Add a Personal trip and verify it does not increase Business miles.
-4. Add a Business trip without a purpose; verify it becomes Needs Review and appears on Home → Attention.
-5. Mark that trip reviewed and confirm it leaves Attention.
-6. Link a trip to a client/session, then open its detail view and verify the work context.
-7. Delete the linked session/client and confirm the mileage record survives with snapshots.
-8. Add a second vehicle, make it Primary, and verify the prior Primary clears.
-9. Delete a vehicle with mileage; confirm the trips remain with the saved vehicle-name snapshot.
-10. Search for a vehicle or mileage purpose from global search and confirm navigation opens the correct record.
-
-## Still deferred
-- Tax deduction eligibility/rules, mileage rates, Schedule C mapping, estimated taxes, and tax-year calculations (Phase 6).
-- Automatic GPS/route capture and advanced mileage automation (Phase 12).
-- Backup restore/import.
-- Secure cloud authentication/sync.
-
-## Frosted Window Bays Alpha
-
-This build applies the selected **Frosted Window Bays** material direction across the four main Corporate Atrium tabs. Main information surfaces now use cool gray-blue architectural frost, restrained luminous borders, localized background blur, and softer window-like highlights so the atrium remains visible through the interface. Semantic color is kept primarily in labels, chips, and status indicators instead of tinting whole cards.
-
-The established iPad/Safari stability profile remains in place: the atrium itself stays fixed, expensive motion is avoided, and touch/Safari devices use lower blur with slightly stronger pane opacity. Business logic, data models, workflows, modals/detail sheets, and receipt/invoice behavior are unchanged.
-
-## Corporate Atrium — Records tab
-
-- Extended the proven Home + Work + Money Corporate Atrium scene to the Records view without changing receipt-vault behavior or stored data.
-- Records now shares the same embedded atrium plate, subtle dynamic architectural lighting, and stable Safari/iPad rendering profile.
-- The Records heading, export action, receipt search/count controls, receipt evidence cards, empty state, and local-storage note now use the same smoked-glass/material language with stronger text contrast.
-- Receipt/expense detail sheets and modals remain on the existing Phase 4 modal treatment; this pass themes the Records tab itself only.
-
-
-## Corporate Atrium — Money tab
-
-- Extended the proven Home + Work Corporate Atrium scene to the Money view without changing invoice, payment, or expense business logic.
-- Money now shares the same embedded atrium plate, stable iPad/Safari lighting profile, and subtle dynamic architectural lighting.
-- Money-specific surfaces (metric cards, invoice/payment/expense ledgers, filters, pagination, and actions) use dense smoked glass with semantic green/amber/red casts.
-- Invoice/payment/expense modals and detail sheets remain on the existing Phase 4 modal treatment for now; only the Money tab itself was themed in this pass.
-
-## Corporate Atrium — Work tab extension
-
-- The proven Home atrium environment is now also active on the Work tab.
-- Work keeps its existing Sessions/Clients structure and functionality, but its heading, actions, segment control, search/filter controls, session table, pagination, and client cards now use the same smoked-glass/material system.
-- The existing subtle architectural-light animation continues on Work without moving the large background image.
-- Safari/iPad retains the lite rendering profile with reduced blur on large Work surfaces for smooth scrolling.
-- Money and Records remain on the prior theme for now.
-
-## Corporate Atrium embedded-scene fix
-
-- The approved atrium photograph is now embedded directly in `styles.css` as a data URI. This removes the failure mode where the app silently fell back to the synthetic dark SVG because the nested `assets/atrium-primary.jpg` file was missing, stale, or not uploaded to GitHub Pages.
-- Added cache-busting query versions to `styles.css` and `app.js` for deployment testing.
-- Reduced synthetic light-rail opacity and global darkening so the actual glass walls, skyline, plants, seating, and reflective marble floor remain clearly visible.
-- iPad/Safari keeps the stabilized non-scroll-linked motion profile.
-
-## Stability pass highlights
-
-- Replaced third-party atrium image dependency with a bundled local background asset so Home no longer depends on remote image hosts.
-- Removed scroll-linked atrium motion and added an automatic lite profile for iPad/Safari/coarse-pointer environments to reduce shimmer and static during scrolling.
-- Reduced blur and glass complexity on the Home scene for more stable rendering while preserving the atrium look.
-
-# Business Ledger — Phase 4 Expenses Alpha
-
-This checkpoint activates the outgoing-money side of Business Ledger while preserving the existing Client → Session → Invoice → Payment architecture.
+Business Ledger records work performed, money received, money spent, and supporting evidence. It distinguishes Business, Mixed, and Personal spending without interpreting those records for taxes or calculating travel mileage.
 
 ## Active workflows
 
-- Multi-workspace business/gig separation
-- Clients with visual color identities
-- Work sessions with rate snapshots and 5-minute radial time entry
-- Invoices, partial/full payments, and direct income
-- Expenses with Business / Mixed / Personal use classification
-- Separate original total and business-use amount
-- Streamlined bookkeeping categories: Food, Gas, Parking, Car, Subscriptions, Misc, Fees, and Work Equipment
-- Business-purpose notes and optional client/session linking
-- Needs Review queue integrated with Home Attention
-- Optional receipt image/PDF attachment
-- Receipt Vault in Records with merchant/category/file search
-- Direct filter menus and 7-record pagination across long financial lists
-- Workspace-local date logic using America/Los_Angeles for Play It Forward
+- Clients and work sessions, including the single-clock session editor and client-scoped quick-time presets
+- Invoices and invoice-linked payments
+- Direct income
+- Expenses with Business, Mixed, or Personal classification
+- Business-use amounts and bookkeeping categories
+- Optional receipts and record evidence
+- Dashboard analytics sourced from the retained work and money records
+- JSON export and local browser persistence
 
-## Receipt storage
+## Preserved financial classification
 
-Structured financial records remain in browser localStorage through the versioned LocalRepository. Receipt file bytes are stored separately in browser IndexedDB so image/PDF data is not embedded in the expense JSON.
+The retirement does not change expense classification or category behavior.
 
-This remains a local prototype. Do not treat it as secure production storage for sensitive client or tax documents yet.
+- Original expense totals remain intact.
+- Business expenses retain their business-use amount.
+- Mixed expenses retain both the original total and business portion.
+- Personal expenses retain a zero business portion.
+- Food, Gas, Parking, Car, Subscriptions, Misc, Fees, and Work Equipment remain available.
+- Older saved expense-category labels remain readable.
 
-The current JSON backup contains the structured expense and receipt metadata, but **does not package the receipt file bytes**. Restore/import is still intentionally deferred.
+These fields are bookkeeping context. The app does not claim that a category or business-use amount is deductible.
 
-## Expense design rules
+## Compatibility boundary
 
-- `totalCents` records what was actually spent.
-- `businessCents` records the business-use portion without destroying the original amount.
-- Business classification = 100% business portion.
-- Personal classification = $0 business portion.
-- Mixed classification requires a business portion between $0 and the total.
-- Expense category is bookkeeping context, **not a tax deduction decision**.
-- A missing business-purpose note on Business/Mixed entries automatically sends the expense to Needs Review.
-- Receipts are optional and remain evidence linked to the expense rather than determining the accounting amount.
+Existing schema-version 9 workspaces still load. Legacy `vehicles` and `mileageTrips` collections are accepted as inert compatibility data so opening an older local workspace is non-destructive. No current view, metric, search result, command, form, or mutation consumes those collections.
 
-## Suggested Phase 4 test
+## Analytics review fixture
 
-1. Add a Business expense with a purpose and no receipt.
-2. Add a Mixed expense and verify the business portion cannot exceed/equal the total.
-3. Add a Personal expense and confirm its business portion remains $0.
-4. Attach an image or PDF receipt and confirm it appears in Records → Receipt Vault.
-5. Edit the expense and replace/remove the receipt.
-6. Mark an expense Needs Review and confirm it appears on Home → Attention.
-7. Mark it reviewed from the expense detail panel and confirm it disappears from Attention.
-8. Link an expense to a client/session and verify the context appears in expense detail.
-9. Test the Expenses filter and pagination with more than seven records.
-10. Search receipt file names/merchants/categories from Records.
-11. Refresh the browser and verify the structured records and local receipt remain available.
+The body attribute `data-analytics-sample="true"` enables deterministic, presentation-only sample data for device review. The fixture is never saved to localStorage and never enters exports or evidence history. Remove the attribute when live-only analytics review is desired.
 
-## Deferred by design
+## Run
 
-- Backup restore/import
-- Mileage and vehicles (Phase 5)
-- Tax deduction logic / Schedule C mapping (Phase 6)
-- Full evidence/audit drill-down (Phase 7)
-- Bank transaction importing and reconciliation (Phase 11)
-- Secure cloud authentication/sync and encrypted file storage
+Serve this directory with any static web server and open `index.html`.
 
-## Phase 4 usability refinement 1
-Desktop/tablet layouts now support an optional collapsible left sidebar. Use the small edge chevron to collapse the navigation; the sidebar fades/slides away and the main workspace expands to use the reclaimed width. Press the same control again to restore the full sidebar. The preference is stored locally. Mobile bottom navigation is unchanged.
+## Validate
 
-### Refinement 2 — default collapsed navigation + fluid top bar
-On a fresh desktop/tablet visit, Business Ledger opens on Home with the sidebar collapsed to maximize usable workspace. The edge chevron remains visible with a subtle traveling accent glow as a discoverability cue. Once the user expands/collapses it, that preference is saved locally for later visits. The sticky top utility area now fades into the page with a gradient blur rather than presenting as a hard translucent rectangle while scrolling.
+```bash
+node --check app.js
+node --test tests/*.test.js
+```
 
-### Top utility blending
-The sticky search/profile region intentionally avoids applying a full-width backdrop blur. A short page-colored fade now protects control readability while allowing bright underlying text and cards to pass beneath without turning into a broad gray haze.
-
-## Corporate Atrium Home prototype
-The Home view now uses the Corporate Atrium visual system while the rest of Phase 4 remains visually unchanged for A/B review. The environment uses remote Unsplash image plates with a bundled SVG fallback. Unsplash source references used for the prototype environment:
-- E Vos — “Modern office interior with glass walls and walkways” (Unsplash, free under the Unsplash License).
-- Fer Troulik — “Modern office interior with glass walls and reflections” (Unsplash, free under the Unsplash License).
-
-No people animation or randomized ambient events are active in this build.
-
-## Safari scroll stability pass
-
-This build specifically reduces the small visual snap that can occur when iPad/iPhone Safari collapses or expands its browser chrome during the first scroll. The atrium scene now uses a stable large-viewport (`lvh`) canvas rather than a fixed element constrained by both `top` and `bottom`, while themed page minimum heights use the stable small viewport (`svh`). Height-only Safari resize events are ignored by the atrium runtime; true width changes such as rotation and Split View still refresh the layout. The browser's own toolbar collapse still changes how much of the webpage is visible, but the app should no longer re-crop/re-scale the photographic background at the same moment.
-
-### Phase 6 Tax Layer
-The Taxes workspace now includes Overview, Mileage, Vehicles, and Deductions. It summarizes a selected tax year from existing source records, applies date-aware standard-mileage planning rates, surfaces review gaps, and provides quarterly planning context. It does not prepare a return or calculate final federal/state tax liability.
-# Business Ledger — Phase 7 Traceability / Evidence
-
-Phase 7 adds evidence drill-through and record history to the completed Phase 6 tax layer. Derived tax figures can now be reconciled to their contributing Payments, Expenses, and Mileage records without creating a new navigation destination or altering source data. Schema v9 also preserves structured final snapshots for newly deleted records.
-# Business Ledger — Phase 8 Dashboard / Analytics
-
-Phase 8 expands Home with a calm analytics workspace. It adds selectable ranges, prior-period comparisons, monthly business-flow and work trends, client/source income and workload, expense-category patterns, invoice collection health, and full source-record drill-through. All analytics are calculated at render time from the existing Phase 7 source-of-truth model.
-# Phase 8 Analytics Chart Refinement
-
-This refinement adds proportional currency axes, a continuously scrubbable monthly net-movement chart, a separate Income vs Expenses trend, and small traceable donut charts for income sources and expense categories. Every visualization responds to the Analytics date-range control and remains derived from authoritative source records.
-
-## Temporary category-column review data
-
-This revision intentionally opens Analytics with a six-month, seeded synthetic review fixture so the complete Analytics workspace can be judged on iPad without running the Node test harness. It varies active income sources, payment sizes and methods, expense categories and merchants, mixed-use amounts, session durations, rates, and uninvoiced work across April through September 2026. The randomization is deterministic, so figures remain stable while the user explores the interface. It affects presentation only and is not saved.
-
-After design approval, remove `data-analytics-sample="true"` from the `<body>` element in `index.html`. The existing live-record path resumes immediately; no migration or cleanup is required.
-
-# Entry Memory + Expense Category Refinement
-
-Successful new entries now remember their recurring selections per workspace. New expenses reopen with the last submitted classification and category; the same principle also carries forward relevant selections for payments, sessions, invoices, mileage, clients, and vehicles. On the first use after this update, compatible choices are inferred from the newest existing record. Explicit launch context—such as recording a payment from a specific invoice—continues to take priority. Abandoned forms and edits do not change these defaults.
-
-New expense entries use Food, Gas, Parking, Car, Subscriptions, Misc, Fees, and Work Equipment. Existing expenses retain their original saved category and label, including when edited or viewed in historical analytics and tax summaries.
+This is a local browser prototype, not a production storage or security model.

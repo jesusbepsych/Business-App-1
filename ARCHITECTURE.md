@@ -1,328 +1,95 @@
-> Corporate Atrium Records extension: the shared atrium scene is now active across Home, Work, Money, and Records. Records-specific glass styling is presentation-only; receipt-vault data flow and detail/modals are unchanged.
-
-## Corporate Atrium embedded-scene fix
-
-- The approved atrium photograph is now embedded directly in `styles.css` as a data URI. This removes the failure mode where the app silently fell back to the synthetic dark SVG because the nested `assets/atrium-primary.jpg` file was missing, stale, or not uploaded to GitHub Pages.
-- Added cache-busting query versions to `styles.css` and `app.js` for deployment testing.
-- Reduced synthetic light-rail opacity and global darkening so the actual glass walls, skyline, plants, seating, and reflective marble floor remain clearly visible.
-- iPad/Safari keeps the stabilized non-scroll-linked motion profile.
-
-> Stability pass note: the Home atrium scene now uses a bundled local image plate plus a runtime lite-profile for Safari/iPad/coarse-pointer devices to avoid scroll shimmer and fallback issues.
-
 # Business Ledger — Architecture
 
-## Current build
+## Revision 44 product boundary
 
-Phase 0 foundation, Phase 1 work records, Phase 2 invoices, Phase 3 payments/income ledger, and Phase 4 expenses/receipt evidence are active.
+Business Ledger records:
 
-## Product principle
+- work performed;
+- money received;
+- money spent;
+- supporting records and receipts.
 
-Enter information once, then reuse it everywhere. Every summarized dollar should ultimately be traceable to a source record and supporting evidence.
+It distinguishes Business, Mixed, and Personal activity. It does not interpret records for taxes, estimate tax liability, calculate mileage, or manage vehicles.
 
-## Device strategy
+## Permanent navigation
 
-The application remains browser-first and responsive across desktop, iPad, and iPhone widths. Domain/data logic stays separate from device-specific capabilities so the same core can later sit inside a native iOS/iPadOS shell or PWA without redesigning the financial model.
+**Home · Work · Money · Records**
 
-## Persistence strategy
+Money contains contextual Invoices, Payments, and Expenses tabs. Taxes, Mileage, and Vehicles have no navigation destination, form, command, search result, dashboard counter, or derived analytics view.
 
-The prototype uses a versioned `LocalRepository` backed by browser local storage. This is **not** the intended production security model. It exists so early workflows can be tested before secure authentication/cloud synchronization is connected.
-
-A production repository should implement the same application-facing boundary while adding authenticated identity, workspace authorization, secure cross-device synchronization, conflict handling, encrypted object storage, recovery/backups, offline queueing where useful, and sync/version metadata.
-
-## Core domain relationships
+## Core relationships
 
 ```text
-Account / Identity
-  └── Business Workspace
-        ├── Clients
-        │     └── Work Sessions
-        │            └── Invoice Line Item ──> Invoice ──> Payments
-        ├── Direct Income ────────────────────────────────> Payments
-        ├── Expenses ──> Receipts (active) / Documents (later)
-        ├── Vehicles ──> Trips / Mileage (later)
-        ├── Tax Years ──> Estimated Payments (later)
-        └── Documents
+Business Workspace
+├── Clients
+│   └── Work Sessions
+│       └── Invoice Line Item ──> Invoice ──> Payments
+├── Direct Income ──────────────────────────> Payments
+├── Expenses ──> Receipts
+└── Audit Events / Evidence Snapshots
 
-Material mutations ──> Audit Events / Traceability
-Structured records ──> Analytics / Automation / AI (later phases)
+Structured work and money records ──> Dashboard Analytics
 ```
 
-## Schema version 6
+## Persistence
+
+The prototype uses a versioned `LocalRepository` backed by browser localStorage. Receipt bytes use IndexedDB while receipt metadata remains in the structured workspace.
+
+Schema-version 9 data remains loadable. The legacy `vehicles` and `mileageTrips` arrays are accepted and preserved only to avoid destructive loading of an older workspace. They are retired compatibility fields: active application code does not read, render, search, edit, count, or derive values from them.
+
+A production repository should add authenticated workspace authorization, encrypted synchronization, conflict handling, recovery, and secure object storage behind the same application-facing boundary.
+
+## Active entities
 
 ### Business
-- id
-- display_name / legal_name
-- entity_type
-- currency / timezone
-- status
-- invoice_settings
-  - prefix
-  - next_number
-  - default_due_days
-  - sender_email / phone / address
-  - payment_instructions
-- created_at / updated_at
+
+Workspace identity, currency/timezone, status, and invoice settings.
 
 ### Client
-- id
-- business_id
-- display_name
-- status
-- default_rate_cents
-- color_key (curated visual identity; presentation aid only)
-- billing_email / billing_address
-- notes
-- created_at / updated_at
+
+Workspace-scoped display identity, active status, default hourly rate, visual color, billing details, notes, and timestamps.
 
 ### WorkSession
-- id
-- business_id
-- client_id
-- client_name_snapshot
-- date
-- start_time / end_time
-- duration_minutes
-- rate_snapshot_cents
-- notes
-- invoice_status (`uninvoiced`, `draft`, `invoiced`)
-- invoice_id
-- created_at / updated_at
+
+Client link and snapshot, date, start/end time, duration, rate snapshot, note, invoice state/link, and timestamps.
 
 ### Invoice
-- id
-- business_id
-- human-readable sequential invoice number
-- client_id
-- recipient snapshot
-- sender snapshot
-- issue date / due date
-- persistence status (`draft`, `sent`, `void`)
-- display state derived with payments (`Draft`, `Sent`, `Partially paid`, `Paid`, `Overdue`, `Void`)
-- line items
-  - session-backed line item or custom line item
-  - description snapshot
-  - quantity / quantity minutes
-  - rate cents
-  - amount cents
-  - source session id when applicable
-- note
-- sent_at / voided_at
-- created_at / updated_at
+
+Sequential number, sender/recipient snapshots, issue/due dates, state, session-backed or custom line items, notes, totals, and timestamps.
 
 ### Payment
-- id
-- business_id
-- kind (`invoice`, `direct`)
-- invoice_id when invoice-linked
-- invoice_number_snapshot
-- client_id when known
-- client_name_snapshot
-- source_name for direct income
-- description for direct income
-- amount_cents
-- received_date
-- method
-- reference / confirmation
-- notes
-- created_at / updated_at
 
-### AuditEvent
-- id
-- business_id
-- event_type
-- entity_type / entity_id
-- details
-- occurred_at
-
-## Invoice + payment integrity rules
-
-1. Invoice value and cash received are separate concepts and separate entities.
-2. Money “Received” totals are calculated from Payment records, not invoice totals.
-3. A sent invoice balance = invoice snapshot total − linked Payment total.
-4. Partial payments are valid and produce a derived `Partially paid` state unless the remaining balance is already overdue.
-5. Full payment produces a derived `Paid` state with a zero balance.
-6. Invoice-linked payments cannot exceed the invoice balance available before that payment.
-7. An invoice with linked payments cannot have billable contents edited, be moved back to Draft, or be voided until the linked payments are corrected/removed.
-8. Deleting or editing a payment immediately recalculates invoice balance/status.
-9. Direct income uses a Payment record with no invoice, avoiding fake invoices solely for bookkeeping.
-10. Future bank imports should match a bank deposit to an existing Payment record instead of creating a second income record.
-11. Invoice sender, recipient, descriptions, rates, and totals remain historical snapshots.
-12. Invoice numbers remain sequential per business and are never reused.
-13. Client color is a presentation attribute only; it never changes billing, tax, or accounting behavior.
-
-## Broader data rules
-
-- Money is stored in integer minor units (cents), never floating point.
-- Historical work sessions keep their own rate snapshot.
-- Tax classification stays separate from bookkeeping classification.
-- Mixed business/personal use must remain representable without destroying original transaction amounts.
-- Files are linked records rather than embedded business logic.
-- Every entity belongs to a business workspace.
-- User-facing identifiers can differ from internal IDs.
-- Tax and mileage rules will be versioned by tax year.
-- AI may suggest classifications later; material financial/tax changes require confirmation.
-- Summarized values should remain drillable to source records.
-
-## UI architecture
-
-Permanent navigation remains **Home · Work · Money · Records**.
-
-Money now uses contextual **Invoices / Payments / Expenses** tabs instead of adding permanent top-level navigation. Expense entry is available from Quick Add and from the Expenses panel; invoice settings remains visually de-emphasized as a utility action.
-
-## Security direction
-
-Production sync should add authorization on every workspace-scoped query, encryption in transit and at rest, passkeys/MFA, short-lived document access, no client-side secrets, session/device management, rate limiting, backups/recovery, least-privilege integrations, no plaintext bank credentials, and tamper-resistant history for material records.
-
-## Phase 4 expense + receipt model
+Invoice-linked or direct income, source/client snapshots, amount, received date, method, reference, note, and timestamps.
 
 ### Expense
-- id / business_id
-- date
-- merchant / description
-- total_cents (what actually left the user)
-- classification (`business`, `mixed`, `personal`)
-- business_cents (preserves the business-use portion separately)
-- category (bookkeeping category only; not a tax determination)
-- business_purpose
-- optional client_id / client_name_snapshot
-- optional session_id plus session date/time snapshots
-- review_status (`ready`, `needs_review`)
-- receipt_id
-- created_at / updated_at
 
-### Receipt metadata
-- id / business_id / expense_id
-- file_name / mime_type / size
-- created_at
+Date, merchant/description, original total, classification, business-use amount, bookkeeping category, optional business purpose and work context, review state, optional receipt, and timestamps.
 
-Receipt file bytes are stored separately in browser IndexedDB for the prototype. Structured financial data stays in LocalRepository/localStorage. This mirrors the production direction where financial records and encrypted object storage should remain separate services linked by IDs.
+### Receipt
 
-### Expense integrity rules
-1. Original expense total is never replaced by a deductible/business amount.
-2. Business expenses default to 100% business use; personal expenses preserve a $0 business portion; mixed expenses require a business portion greater than $0 and less than the original total.
-3. Expense categories are bookkeeping labels only. Tax treatment is deferred to Phase 6.
-4. A missing business-purpose note automatically places business/mixed expenses into `needs_review`; the user can also manually keep any expense in review.
-5. Receipts are optional. Attaching/replacing/deleting a receipt never changes the expense amount.
-6. Client/session links are optional context. If a linked client or session is deleted later, the expense survives and retains useful snapshots rather than being deleted with work records.
-7. Receipt metadata is included in structured data; receipt file bytes are intentionally not included in the current JSON backup yet.
+Workspace/expense link plus file metadata. File bytes remain separate from the structured financial record.
 
-## Next engineering slice
+### AuditEvent and EvidenceSnapshot
 
-Phase 5 should introduce mileage + vehicle tracking as its own focused workflow:
+Trace material mutations and preserve final structured copies of deleted records without participating in active totals.
 
-- vehicle records
-- manual business-trip logging
-- start/end locations and mileage
-- client/session association
-- business-purpose notes
-- yearly mileage totals
-- tax-year mileage rates later consumed by Phase 6
-- later GPS-assisted trip suggestions only after manual logging feels solid
+## Financial integrity rules
 
-## Phase 3 refinement 4 UI behavior
+1. Money uses integer cents.
+2. Invoice value and received cash are separate concepts.
+3. Received totals come from Payment records, not invoice totals.
+4. Historical sessions keep their own rate snapshot.
+5. Original expense totals are never replaced by business-use amounts.
+6. Business expenses may carry a 100% business portion; Personal expenses carry a zero business portion; Mixed expenses retain a portion between zero and the original total.
+7. Categories are bookkeeping labels and do not constitute tax treatment.
+8. Client/session links on expenses are optional context; expenses survive deletion of linked work through snapshots.
+9. Receipt changes do not change expense amounts.
+10. Summaries remain traceable to retained source records.
 
-The invoice work-session selector is a bounded nested scroll region; this is presentation-only and does not change invoice/session relationships. Home recent-session rotation is also presentation-only: it samples from the twelve most recent session records and never mutates or reorders stored data.
+## UI and device strategy
 
+The app is browser-first and responsive across desktop, iPad, and iPhone widths. Device-specific rendering optimizations do not change domain behavior. Analytics sample fixtures are presentation-only and never enter the repository.
 
-## Phase 3 refinement 7 interaction rules
+## Retirement guardrail
 
-- Status filters use direct-select popovers rather than cycle-on-click behavior; the underlying filter state remains UI-only and does not modify stored records.
-- Sessions, Invoices, and Payments use bounded list pagination to keep long ledgers scannable without increasing permanent screen density.
-- Invoice `Select all / Clear` operates only on currently eligible session checkboxes and still feeds the same immutable invoice snapshot workflow.
-- Home Invoice earnings is cumulative across recorded invoice-linked Payments; the `All time` label clarifies that display basis without changing calculation logic.
-## Workspace time semantics
-
-- Event/audit timestamps (`createdAt`, `updatedAt`, `occurredAt`) remain UTC ISO instants.
-- Date-only business records (session date, invoice issue/due date, payment received date) are calendar dates interpreted using the active workspace timezone.
-- “Today,” overdue status, current-month metrics, and default form dates use the workspace timezone (`America/Los_Angeles` for Play It Forward), preventing UTC day-boundary shifts.
-- Date-only display formatting is timezone-neutral so a stored `YYYY-MM-DD` does not move backward/forward when viewed on a device in another timezone.
-
-
-## Collapsible navigation shell
-The desktop sidebar collapse state is intentionally UI-only and does not touch business data or schema versioning. The app shell transitions its grid from `260px + main` to `0px + main`, allowing the existing responsive content grids to reflow naturally rather than leaving a reserved blank column. The preference is stored separately from financial data under `business-ledger-sidebar-collapsed`. Mobile navigation remains a separate presentation path below 921px.
-
-## UI state refinement — sidebar default and top-bar veil
-The sidebar remains a layout state rather than an overlay. If no preference exists, its desktop/tablet default is collapsed; after the user explicitly toggles it, `business-ledger-sidebar-collapsed` persists that choice. The Home view remains the initial application view. The sticky utility bar uses a masked gradient blur layer so content protection fades into the document rather than creating a hard rectangular occlusion boundary.
-
-### Sticky utility scrim
-The desktop/tablet topbar uses an alpha-faded page-color scrim rather than a full-width `backdrop-filter`. This is deliberate: backdrop blur spreads bright underlying pixels and can create a visible light band over text/cards on dark themes. The controls themselves provide their own surface contrast, while the scrim only manages the transition between document content and the sticky utility region.
-
-## Corporate Atrium Home visual architecture
-The Home theme is isolated from domain/business logic.
-
-Visual stack (back to front):
-1. `#homeAtriumScene` fixed physical environment.
-2. Primary sharp office photo plate + local SVG fallback.
-3. Secondary masked architectural plate for side/depth variation.
-4. CSS structural light rails / floor glints / atmosphere.
-5. Existing live Business Ledger shell and Home DOM.
-6. Local `backdrop-filter` on the actual Home cards/panels.
-7. Environment-aware reflection pseudo-elements driven by CSS variables.
-
-`setView()` toggles `body.home-atrium-active`, so navigating to Work/Money/Records removes the atrium visual layer without altering any application data or view behavior. Pointer/touch/scroll input only changes presentation CSS variables and never persists to financial data.
-
-> Money view now participates in the shared atrium scene and runtime profile. Its page-level surfaces are themed; modal/detail architecture is unchanged.
-
-
-## Phase 5 domain additions
-
-### Vehicle
-`Vehicle` belongs to one workspace and stores descriptive identity (`year`, `make`, `model`, optional `nickname`), `status`, optional `odometer`, `isPrimary`, notes, and timestamps. Only an active vehicle should be primary.
-
-### MileageTrip
-`MileageTrip` belongs to one workspace and stores the source facts of a trip: `date`, `miles`, Business/Personal `classification`, optional route labels, business purpose, vehicle link + vehicle snapshot, optional client/session links + snapshots, review state, notes, and timestamps. Mileage is intentionally separate from `Expense`.
-
-### Relationship rules
-- A mileage trip may link to a Vehicle, Client, and WorkSession, but survives deletion of those source records using snapshots.
-- Vehicle deletion detaches linked trips while preserving `vehicleNameSnapshot`.
-- Session/client deletion detaches mileage links while preserving client/session context snapshots.
-- Phase 6 may interpret mileage for tax purposes but should not rewrite the original trip facts.
-## Phase 7 traceability + evidence layer
-
-Phase 7 is cross-cutting and does not add a sixth navigation destination. Derived tax figures expose compact evidence drill-throughs that use the exact same year model as the visible totals. Each drill-through identifies the contributing source collection and reconciles its own displayed total before linking into the existing record detail.
-
-Schema v9 adds `evidenceSnapshots` for final structured copies of records deleted after migration. Audit history is retained rather than filtered away on deletion. These snapshots are evidence only: they never participate in active bookkeeping, invoice balances, tax totals, or dashboard calculations.
-
-Source authority remains unchanged:
-
-- Invoice = billed/earned record and immutable issued snapshot.
-- Payment = cash received and the only source for received-income totals.
-- Expense = money out, with original and business-use amounts kept distinct.
-- MileageTrip = driving fact; the tax layer derives a planning amount by trip date.
-- Receipt = optional evidence attached to an Expense; it never changes the amount.
-## Phase 8 dashboard + analytics layer
-
-Phase 8 remains inside Home as a contextual `Snapshot / Analytics` switch. This preserves the five permanent destinations and keeps the mobile navigation from becoming denser.
-
-Analytics are pure derived projections and are never persisted as transactions or cached totals:
-
-- received income reads `payments.amountCents` by `receivedDate`;
-- business spending reads `expenses.businessCents` by expense `date`;
-- Net Received is received income minus business-use spending for the same range and is not presented as reconciled bank cash or taxable profit;
-- hours and uninvoiced value read Work Session date/time/rate facts;
-- client/source income reads Payment client/invoice relationships and saved snapshots;
-- client workload reads Work Sessions independently of payment status;
-- invoice health reads issued Invoice snapshots plus linked Payment totals.
-
-The Analytics period is an inclusive user-selected `From` month/year through `To` month/year. It defaults to the latest six months. A historical ending month includes its complete calendar month, while the current ending month is capped at the business's current date. The main KPI numbers and every analytics projection use this full selected range.
-
-KPI trend context is deliberately narrower and stable: the selected ending calendar month is compared with the immediately preceding calendar month. Each card names both months and shows the prior-month value so the range total and monthly comparison cannot be mistaken for the same scope. Percentage change is omitted when the previous month is zero because no finite percentage exists.
-
-Every aggregate retains a drill-through predicate and opens the Phase 7 evidence surface with the exact contributing records. Charts are inline SVG with keyboard-selectable month targets; they add no network dependency and remain static under the Safari/iPad lite profile.
-
-Billing Health derives its visual state from the issued-invoice collection rate without persisting a separate health record: above 80% is healthy, 50–80% is watch, and below 50% is critical. With no billed amount, the ring is neutral. The red critical pulse is presentation-only and is replaced by a static glow under Reduced Motion.
-
-The Expense Category Breakdown renders one continuous $250 mosaic grid per month on the same proportional currency axis used by the other analytics charts. Category fragments flow through those units without resetting unit boundaries. A final unit may be partial: its colored fill stops at the exact saved amount while its full $250 outline remains visible as a measurement guide. The graph domain always reserves at least one complete unit so low-value months remain legible. These SVG blocks are derived presentation only and do not quantize, mutate, or persist expense values.
-## Phase 8 chart refinement
-
-The Business Flow graph now plots monthly `payments.amountCents − expenses.businessCents`. Its currency domain always includes zero and expands proportionally to the selected range, including negative movement. Pointer tracking uses the rendered SVG path for continuous visual interpolation; the displayed tooltip anchors to the nearest source month. A horizontal drag suppresses the subsequent click so scrubbing does not unintentionally open evidence.
-
-Income vs Expenses plots the two underlying monthly series separately. Client/source income and expense categories use full-width share bars based on the same filtered rollups. A track represents the complete selected-range total and its colored fill represents the row amount divided by that total; the unfilled portion remains visually present through a quiet smoked texture. A compact percentage beside each row name exposes the same share numerically: linked income sources use the client's saved color, unlinked sources use the analytics fallback palette, and expense percentages use the orange expense accent. The denominator always includes the full filtered dataset rather than only the current page. Each ranking card exposes its complete selected-range total in the header, shows four items per page, and keeps a stable four-row visual footprint so shorter final pages do not reflow neighboring content. Drill-through records remain unabridged.
-
-All chart models are rebuilt from the current Analytics range on every render. No chart data is persisted.
-
-## Workspace entry defaults and category compatibility
-
-Entry defaults are lightweight UI preferences stored separately from financial source records and keyed by workspace. They are written only after successful creation and never enter the audit trail as financial events. Record edits always render the record's own saved values, while explicit creation context overrides remembered defaults.
-
-The active expense-category vocabulary is Food, Gas, Parking, Car, Subscriptions, Misc, Fees, and Work Equipment. The display layer retains a legacy label map so older expenses remain understandable and traceable without data migration. Tax rollups discover categories from source records rather than assuming only the active menu, while both legacy Vehicle & fuel and the new Gas/Car categories continue to participate in vehicle-operating-cost planning.
+Future work should not reintroduce tax interpretation, mileage calculation, vehicle management, or related counters through generic analytics or classification changes. Gas, Parking, Car, Work Equipment, and Business/Mixed/Personal classification remain ordinary bookkeeping concepts.

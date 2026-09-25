@@ -111,7 +111,6 @@
 /* Compact dates reclaim horizontal space in the other entry consoles too. */
 .expense-compose-sheet .compose-chips{grid-template-columns:1fr 1.35fr .9fr 1.2fr max-content}
 .payment-compose-sheet .payment-compose-chips{grid-template-columns:1fr 1.5fr .9fr 1fr max-content}
-.mileage-context-rail{grid-template-columns:minmax(240px,1.35fr) minmax(190px,.8fr) max-content}
 .invoice-calendar-basics{grid-template-columns:minmax(220px,1.45fr) minmax(145px,.7fr) max-content max-content}
 .invoice-calendar-basics .compact-date-control{grid-template-columns:44px max-content}
 

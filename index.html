@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
-  <meta name="description" content="A fast, traceable workspace for independent business work, money, records, and taxes." />
+  <meta name="description" content="A fast, traceable workspace for independent business work, money, and records." />
   <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles-r42-expense-ledger-order.css" />
+  <link rel="stylesheet" href="styles-r44-core-ledger.css" />
   <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
   <link rel="stylesheet" href="clock-companion.css?v=r24" />
   <link rel="stylesheet" href="compact-calendar.css?v=r26" />
@@ -42,7 +42,6 @@
         <button class="nav-item active" data-view="home"><span class="nav-icon">⌂</span><span>Home</span></button>
         <button class="nav-item" data-view="work"><span class="nav-icon">◫</span><span>Work</span></button>
         <button class="nav-item" data-view="money"><span class="nav-icon">$</span><span>Money</span></button>
-        <button class="nav-item" data-view="taxes"><span class="nav-icon">↝</span><span>Taxes</span></button>
         <button class="nav-item" data-view="records"><span class="nav-icon">▤</span><span>Records</span></button>
       </nav>
 
@@ -69,7 +68,7 @@
       <section class="view active home-atrium-view" data-page="home">
         <div class="content-wrap home-atrium-content">
           <div class="page-heading">
-            <div><p class="eyebrow" id="homeEyebrow">PLAY IT FORWARD</p><h1>Your business, in one place.</h1><p class="subtitle">Work first. Money and tax traceability build on the same records.</p></div>
+            <div><p class="eyebrow" id="homeEyebrow">PLAY IT FORWARD</p><h1>Your business, in one place.</h1><p class="subtitle">Work, money, and supporting records stay connected in one workspace.</p></div>
             <button class="primary-btn" id="quickAddBtn"><span>＋</span> Add</button>
           </div>
 
@@ -90,7 +89,7 @@
           <div class="two-column">
             <article class="panel-card focus-card">
               <div class="panel-title-row"><div><p class="eyebrow">ATTENTION</p><h2 id="attentionTitle">Nothing needs your attention.</h2></div><span class="quiet-badge" id="attentionCount">0 items</span></div>
-              <div id="attentionBody"><p class="panel-copy">As data grows, this becomes the single queue for missing session details, overdue invoices, receipts, mileage review, and tax reminders.</p></div>
+              <div id="attentionBody"><p class="panel-copy">As data grows, this becomes the single queue for incomplete sessions, overdue invoices, expenses, and records that need review.</p></div>
               <div class="empty-illustration" aria-hidden="true"><div class="line l1"></div><div class="line l2"></div><div class="line l3"></div><div class="check">✓</div></div>
             </article>
 
@@ -154,7 +153,7 @@
       <section class="view work-atrium-view" data-page="work">
         <div class="content-wrap work-atrium-content">
           <div class="page-heading work-heading">
-            <div><p class="eyebrow">WORK</p><h1>Clients and sessions.</h1><p class="subtitle">Record the work once; later phases turn the same session into invoices, mileage links, expenses, and analytics.</p></div>
+            <div><p class="eyebrow">WORK</p><h1>Clients and sessions.</h1><p class="subtitle">Record the work once, then carry the same session into invoices, expenses, and analytics.</p></div>
             <div class="heading-actions"><button class="secondary-btn" id="addClientBtn">Add client</button><button class="primary-btn" id="addSessionBtn">＋ Work session</button></div>
           </div>
 
@@ -166,7 +165,7 @@
           <div class="work-tab active" data-work-panel="sessions">
             <div class="work-toolbar">
               <div class="mini-search"><span>⌕</span><input id="sessionSearch" placeholder="Search sessions or clients" /></div>
-              <button class="filter-pill" id="sessionFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All sessions</button>
+              <div class="work-filter-actions"><button class="subfilter-trigger" id="sessionClientSubfilterBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Filter sessions by client" title="Filter by client"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="11" cy="18" r="2"/></svg></button><button class="filter-pill" id="sessionFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All sessions</button></div>
             </div>
             <div class="data-card" id="sessionsContainer"></div>
           </div>
@@ -219,60 +218,11 @@
           <div class="money-tab" data-money-panel="expenses">
             <div class="money-list-head expense-list-head">
               <div><p class="eyebrow">EXPENSE LEDGER</p><h2>Money spent</h2><div class="expense-summary-line"><span id="expenseMonthTotal">$0 this month</span><span id="expenseBusinessTotal">$0 business portion</span></div></div>
-              <div class="expense-head-actions"><button class="filter-pill" id="expenseFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All expenses</button><button class="primary-btn compact-action" id="addExpenseBtn">＋ Expense</button></div>
+              <div class="expense-head-actions"><button class="subfilter-trigger expense-category-trigger" id="expenseCategorySubfilterBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Filter expenses by category" title="Filter by category"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="11" cy="18" r="2"/></svg></button><button class="filter-pill" id="expenseFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All expenses</button><button class="primary-btn compact-action" id="addExpenseBtn">＋ Expense</button></div>
             </div>
             <div class="data-card" id="expensesContainer"></div>
           </div>
-          <div class="phase-next-note"><span>↳</span><div><strong>One financial event, one source record.</strong><small>Invoices, received payments, and expenses stay separate so later tax and bank-reconciliation layers can use the same records without double counting.</small></div></div>
-        </div>
-      </section>
-
-      <section class="view taxes-atrium-view" data-page="taxes">
-        <div class="content-wrap taxes-atrium-content">
-          <div class="page-heading taxes-heading">
-            <div><p class="eyebrow">TAXES</p><h1>Tax context, without the spreadsheet.</h1><p class="subtitle">A planning layer built from the records you already keep. Source transactions stay untouched while this view summarizes income, business-use expenses, mileage, and review gaps.</p></div>
-            <div class="heading-actions taxes-actions"><label class="tax-year-control"><span>Tax year</span><select id="taxYearSelect" aria-label="Tax year"></select></label><button class="secondary-btn" id="addVehicleBtn">＋ Vehicle</button><button class="primary-btn" id="addMileageBtn">＋ Mileage</button></div>
-          </div>
-
-          <div class="tax-metric-grid tax-overview-metrics">
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Received income</span><span class="muted-chip tax-chip-income">Year</span></div><strong class="metric-value" id="taxYearIncome">$0</strong><span class="metric-caption">Payments actually received</span></article>
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Business expenses</span><span class="muted-chip tax-chip-expense">Recorded</span></div><strong class="metric-value" id="taxYearExpenses">$0</strong><span class="metric-caption">Business-use portions on file</span></article>
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Mileage scenario</span><span class="muted-chip tax-chip-mileage">Standard rate</span></div><strong class="metric-value" id="taxMileageDeduction">$0</strong><span class="metric-caption" id="taxMileageRateCaption">Potential standard-mileage amount</span></article>
-            <article class="metric-card compact-metric"><div class="metric-head"><span>Planning profit</span><span class="muted-chip tax-chip-profit">Estimate</span></div><strong class="metric-value" id="taxPlanningProfit">$0</strong><span class="metric-caption">Income less modeled business deductions</span></article>
-          </div>
-
-          <div class="segment-control taxes-segments gold-segment-bar" role="tablist" aria-label="Tax sections">
-            <button class="segment active" data-tax-tab="overview" role="tab">Overview</button>
-            <button class="segment" data-tax-tab="mileage" role="tab">Mileage <span id="mileageCount">0</span></button>
-            <button class="segment" data-tax-tab="vehicles" role="tab">Vehicles <span id="vehicleCount">0</span></button>
-            <button class="segment" data-tax-tab="deductions" role="tab">Deductions</button>
-          </div>
-
-          <div class="tax-tab active" data-tax-panel="overview">
-            <div class="tax-overview-grid">
-              <article class="tax-insight-card"><div class="panel-title-row"><div><p class="eyebrow">YEAR AT A GLANCE</p><h2>From ledger to tax context</h2></div><span class="quiet-badge green" id="taxYearBadge">2026</span></div><div class="tax-flow-list" id="taxFlowSummary"></div></article>
-              <article class="tax-insight-card"><div class="panel-title-row"><div><p class="eyebrow">READINESS</p><h2>What needs attention</h2></div><span class="quiet-badge" id="taxReadinessBadge">Ready</span></div><div id="taxReadinessBody"></div></article>
-            </div>
-            <article class="tax-insight-card tax-quarter-card"><div class="panel-title-row"><div><p class="eyebrow">ESTIMATED TAX GROUNDWORK</p><h2>Quarterly planning</h2></div><span class="muted-chip">Planning only</span></div><div class="tax-quarter-grid" id="taxQuarterGrid"></div><p class="tax-disclaimer">This workspace does not calculate your federal or state tax liability. Estimated-tax requirements depend on your full return, withholding, credits, filing status, and other income. Use Form 1040-ES or a tax professional for the payment amount.</p></article>
-          </div>
-
-          <div class="tax-tab" data-tax-panel="mileage">
-            <div class="tax-list-head"><div><p class="eyebrow">MILEAGE LEDGER</p><h2>Trip history</h2><div class="tax-summary-line"><span id="taxBusinessTripCount">0 business trips</span><span id="taxLinkedTripCount">0 linked to work</span></div></div><div class="tax-head-actions"><button class="filter-pill" id="mileageFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">All trips</button></div></div>
-            <div class="tax-mileage-rate-strip" id="taxMileageRateStrip"></div>
-            <div class="data-card" id="mileageContainer"></div>
-          </div>
-
-          <div class="tax-tab" data-tax-panel="vehicles">
-            <div class="tax-list-head"><div><p class="eyebrow">VEHICLE PROFILES</p><h2>Vehicles used for work</h2><div class="tax-summary-line"><span>Profiles preserve which vehicle was used</span><span>One can be primary</span></div></div><div class="tax-head-actions"><button class="primary-btn compact-action" id="addVehicleInlineBtn">＋ Vehicle</button></div></div>
-            <div class="vehicle-grid" id="vehiclesContainer"></div>
-          </div>
-
-          <div class="tax-tab" data-tax-panel="deductions">
-            <div class="tax-list-head"><div><p class="eyebrow">DEDUCTION VIEW</p><h2>Recorded business-use amounts</h2><div class="tax-summary-line"><span>Grouped from Money and Mileage</span><span>Tap a category to trace the source records</span></div></div></div>
-            <div class="tax-deduction-layout"><div class="data-card" id="taxDeductionContainer"></div><aside class="tax-method-card" id="taxVehicleMethodCard"></aside></div>
-          </div>
-
-          <div class="phase-next-note taxes-note"><span>↳</span><div><strong>Every derived figure keeps its evidence trail.</strong><small>Open a tax summary row or quarter to see the exact Payments, Expenses, or Mileage records behind it. Source transactions remain untouched.</small></div></div>
+          <div class="phase-next-note"><span>↳</span><div><strong>One financial event, one source record.</strong><small>Invoices, received payments, and expenses stay separate so reporting and future reconciliation can use the same records without double counting.</small></div></div>
         </div>
       </section>
 
@@ -290,7 +240,6 @@
         <button class="mobile-nav-item" data-view="work"><span>◫</span><small>Work</small></button>
         <button class="mobile-add" id="mobileAddBtn" aria-label="Add new record">＋</button>
         <button class="mobile-nav-item" data-view="money"><span>$</span><small>Money</small></button>
-        <button class="mobile-nav-item" data-view="taxes"><span>↝</span><small>Taxes</small></button>
         <button class="mobile-nav-item" data-view="records"><span>▤</span><small>Records</small></button>
       </nav>
     </main>
@@ -306,12 +255,11 @@
       <button class="quick-card enabled" data-action="add-invoice"><span class="quick-icon" aria-hidden="true">▧</span><strong>Invoice</strong></button>
       <button class="quick-card enabled" data-action="add-payment"><span class="quick-icon" aria-hidden="true">$</span><strong>Payment</strong></button>
       <button class="quick-card enabled" data-action="add-expense"><span class="quick-icon" aria-hidden="true">−</span><strong>Expense</strong></button>
-      <button class="quick-card enabled" data-action="add-mileage"><span class="quick-icon" aria-hidden="true">↝</span><strong>Mileage</strong></button>
     </div>
   </section>
 
   <section class="command-palette" id="commandPalette" role="dialog" aria-modal="true" aria-labelledby="commandTitle" hidden>
-    <div class="command-input-row"><span>⌕</span><input id="commandInput" aria-label="Search" placeholder="Search clients, sessions, invoices, payments, expenses, mileage, vehicles…" autocomplete="off" /><kbd>Esc</kbd></div>
+    <div class="command-input-row"><span>⌕</span><input id="commandInput" aria-label="Search" placeholder="Search clients, sessions, invoices, payments, and expenses…" autocomplete="off" /><kbd>Esc</kbd></div>
     <div class="command-body" id="commandBody"><p class="command-label" id="commandTitle">Quick navigation</p></div>
   </section>
 
@@ -388,6 +336,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app-r42-expense-ledger-order.js"></script>
+  <script src="app-r44-core-ledger.js"></script>
 </body>
 </html>

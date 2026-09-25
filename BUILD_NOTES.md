@@ -589,3 +589,20 @@ Validation: JavaScript syntax check and both Node test suites pass (existing ana
 - Removed the redundant Use column while retaining Personal, Mixed, and Business context beneath Amount.
 - Added a closed-by-default Receipt rail that expands and collapses in place without affecting expense-detail navigation.
 - Added responsive and reduced-motion handling for the new ledger layout.
+# Revision 43 — Layered sub-filters
+
+- Added a compact sliders control beside All Sessions and All Expenses.
+- Sessions can filter by one client through color-coded initial tiles while retaining the existing invoice-status filter.
+- Expenses can filter by one category through named chips while retaining the existing classification/review filter.
+- Both sub-filters are optional, default to All, reset pagination, and combine with search and primary filters.
+- Active sub-filters are reflected through a small luminous indicator and accessible labels.
+
+## Revision 44 — Core ledger boundary
+
+- Retired Taxes, Mileage, and Vehicles together from permanent navigation, Quick Add, command search, forms, details, dashboard attention items, derived counters, and runtime handlers.
+- Preserved the four-destination workspace: Home, Work, Money, and Records.
+- Preserved Business, Mixed, and Personal expense classification, the original and business-use amounts, and all active bookkeeping categories including Gas, Parking, Car, and Work Equipment.
+- Kept legacy `vehicles` and `mileageTrips` collections as inert schema-compatibility fields only, allowing existing schema-version 9 local workspaces to load without destructive conversion. No active feature code consumes them.
+- Removed retired feature-specific CSS and reduced Aurora Frost/compact-calendar selectors to retained entry workflows.
+- Replaced mileage-specific regression coverage with a retirement-boundary suite that guards both sides of the change: retired entry points stay absent while classification and categories remain intact.
+- Updated current README, architecture, manifest copy, and browser asset names for Revision 44.
