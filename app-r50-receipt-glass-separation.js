@@ -1,0 +1,3466 @@
+(() => {
+  'use strict';
+
+  const STORAGE_KEY = 'business-ledger:v0.2';
+  const SIDEBAR_COLLAPSE_KEY = 'business-ledger-sidebar-collapsed';
+  const ENTRY_DEFAULTS_KEY = 'business-ledger-entry-defaults:v1';
+  const SESSION_QUICK_TIMES_KEY = 'business-ledger-session-quick-times:v1';
+  const RECEIPT_SEARCH_HISTORY_KEY = 'business-ledger-receipt-searches:v1';
+  const nowIso = () => new Date().toISOString();
+  const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+  const CLIENT_COLOR_KEYS = ['blue','teal','green','amber','coral','purple','pink','sky'];
+  const EXPENSE_CATEGORIES = [
+    ['food','Food'],['gas','Gas'],['parking','Parking'],['car','Car'],['subscriptions','Subscriptions'],['misc','Misc'],['fees','Fees'],['work_equipment','Work Equipment']
+  ];
+  const LEGACY_EXPENSE_CATEGORIES = [
+    ['supplies','Supplies'],['vehicle_fuel','Vehicle & fuel'],['parking_tolls','Parking & tolls'],['phone_internet','Phone & internet'],['software','Software'],['training','Training & education'],['insurance','Insurance'],['marketing','Marketing'],['meals','Meals'],['equipment','Equipment'],['other','Other']
+  ];
+  const EXPENSE_CATEGORY_LABELS = Object.fromEntries([...LEGACY_EXPENSE_CATEGORIES, ...EXPENSE_CATEGORIES]);
+  const defaultClientColorForIndex = (index = 0) => CLIENT_COLOR_KEYS[Math.abs(Number(index) || 0) % CLIENT_COLOR_KEYS.length];
+
+  const initialData = {
+    schemaVersion: 9,
+    activeBusinessId: 'biz_play_it_forward',
+    businesses: [{
+      id: 'biz_play_it_forward',
+      displayName: 'Play It Forward',
+      legalName: 'Play It Forward',
+      entityType: 'Sole proprietor',
+      currency: 'USD',
+      timezone: 'America/Los_Angeles',
+      status: 'active',
+      invoiceSettings: { prefix: 'INV', nextNumber: 1, defaultDueDays: 7, senderEmail: '', senderPhone: '', senderAddress: '', paymentInstructions: '' },
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    }],
+    clients: [],
+    sessions: [],
+    invoices: [],
+    payments: [],
+    expenses: [],
+    receipts: [],
+    vehicles: [],
+    mileageTrips: [],
+    auditEvents: [],
+    evidenceSnapshots: [],
+  };
+
+  const deepClone = (value) => JSON.parse(JSON.stringify(value));
+
+  function invoiceDefaults() {
+    return { prefix: 'INV', nextNumber: 1, defaultDueDays: 7, senderEmail: '', senderPhone: '', senderAddress: '', paymentInstructions: '' };
+  }
+
+  function migrateData(parsed) {
+    if (!parsed || typeof parsed !== 'object') return deepClone(initialData);
+    parsed.evidenceSnapshots ||= [];
+    if (parsed.schemaVersion === 2) {
+      parsed.schemaVersion = 9;
+      parsed.invoices = [];
+      parsed.payments = [];
+      parsed.expenses = [];
+      parsed.receipts = [];
+      parsed.vehicles = [];
+      parsed.mileageTrips = [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      const clientNames = new Map((parsed.clients || []).map(c => [c.id, c.displayName]));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: clientNames.get(s.clientId) || '', ...s }));
+      return parsed;
+    }
+    if (parsed.schemaVersion === 3) {
+      parsed.schemaVersion = 9;
+      parsed.invoices ||= [];
+      parsed.payments = [];
+      parsed.expenses = [];
+      parsed.receipts = [];
+      parsed.vehicles = [];
+      parsed.mileageTrips = [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
+      return parsed;
+    }
+    if (parsed.schemaVersion === 4 || parsed.schemaVersion === 5) {
+      parsed.schemaVersion = 9;
+      parsed.invoices ||= [];
+      parsed.payments ||= [];
+      parsed.expenses ||= [];
+      parsed.receipts ||= [];
+      parsed.vehicles ||= [];
+      parsed.mileageTrips ||= [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
+      return parsed;
+    }
+    if (parsed.schemaVersion === 6) {
+      parsed.schemaVersion = 9;
+      parsed.invoices ||= [];
+      parsed.payments ||= [];
+      parsed.expenses ||= [];
+      parsed.receipts ||= [];
+      parsed.vehicles ||= [];
+      parsed.mileageTrips ||= [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
+      return parsed;
+    }
+    if (parsed.schemaVersion === 7) { parsed.schemaVersion = 9;
+      parsed.invoices ||= []; parsed.payments ||= []; parsed.expenses ||= []; parsed.receipts ||= [];
+      parsed.vehicles ||= []; parsed.mileageTrips ||= []; parsed.auditEvents ||= [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
+      return parsed;
+    }
+    if (parsed.schemaVersion === 8) {
+      parsed.schemaVersion = 9;
+      parsed.evidenceSnapshots ||= [];
+    }
+    if (parsed.schemaVersion === 9) {
+      parsed.invoices ||= []; parsed.payments ||= []; parsed.expenses ||= []; parsed.receipts ||= [];
+      parsed.vehicles ||= []; parsed.mileageTrips ||= []; parsed.auditEvents ||= [];
+      parsed.evidenceSnapshots ||= [];
+      parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
+      parsed.clients = (parsed.clients || []).map((c, index) => ({ billingEmail: '', billingAddress: '', colorKey: c.colorKey || defaultClientColorForIndex(index), ...c }));
+      parsed.sessions = (parsed.sessions || []).map(s => ({ invoiceId: null, clientNameSnapshot: '', ...s }));
+      return parsed;
+    }
+    return deepClone(initialData);
+  }
+
+  class LocalRepository {
+    load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return deepClone(initialData);
+        return migrateData(JSON.parse(raw));
+      } catch (error) {
+        console.warn('Could not load local workspace.', error);
+        return deepClone(initialData);
+      }
+    }
+    save(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+    export(data) {
+      return JSON.stringify(data, null, 2);
+    }
+  }
+
+
+  class ReceiptBlobStore {
+    constructor() { this.dbName = 'business-ledger-receipts'; this.storeName = 'files'; this.version = 1; }
+    open() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(this.dbName, this.version);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(this.storeName)) db.createObjectStore(this.storeName, { keyPath: 'id' });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+    async put(id, file) {
+      const db = await this.open();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, 'readwrite');
+        tx.objectStore(this.storeName).put({ id, blob: file });
+        tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+      });
+      db.close();
+    }
+    async get(id) {
+      if (!id) return null;
+      const db = await this.open();
+      const result = await new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, 'readonly');
+        const request = tx.objectStore(this.storeName).get(id);
+        request.onsuccess = () => resolve(request.result?.blob || null);
+        request.onerror = () => reject(request.error);
+      });
+      db.close(); return result;
+    }
+    async delete(id) {
+      if (!id) return;
+      const db = await this.open();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, 'readwrite');
+        tx.objectStore(this.storeName).delete(id);
+        tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+      });
+      db.close();
+    }
+  }
+
+  // Provider-neutral boundary. A later cloud repository can implement the same
+  // load/save contract plus authenticated sync without changing domain/UI code.
+  const repository = new LocalRepository();
+  const receiptBlobStore = new ReceiptBlobStore();
+  const data = repository.load();
+  const entryDefaults = (() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(ENTRY_DEFAULTS_KEY) || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  })();
+  const sessionQuickTimes = (() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(SESSION_QUICK_TIMES_KEY) || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  })();
+  function entryDefaultsFor(formType) {
+    return entryDefaults[data.activeBusinessId]?.[formType] || {};
+  }
+  function rememberEntryDefaults(formType, selections) {
+    const businessId = data.activeBusinessId;
+    if (!businessId || !formType || !selections || typeof selections !== 'object') return;
+    entryDefaults[businessId] ||= {};
+    entryDefaults[businessId][formType] = { ...(entryDefaults[businessId][formType] || {}), ...selections };
+    try { localStorage.setItem(ENTRY_DEFAULTS_KEY, JSON.stringify(entryDefaults)); } catch (error) { console.warn('Could not save entry defaults.', error); }
+  }
+  function quickTimesForClient(clientId) {
+    const slots = sessionQuickTimes[data.activeBusinessId]?.[clientId];
+    return Array.from({ length: 6 }, (_, index) => {
+      const slot = Array.isArray(slots) ? slots[index] : null;
+      return slot && timeToMinutes(slot.startTime) != null && timeToMinutes(slot.endTime) != null && slot.startTime !== slot.endTime
+        ? { startTime: slot.startTime, endTime: slot.endTime, ...(slot.name ? { name: String(slot.name).slice(0,40) } : {}) }
+        : null;
+    });
+  }
+  function saveQuickTimesForClient(clientId, slots) {
+    if (!data.activeBusinessId || !clientId) return;
+    sessionQuickTimes[data.activeBusinessId] ||= {};
+    sessionQuickTimes[data.activeBusinessId][clientId] = Array.from({ length: 6 }, (_, index) => slots[index] || null);
+    try { localStorage.setItem(SESSION_QUICK_TIMES_KEY, JSON.stringify(sessionQuickTimes)); } catch (error) { console.warn('Could not save session quick times.', error); }
+  }
+  function mostRecentRecord(records, dateField = 'createdAt') {
+    return (records || []).slice().sort((a,b) => `${b?.[dateField] || ''}${b?.createdAt || ''}`.localeCompare(`${a?.[dateField] || ''}${a?.createdAt || ''}`))[0] || null;
+  }
+  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsStartMonth: '', analyticsEndMonth: '', analyticsNetExpenseBasis: 'business', analyticsClientPage: 1, analyticsExpensePage: 1, analyticsPageSize: 4, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionClientFilters: [], clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expenseCategoryFilters: [], expensePage: 1, expensePageSize: 7, expenseReceiptsOpen: false, receiptMonthLimit: 6, receiptOpenMonths: [], receiptArchiveBusinessId: '', invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null };
+  let homeRecentRotationTimer = null;
+  let homeRecentSignature = '';
+  let homeRecentSwapTimer = null;
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const views = $$('[data-page]');
+  const navButtons = $$('[data-view]');
+  const overlay = $('#overlay');
+  const modals = [$('#quickAddSheet'), $('#commandPalette'), $('#businessSheet'), $('#formSheet'), $('#invoiceSheet'), $('#settingsSheet'), $('#detailPanel')];
+  const toast = $('#toast');
+  const appShell = $('#appShell');
+  const sidebarCollapseBtn = $('#sidebarCollapseBtn');
+  const homeAtriumScene = $('#homeAtriumScene');
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let atriumFrame = null;
+  let atriumPointerX = 0;
+  let atriumPointerY = 0;
+  let atriumMotionProfile = 'desktop';
+  let atriumViewportWidth = window.innerWidth;
+  let activeFilterMenu = null;
+  let receiptArchiveObserver = null;
+
+  function enhanceDateInputs(root = document) {
+    if (!root?.querySelectorAll || !document?.createElement) return;
+    $$('input[type="date"]', root).forEach(input => {
+      if (input.dataset.compactDateReady === 'true') {
+        input._syncCompactDate?.();
+        return;
+      }
+      if (!input.parentElement || typeof input.before !== 'function') return;
+
+      const field = input.closest?.('.field');
+      const labelText = field?.querySelector?.(':scope > span')?.textContent?.trim() || 'Date';
+      const control = document.createElement('div');
+      control.className = 'compact-date-control';
+      control.innerHTML = `<span class="compact-date-button" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M7 3v3M17 3v3M4.5 9h15M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/><path d="M8 12h2M14 12h2M8 16h2M14 16h2"/></svg><b class="compact-date-day">—</b></span><span class="compact-date-value">Choose date</span>`;
+      input.before(control);
+      control.appendChild(input);
+      field?.classList.add('compact-date-field');
+      input.dataset.compactDateReady = 'true';
+      if (!input.getAttribute('aria-label')) input.setAttribute('aria-label', labelText);
+      input.title = `Choose ${labelText.toLowerCase()}`;
+
+      const day = $('.compact-date-day', control);
+      const value = $('.compact-date-value', control);
+      const sync = () => {
+        const parts = String(input.value || '').split('-');
+        day.textContent = parts.length === 3 && parts[2] ? String(Number(parts[2])) : '—';
+        value.textContent = input.value ? formatDate(input.value) : 'Choose date';
+      };
+      input._syncCompactDate = sync;
+      input.addEventListener('input', sync);
+      input.addEventListener('change', sync);
+      sync();
+    });
+  }
+
+  function readSidebarCollapsedPreference() {
+    try {
+      const saved = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
+      return saved === null ? true : saved === '1';
+    } catch (error) {
+      return true;
+    }
+  }
+
+  function applySidebarCollapsed(collapsed, { persist = true } = {}) {
+    if (!appShell || !sidebarCollapseBtn) return;
+    appShell.classList.toggle('sidebar-collapsed', collapsed);
+    document.documentElement.classList.remove('sidebar-collapsed-preload');
+    sidebarCollapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    sidebarCollapseBtn.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    sidebarCollapseBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    if (persist) {
+      try { localStorage.setItem(SIDEBAR_COLLAPSE_KEY, collapsed ? '1' : '0'); }
+      catch (error) { /* Sidebar preference is non-critical. */ }
+    }
+  }
+
+  applySidebarCollapsed(readSidebarCollapsedPreference(), { persist: false });
+
+  function closeFilterMenu() {
+    if (!activeFilterMenu) return;
+    activeFilterMenu.anchor?.setAttribute('aria-expanded', 'false');
+    activeFilterMenu.menu?.remove();
+    activeFilterMenu = null;
+  }
+
+  function openFilterMenu(anchor, items, currentValue, onSelect) {
+    if (activeFilterMenu?.anchor === anchor) { closeFilterMenu(); return; }
+    closeFilterMenu();
+    const menu = document.createElement('div');
+    menu.className = 'filter-popover';
+    menu.setAttribute('role', 'menu');
+    menu.innerHTML = items.map(item => `<button type="button" role="menuitemradio" aria-checked="${item.value === currentValue}" class="filter-menu-item ${item.value === currentValue ? 'selected' : ''}" data-filter-value="${escapeHtml(item.value)}"><span>${escapeHtml(item.label)}</span><span class="filter-menu-check" aria-hidden="true">${item.value === currentValue ? '✓' : ''}</span></button>`).join('');
+    document.body.appendChild(menu);
+    anchor.setAttribute('aria-expanded', 'true');
+    activeFilterMenu = { anchor, menu };
+
+    const rect = anchor.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    let left = rect.right - menuRect.width;
+    let top = rect.bottom + 7;
+    left = Math.max(10, Math.min(left, window.innerWidth - menuRect.width - 10));
+    if (top + menuRect.height > window.innerHeight - 10) top = Math.max(10, rect.top - menuRect.height - 7);
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+
+    $$('[data-filter-value]', menu).forEach(item => item.addEventListener('click', event => {
+      event.stopPropagation();
+      const value = item.dataset.filterValue;
+      closeFilterMenu();
+      onSelect(value);
+    }));
+  }
+
+  function openSubfilterMenu(anchor, { kind, title, items, currentValues = [], onChange }) {
+    if (activeFilterMenu?.anchor === anchor) { closeFilterMenu(); return; }
+    closeFilterMenu();
+    const menu = document.createElement('div');
+    menu.className = `filter-popover subfilter-popover subfilter-${kind}`;
+    menu.setAttribute('role', 'dialog');
+    menu.setAttribute('aria-label', title);
+    const selectedValues = new Set(Array.isArray(currentValues) ? currentValues : []);
+    const choices = items.map(item => {
+      const selected = selectedValues.has(item.value);
+      if (kind === 'clients') {
+        const colorKey = CLIENT_COLOR_KEYS.includes(item.colorKey) ? item.colorKey : 'blue';
+        const initial = String(item.label || '?').trim().charAt(0).toUpperCase() || '?';
+        return `<button type="button" aria-pressed="${selected}" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}" class="subfilter-client-choice ${selected ? 'selected' : ''}" data-subfilter-value="${escapeHtml(item.value)}"><span class="subfilter-client-initial client-bg-${colorKey}" aria-hidden="true">${escapeHtml(initial)}</span><span class="sr-only">${escapeHtml(item.label)}</span></button>`;
+      }
+      return `<button type="button" aria-pressed="${selected}" class="subfilter-category-choice ${selected ? 'selected' : ''}" data-subfilter-value="${escapeHtml(item.value)}"><span class="subfilter-category-marker" aria-hidden="true"></span><span class="subfilter-category-label">${escapeHtml(item.label)}</span><span class="subfilter-choice-check" aria-hidden="true">${selected ? '✓' : ''}</span></button>`;
+    }).join('');
+    menu.innerHTML = `<div class="subfilter-heading"><span>${escapeHtml(title)}</span><span class="subfilter-selected-count" aria-live="polite"></span></div><p class="subfilter-guidance">Choose any combination. Selections work together with the main filter.</p><div class="subfilter-choices">${choices}</div><div class="subfilter-footer"><button type="button" class="subfilter-clear" data-subfilter-clear>Clear</button><span class="subfilter-footer-count"></span><button type="button" class="subfilter-done" data-subfilter-done>Done</button></div>`;
+    document.body.appendChild(menu);
+    anchor.setAttribute('aria-expanded', 'true');
+    activeFilterMenu = { anchor, menu };
+
+    const rect = anchor.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    let left = rect.right - menuRect.width;
+    let top = rect.bottom + 8;
+    left = Math.max(10, Math.min(left, window.innerWidth - menuRect.width - 10));
+    if (top + menuRect.height > window.innerHeight - 10) top = Math.max(10, rect.top - menuRect.height - 8);
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+
+    const refreshSelection = () => {
+      $$('[data-subfilter-value]', menu).forEach(choice => {
+        const selected = selectedValues.has(choice.dataset.subfilterValue);
+        choice.classList.toggle('selected', selected);
+        choice.setAttribute('aria-pressed', String(selected));
+        const check = $('.subfilter-choice-check', choice);
+        if (check) check.textContent = selected ? '✓' : '';
+      });
+      const countLabel = selectedValues.size ? `${selectedValues.size} selected` : 'All';
+      $('.subfilter-selected-count', menu).textContent = countLabel;
+      $('.subfilter-footer-count', menu).textContent = selectedValues.size ? `${selectedValues.size} active` : 'No restrictions';
+      $('[data-subfilter-clear]', menu).disabled = selectedValues.size === 0;
+    };
+
+    $$('[data-subfilter-value]', menu).forEach(item => item.addEventListener('click', event => {
+      event.stopPropagation();
+      const value = item.dataset.subfilterValue;
+      if (selectedValues.has(value)) selectedValues.delete(value);
+      else selectedValues.add(value);
+      refreshSelection();
+      onChange([...selectedValues]);
+    }));
+    $('[data-subfilter-clear]', menu).addEventListener('click', event => {
+      event.stopPropagation();
+      selectedValues.clear();
+      refreshSelection();
+      onChange([]);
+    });
+    $('[data-subfilter-done]', menu).addEventListener('click', event => { event.stopPropagation(); closeFilterMenu(); });
+    refreshSelection();
+  }
+
+  function syncSubfilterTrigger(button, { active = false, label = '', colorKey = '', category = false } = {}) {
+    if (!button) return;
+    button.classList.toggle('has-selection', active);
+    button.classList.toggle('category-selection', active && category);
+    CLIENT_COLOR_KEYS.forEach(key => button.classList.remove(`client-color-${key}`));
+    if (active && colorKey && CLIENT_COLOR_KEYS.includes(colorKey)) button.classList.add(`client-color-${colorKey}`);
+    button.title = active ? `${label} · tap to change or clear` : (category ? 'Filter by category' : 'Filter by client');
+    button.setAttribute('aria-label', button.title);
+  }
+
+  document.addEventListener('pointerdown', event => {
+    if (!activeFilterMenu) return;
+    if (activeFilterMenu.menu.contains(event.target) || activeFilterMenu.anchor.contains(event.target)) return;
+    closeFilterMenu();
+  });
+
+  function persist(eventType, entityType, entityId, details = {}) {
+    if (eventType) {
+      data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType, entityType, entityId, details, occurredAt: nowIso() });
+    }
+    repository.save(data);
+  }
+
+  function preserveEvidenceSnapshot(entityType, record, label = '') {
+    if (!record) return;
+    data.evidenceSnapshots ||= [];
+    data.evidenceSnapshots.push({
+      id: uid('evidence'), businessId: data.activeBusinessId, entityType,
+      entityId: record.id, label, snapshot: deepClone(record), preservedAt: nowIso()
+    });
+  }
+
+  function entityAuditEvents(entityType, entityId) {
+    return (data.auditEvents || []).filter(event => event.businessId === data.activeBusinessId && event.entityType === entityType && event.entityId === entityId)
+      .slice().sort((a,b) => String(b.occurredAt || '').localeCompare(String(a.occurredAt || '')));
+  }
+
+  function evidenceTimelineHtml(entityType, entityId) {
+    const events = entityAuditEvents(entityType, entityId).slice(0, 6);
+    const rows = events.map(event => `<li><span class="evidence-event-dot"></span><div><strong>${escapeHtml(String(event.eventType || 'updated').replaceAll('_',' '))}</strong><small>${formatDateTime(event.occurredAt)}</small></div></li>`).join('');
+    return `<details class="evidence-history"><summary><span><strong>Record history</strong><small>${events.length ? `${events.length} saved ${events.length === 1 ? 'event' : 'events'}` : 'Source record retained'}</small></span><span aria-hidden="true">⌄</span></summary>${rows ? `<ol>${rows}</ol>` : '<p>No history events are available for this migrated record.</p>'}</details>`;
+  }
+
+  function formatDateTime(value) {
+    if (!value) return 'Time unavailable';
+    const date = new Date(value); if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}).format(date);
+  }
+
+  function activeBusiness() {
+    return data.businesses.find(b => b.id === data.activeBusinessId) || data.businesses[0];
+  }
+
+  function businessTimeZone(business = activeBusiness()) {
+    const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const candidate = business?.timezone || fallback;
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: candidate }).format(new Date());
+      return candidate;
+    } catch (error) {
+      console.warn('Invalid workspace timezone; falling back to device timezone.', candidate, error);
+      return fallback;
+    }
+  }
+
+  function zonedNowParts(business = activeBusiness(), instant = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: businessTimeZone(business),
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(instant);
+    const value = type => parts.find(part => part.type === type)?.value || '';
+    return { year: value('year'), month: value('month'), day: value('day'), hour: Number(value('hour') || 0), minute: Number(value('minute') || 0) };
+  }
+
+  function businessToday(business = activeBusiness()) {
+    const parts = zonedNowParts(business);
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  }
+
+  function businessMonthKey(business = activeBusiness()) {
+    return businessToday(business).slice(0, 7);
+  }
+
+  function businessClients(businessId = data.activeBusinessId) {
+    return data.clients.filter(c => c.businessId === businessId);
+  }
+
+  function businessSessions(businessId = data.activeBusinessId) {
+    return data.sessions.filter(s => s.businessId === businessId);
+  }
+
+  function businessInvoices(businessId = data.activeBusinessId) {
+    return data.invoices.filter(invoice => invoice.businessId === businessId);
+  }
+
+  function businessPayments(businessId = data.activeBusinessId) {
+    return data.payments.filter(payment => payment.businessId === businessId);
+  }
+
+  function businessExpenses(businessId = data.activeBusinessId) {
+    return data.expenses.filter(expense => expense.businessId === businessId);
+  }
+
+  function businessReceipts(businessId = data.activeBusinessId) {
+    return data.receipts.filter(receipt => receipt.businessId === businessId);
+  }
+
+  function clientById(id) { return data.clients.find(c => c.id === id); }
+  function invoiceById(id) { return data.invoices.find(invoice => invoice.id === id); }
+  function paymentById(id) { return data.payments.find(payment => payment.id === id); }
+  function expenseById(id) { return data.expenses.find(expense => expense.id === id); }
+  function receiptById(id) { return data.receipts.find(receipt => receipt.id === id); }
+  function clientColorKey(client) { return CLIENT_COLOR_KEYS.includes(client?.colorKey) ? client.colorKey : 'blue'; }
+  function clientColorClass(client) { return `client-color-${clientColorKey(client)}`; }
+
+  function invoiceTotalCents(invoice) {
+    return (invoice?.lineItems || []).reduce((sum, item) => sum + Number(item.amountCents || 0), 0);
+  }
+
+  function invoiceTotalMinutes(invoice) {
+    return (invoice?.lineItems || []).reduce((sum, item) => item.type === 'session' ? sum + Number(item.quantityMinutes || 0) : sum, 0);
+  }
+
+  function invoicePayments(invoiceOrId) {
+    const invoiceId = typeof invoiceOrId === 'string' ? invoiceOrId : invoiceOrId?.id;
+    return data.payments.filter(payment => payment.businessId === data.activeBusinessId && payment.kind === 'invoice' && payment.invoiceId === invoiceId);
+  }
+
+  function invoicePaidCents(invoiceOrId) {
+    return invoicePayments(invoiceOrId).reduce((sum, payment) => sum + Number(payment.amountCents || 0), 0);
+  }
+
+  function invoiceBalanceCents(invoice) {
+    return Math.max(0, invoiceTotalCents(invoice) - invoicePaidCents(invoice));
+  }
+
+  function paymentSourceLabel(payment) {
+    if (payment?.kind === 'invoice') return payment.invoiceNumberSnapshot || invoiceById(payment.invoiceId)?.number || 'Invoice';
+    return payment?.sourceName || payment?.clientNameSnapshot || 'Other income';
+  }
+
+  function durationExactLabel(minutes = 0) {
+    const total = Math.max(0, Math.round(Number(minutes) || 0));
+    const hours = Math.floor(total / 60);
+    const mins = total % 60;
+    if (!hours) return `${mins}m`;
+    if (!mins) return `${hours}h`;
+    return `${hours}h ${mins}m`;
+  }
+
+  function invoiceDisplayStatus(invoice) {
+    if (!invoice) return 'Draft';
+    if (invoice.status === 'void') return 'Void';
+    if (invoice.status === 'draft') return 'Draft';
+    const paid = invoicePaidCents(invoice);
+    const total = invoiceTotalCents(invoice);
+    const balance = Math.max(0, total - paid);
+    if (total > 0 && balance === 0) return 'Paid';
+    const today = businessToday();
+    if (invoice.status === 'sent' && balance > 0 && invoice.dueDate && invoice.dueDate < today) return 'Overdue';
+    if (paid > 0 && balance > 0) return 'Partially paid';
+    return invoice.status === 'sent' ? 'Sent' : invoice.status;
+  }
+
+  function invoiceNumberPreview(business = activeBusiness()) {
+    const settings = { ...invoiceDefaults(), ...(business?.invoiceSettings || {}) };
+    return `${settings.prefix || 'INV'}-${String(settings.nextNumber || 1).padStart(4,'0')}`;
+  }
+
+  function nextInvoiceNumber(business = activeBusiness()) {
+    const settings = business.invoiceSettings ||= invoiceDefaults();
+    const number = `${settings.prefix || 'INV'}-${String(settings.nextNumber || 1).padStart(4,'0')}`;
+    settings.nextNumber = Number(settings.nextNumber || 1) + 1;
+    business.updatedAt = nowIso();
+    return number;
+  }
+
+  function addDays(dateString, days) {
+    const [year, month, day] = String(dateString || '').split('-').map(Number);
+    if (!year || !month || !day) return dateString;
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCDate(date.getUTCDate() + Number(days || 0));
+    return date.toISOString().slice(0,10);
+  }
+
+  function initials(name) {
+    return String(name || '?').trim().split(/\s+/).slice(0,2).map(p => p[0]).join('').toUpperCase();
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[ch]));
+  }
+
+  function formatMoney(cents = 0, currency = 'USD') {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100);
+  }
+
+  function formatDate(dateString, options = { month: 'short', day: 'numeric', year: 'numeric' }) {
+    if (!dateString) return '—';
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(String(dateString));
+    const date = dateOnly ? new Date(`${dateString}T00:00:00Z`) : new Date(dateString);
+    const timeZone = dateOnly ? 'UTC' : businessTimeZone();
+    return new Intl.DateTimeFormat('en-US', { ...options, timeZone }).format(date);
+  }
+
+  function clockTimeLabel(value) {
+    if (!value) return '—';
+    const [hour, minute] = value.split(':').map(Number);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${String(minute).padStart(2,'0')} ${period}`;
+  }
+
+  function sessionTimeRangeLabel(session) {
+    if (!session?.startTime || !session?.endTime) return '—';
+    return `${clockTimeLabel(session.startTime)}–${clockTimeLabel(session.endTime)}`;
+  }
+
+  function timeToMinutes(value) {
+    if (!value) return null;
+    const [hour, minute] = value.split(':').map(Number);
+    return hour * 60 + minute;
+  }
+
+  function minutesToTime(totalMinutes) {
+    const normalized = ((Math.round(totalMinutes / 5) * 5) % 1440 + 1440) % 1440;
+    return `${String(Math.floor(normalized / 60)).padStart(2,'0')}:${String(normalized % 60).padStart(2,'0')}`;
+  }
+
+  function currentRoundedTime() {
+    const now = zonedNowParts();
+    return minutesToTime(now.hour * 60 + now.minute);
+  }
+
+  function addMinutesToTime(value, amount) {
+    const base = timeToMinutes(value);
+    return minutesToTime((base ?? 0) + amount);
+  }
+
+  function minutesBetween(start, end) {
+    if (!start || !end) return 0;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    let minutes = eh * 60 + em - (sh * 60 + sm);
+    if (minutes < 0) minutes += 24 * 60;
+    return Math.max(0, minutes);
+  }
+
+  function sessionMinutes(session) { return session.durationMinutes ?? minutesBetween(session.startTime, session.endTime); }
+  function sessionAmountCents(session) { return Math.round(sessionMinutes(session) / 60 * (session.rateCents || 0)); }
+  function hoursLabel(minutes) { return `${(minutes / 60).toFixed(minutes % 60 ? 1 : 0)}h`; }
+
+  function sessionInvoiceStatusLabel(session) {
+    if (session.invoiceStatus === 'draft') return 'In draft';
+    if (session.invoiceStatus === 'invoiced') return 'Invoiced';
+    return 'Uninvoiced';
+  }
+
+  function sessionInvoiceStatusClass(session) {
+    if (session.invoiceStatus === 'invoiced') return 'success';
+    if (session.invoiceStatus === 'draft') return 'accent';
+    return '';
+  }
+
+  function applyHomeAtriumState(viewName = ui.activeView) {
+    const usesAtrium = ['home','work','money','records'].includes(viewName);
+    document.body.classList.toggle('home-atrium-active', usesAtrium);
+    document.body.classList.toggle('work-atrium-active', viewName === 'work');
+    document.body.classList.toggle('money-atrium-active', viewName === 'money');
+    document.body.classList.toggle('records-atrium-active', viewName === 'records');
+    homeAtriumScene?.setAttribute('aria-hidden', 'true');
+    if (usesAtrium) applyAtriumRuntimeProfile();
+    if (!usesAtrium) {
+      document.documentElement.style.setProperty('--atrium-px', '0');
+      document.documentElement.style.setProperty('--atrium-py', '0');
+      document.documentElement.style.setProperty('--atrium-scroll', '0');
+      document.documentElement.style.setProperty('--atrium-light-x', '52%');
+      document.documentElement.style.setProperty('--atrium-light-y', '28%');
+    }
+  }
+
+  function commitAtriumMotion() {
+    atriumFrame = null;
+    if (!['home','work','money','records'].includes(ui.activeView) || prefersReducedMotion.matches) return;
+    const px = atriumMotionProfile === 'desktop' ? atriumPointerX : 0;
+    const py = atriumMotionProfile === 'desktop' ? atriumPointerY : 0;
+    document.documentElement.style.setProperty('--atrium-px', px.toFixed(4));
+    document.documentElement.style.setProperty('--atrium-py', py.toFixed(4));
+    document.documentElement.style.setProperty('--atrium-scroll', '0');
+    document.documentElement.style.setProperty('--atrium-light-x', `${(50 + px * 14).toFixed(1)}%`);
+    document.documentElement.style.setProperty('--atrium-light-y', `${(29 + py * 10).toFixed(1)}%`);
+  }
+
+  function queueAtriumMotion(clientX, clientY) {
+    if (!['home','work','money','records'].includes(ui.activeView) || prefersReducedMotion.matches) return;
+    if (atriumMotionProfile !== 'desktop') {
+      atriumPointerX = 0;
+      atriumPointerY = 0;
+      if (!atriumFrame) atriumFrame = requestAnimationFrame(commitAtriumMotion);
+      return;
+    }
+    if (Number.isFinite(clientX) && Number.isFinite(clientY)) {
+      atriumPointerX = Math.max(-1, Math.min(1, (clientX / Math.max(window.innerWidth,1) - .5) * 2));
+      atriumPointerY = Math.max(-1, Math.min(1, (clientY / Math.max(window.innerHeight,1) - .5) * 2));
+    }
+    if (!atriumFrame) atriumFrame = requestAnimationFrame(commitAtriumMotion);
+  }
+
+  function applyAtriumRuntimeProfile() {
+    const coarsePointer = window.matchMedia('(hover: none), (pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    const iPadLike = /iPad|iPhone|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const safariLike = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || iPadLike;
+    const liteProfile = coarsePointer || safariLike || window.innerWidth <= 1180;
+    document.documentElement.classList.toggle('atrium-touch', coarsePointer);
+    document.documentElement.classList.toggle('atrium-safari', safariLike);
+    document.documentElement.classList.toggle('atrium-lite', liteProfile);
+    atriumMotionProfile = liteProfile ? 'static' : 'desktop';
+    if (liteProfile) {
+      atriumPointerX = 0;
+      atriumPointerY = 0;
+    }
+    if (!atriumFrame) atriumFrame = requestAnimationFrame(commitAtriumMotion);
+  }
+
+  function setView(viewName) {
+    ui.activeView = viewName;
+    applyHomeAtriumState(viewName);
+    views.forEach(view => view.classList.toggle('active', view.dataset.page === viewName));
+    navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    closeModal();
+  }
+
+  function openModal(modal) {
+    closeModal(false);
+    const isFormSheet = modal === $('#formSheet');
+    $('#formSubmitBtn').disabled=false; $('#formSubmitBtn').title='';
+    $('#formSheet').classList.toggle('expense-compose-sheet', isFormSheet && ui.formMode === 'expense');
+    $('#formSheet').classList.toggle('payment-compose-sheet', isFormSheet && ui.formMode === 'payment');
+    $('#formSheet').classList.toggle('client-profile-sheet', isFormSheet && ui.formMode === 'client');
+    $('#formSheet').classList.toggle('integrated-profile-sheet', isFormSheet && ui.formMode === 'client');
+    ui.modal = modal;
+    overlay.hidden = false;
+    modal.hidden = false;
+    enhanceDateInputs(modal);
+    document.body.style.overflow = 'hidden';
+    if (modal === $('#commandPalette')) setTimeout(() => $('#commandInput').focus(), 40);
+    if (modal === $('#formSheet')) setTimeout(() => $('#dynamicForm input, #dynamicForm select, #dynamicForm textarea')?.focus(), 60);
+    if (modal === $('#invoiceSheet')) setTimeout(() => $('#invoiceClient')?.focus(), 60);
+  }
+
+  function closeModal(hideOverlay = true) {
+    modals.forEach(item => { if (item) item.hidden = true; });
+    resetDetailPanelTheme();
+    ui.modal = null;
+    if (hideOverlay) overlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  function showToast(message) {
+    toast.textContent = message;
+    toast.hidden = false;
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => { toast.hidden = true; }, 2300);
+  }
+
+  function renderWorkspaceChrome() {
+    const biz = activeBusiness();
+    if (!biz) return;
+    $('#businessName').textContent = biz.displayName;
+    $('#businessType').textContent = biz.entityType;
+    $('#businessInitials').textContent = initials(biz.displayName);
+    $('#mobileBusinessName').textContent = biz.displayName;
+    $('#mobileBusinessInitials').textContent = initials(biz.displayName);
+    $('#homeEyebrow').textContent = biz.displayName.toUpperCase();
+  }
+
+  function renderWorkspaceOptions() {
+    $('#workspaceOptions').innerHTML = data.businesses.map(b => `
+      <button class="workspace-option ${b.id === data.activeBusinessId ? 'selected' : ''}" data-business-id="${b.id}">
+        <span class="business-icon">${escapeHtml(initials(b.displayName))}</span>
+        <span><strong>${escapeHtml(b.displayName)}</strong><small>${escapeHtml(b.entityType)}</small></span>
+        ${b.id === data.activeBusinessId ? '<span class="workspace-check">✓</span>' : ''}
+      </button>`).join('');
+    $$('[data-business-id]').forEach(btn => btn.addEventListener('click', () => {
+      data.activeBusinessId = btn.dataset.businessId;
+      persist('workspace_switched', 'Business', btn.dataset.businessId);
+      renderAll();
+      closeModal();
+      showToast(`Switched to ${activeBusiness().displayName}`);
+    }));
+  }
+
+  function renderHome() {
+    const clients = businessClients().filter(c => c.status === 'active');
+    const sessions = businessSessions();
+    const monthKey = businessMonthKey();
+    const monthly = sessions.filter(s => s.date?.slice(0,7) === monthKey);
+    const totalMinutes = monthly.reduce((sum, s) => sum + sessionMinutes(s), 0);
+    const uninvoiced = sessions.filter(s => s.invoiceStatus === 'uninvoiced');
+    const uninvoicedCents = uninvoiced.reduce((sum, s) => sum + sessionAmountCents(s), 0);
+    const invoiceEarningsCents = businessPayments()
+      .filter(payment => payment.kind === 'invoice')
+      .reduce((sum, payment) => sum + Number(payment.amountCents || 0), 0);
+
+    $('#metricClients').textContent = clients.length;
+    $('#metricHours').textContent = `${(totalMinutes / 60).toFixed(totalMinutes % 60 ? 1 : 0)}h`;
+    $('#metricUninvoiced').textContent = formatMoney(uninvoicedCents, activeBusiness().currency);
+    $('#metricInvoiceEarnings').textContent = formatMoney(invoiceEarningsCents, activeBusiness().currency);
+    $('#clientTabCount').textContent = businessClients().length;
+    $('#sessionTabCount').textContent = sessions.length;
+
+    const incomplete = sessions.filter(s => !s.clientId || !s.date || !s.startTime || !s.endTime);
+    const overdue = businessInvoices().filter(invoice => invoiceDisplayStatus(invoice) === 'Overdue');
+    const expenseReview = businessExpenses().filter(expense => expense.reviewStatus === 'needs_review');
+    const attentionItems = [
+      ...overdue.map(invoice => ({ type: 'invoice', id: invoice.id, title: `${invoice.number} is overdue`, sub: `${invoice.recipientSnapshot?.displayName || 'Client'} · ${formatMoney(invoiceBalanceCents(invoice), activeBusiness().currency)} still due` })),
+      ...expenseReview.map(expense => ({ type: 'expense', id: expense.id, title: `${expense.merchant || 'Expense'} needs review`, sub: `${formatMoney(expense.totalCents || 0, activeBusiness().currency)} · ${expenseCategoryLabel(expense.category)} · ${formatDate(expense.date,{month:'short',day:'numeric'})}` })),
+      ...incomplete.map(session => ({ type: 'session', id: session.id, title: 'Incomplete work session', sub: `${clientById(session.clientId)?.displayName || session.clientNameSnapshot || 'No client'} · ${formatDate(session.date)}` }))
+    ];
+    $('#attentionCount').textContent = `${attentionItems.length} ${attentionItems.length === 1 ? 'item' : 'items'}`;
+    $('#attentionTitle').textContent = attentionItems.length ? 'A few records need review.' : 'Nothing needs your attention.';
+    $('#attentionBody').innerHTML = attentionItems.length
+      ? `<div class="attention-list">${attentionItems.slice(0,3).map(item => `<button ${item.type === 'invoice' ? `data-invoice-detail="${item.id}"` : item.type === 'expense' ? `data-expense-detail="${item.id}"` : `data-session-detail="${item.id}"`}><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sub)}</small></button>`).join('')}</div>`
+      : `<p class="panel-copy">Overdue invoices, incomplete work sessions, and expenses you mark for review will collect here.</p>`;
+
+    renderRandomHomeSessions(sessions, false);
+    startHomeRecentRotation();
+
+    $$('[data-session-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
+    $$('[data-invoice-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
+    $$('[data-expense-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => { setView('money'); ui.moneyTab='expenses'; syncMoneyTabs(); openExpenseDetail(btn.dataset.expenseDetail); }));
+    renderAnalytics();
+  }
+
+  function syncHomeTabs() {
+    $$('[data-home-tab]').forEach(btn => { const active=btn.dataset.homeTab===ui.homeTab; btn.classList.toggle('active',active); btn.setAttribute('aria-selected',String(active)); });
+    $$('[data-home-panel]').forEach(panel => panel.classList.toggle('active',panel.dataset.homePanel===ui.homeTab));
+    if (ui.homeTab === 'analytics') { stopHomeRecentRotation(); renderAnalytics(); }
+    else startHomeRecentRotation();
+  }
+
+  function dateOnlyFromDate(date) {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`;
+  }
+
+  function parseDateOnlyUtc(value) {
+    const [year,month,day]=String(value||'').split('-').map(Number);
+    return new Date(Date.UTC(year||1970,(month||1)-1,day||1));
+  }
+
+  const ANALYTICS_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function monthKeyOffset(monthKey,offset) {
+    const [year,month]=String(monthKey||businessToday().slice(0,7)).split('-').map(Number);
+    const date=new Date(Date.UTC(year,(month||1)-1+offset,1));
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`;
+  }
+
+  function ensureAnalyticsPeriod() {
+    const currentMonth=businessToday().slice(0,7);
+    ui.analyticsEndMonth ||= currentMonth;
+    ui.analyticsStartMonth ||= monthKeyOffset(ui.analyticsEndMonth,-5);
+    if(ui.analyticsEndMonth>currentMonth)ui.analyticsEndMonth=currentMonth;
+    if(ui.analyticsStartMonth>ui.analyticsEndMonth)ui.analyticsStartMonth=ui.analyticsEndMonth;
+  }
+
+  function analyticsMonthEnd(monthKey) {
+    const [year,month]=monthKey.split('-').map(Number);
+    return dateOnlyFromDate(new Date(Date.UTC(year,month,0)));
+  }
+
+  function analyticsRangeBounds() {
+    ensureAnalyticsPeriod();
+    const today=businessToday();
+    return {start:`${ui.analyticsStartMonth}-01`,end:ui.analyticsEndMonth===today.slice(0,7)?today:analyticsMonthEnd(ui.analyticsEndMonth)};
+  }
+
+  function analyticsTrendBounds(bounds) {
+    const month=bounds.end.slice(0,7); const previousMonth=monthKeyOffset(month,-1);
+    const currentStart=`${month}-01`; const currentEnd=bounds.end;
+    const previousStart=`${previousMonth}-01`; const previousEnd=analyticsMonthEnd(previousMonth);
+    const label=key=>{const [year,number]=key.split('-').map(Number);return `${ANALYTICS_MONTHS[number-1]} ${year}`};
+    return {currentStart,currentEnd,previousStart,previousEnd,currentLabel:label(month),previousLabel:label(previousMonth)};
+  }
+
+  function analyticsRecordYears() {
+    const currentYear=Number(businessToday().slice(0,4));
+    const years=[...analyticsPaymentsForReview().map(x=>x.receivedDate),...analyticsExpensesForReview().map(x=>x.date),...analyticsSessionsForReview().map(x=>x.date),...businessInvoices().map(x=>x.issueDate)].filter(Boolean).map(value=>Number(value.slice(0,4))).filter(Number.isFinite);
+    const first=Math.min(currentYear-5,...years); const out=[];
+    for(let year=first;year<=currentYear;year+=1)out.push(year);
+    return out;
+  }
+
+  function syncAnalyticsPeriodControls() {
+    ensureAnalyticsPeriod(); const years=analyticsRecordYears();
+    const monthOptions=ANALYTICS_MONTHS.map((label,index)=>`<option value="${String(index+1).padStart(2,'0')}">${label}</option>`).join('');
+    const yearOptions=years.map(year=>`<option value="${year}">${year}</option>`).join('');
+    const [fromYear,fromMonth]=ui.analyticsStartMonth.split('-'); const [toYear,toMonth]=ui.analyticsEndMonth.split('-');
+    [['#analyticsFromMonth',monthOptions,fromMonth],['#analyticsToMonth',monthOptions,toMonth],['#analyticsFromYear',yearOptions,fromYear],['#analyticsToYear',yearOptions,toYear]].forEach(([selector,options,value])=>{const control=$(selector);if(!control)return;control.innerHTML=options;control.value=value});
+  }
+
+  function updateAnalyticsPeriod(changedBoundary) {
+    const from=`${$('#analyticsFromYear').value}-${$('#analyticsFromMonth').value}`;
+    const to=`${$('#analyticsToYear').value}-${$('#analyticsToMonth').value}`;
+    ui.analyticsStartMonth=from; ui.analyticsEndMonth=to;
+    if(from>to){if(changedBoundary==='from')ui.analyticsEndMonth=from;else ui.analyticsStartMonth=to}
+    const currentMonth=businessToday().slice(0,7);if(ui.analyticsEndMonth>currentMonth)ui.analyticsEndMonth=currentMonth;if(ui.analyticsStartMonth>ui.analyticsEndMonth)ui.analyticsStartMonth=ui.analyticsEndMonth;
+    ui.analyticsClientPage=1;ui.analyticsExpensePage=1;renderAnalytics();
+  }
+
+  function dateInBounds(value,start,end) { return Boolean(value && value>=start && value<=end); }
+  function analyticsComparison(current,previous,{money=false,hours=false}={}) {
+    const delta=current-previous; const pct=previous ? Math.round((delta/Math.abs(previous))*100) : current ? null : 0;
+    const direction=delta>0?'up':delta<0?'down':'flat';
+    const detail=money?formatMoney(Math.abs(delta),activeBusiness().currency):hours?`${(Math.abs(delta)/60).toFixed(1)}h`:`${Math.abs(delta)}`;
+    return {direction,pct,detail};
+  }
+
+  function analyticsMonthBuckets(bounds) {
+    const cursor=parseDateOnlyUtc(`${bounds.start.slice(0,7)}-01`); const end=parseDateOnlyUtc(`${bounds.end.slice(0,7)}-01`); const out=[]; const includeYear=bounds.start.slice(0,4)!==bounds.end.slice(0,4);
+    while(cursor<=end){const key=`${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth()+1).padStart(2,'0')}`;out.push({key,label:new Intl.DateTimeFormat('en-US',{month:'short',year:includeYear?'2-digit':undefined,timeZone:'UTC'}).format(cursor),received:0,expenses:0,allExpenses:0,hours:0,uninvoiced:0});cursor.setUTCMonth(cursor.getUTCMonth()+1);}
+    const byKey=new Map(out.map(x=>[x.key,x]));
+    analyticsPaymentsForReview().filter(x=>dateInBounds(x.receivedDate,bounds.start,bounds.end)).forEach(x=>{const b=byKey.get(x.receivedDate.slice(0,7));if(b)b.received+=Number(x.amountCents||0)});
+    analyticsExpensesForReview().filter(x=>dateInBounds(x.date,bounds.start,bounds.end)).forEach(x=>{const b=byKey.get(x.date.slice(0,7));if(b){b.expenses+=Number(x.businessCents||0);b.allExpenses+=Number(x.totalCents||0)}});
+    analyticsSessionsForReview().filter(x=>dateInBounds(x.date,bounds.start,bounds.end)).forEach(x=>{const b=byKey.get(x.date.slice(0,7));if(b){b.hours+=sessionMinutes(x);if(x.invoiceStatus==='uninvoiced')b.uninvoiced+=sessionAmountCents(x)}});
+    return out;
+  }
+
+  function moneyAxisLabel(cents) {
+    const sign=cents<0?'−':''; const amount=Math.abs(cents)/100;
+    if(amount>=1000000)return `${sign}$${(amount/1000000).toFixed(amount>=10000000?0:1)}m`;
+    if(amount>=1000)return `${sign}$${(amount/1000).toFixed(amount>=10000?0:1)}k`;
+    return `${sign}$${Math.round(amount).toLocaleString('en-US')}`;
+  }
+
+  function niceMoneyDomain(values) {
+    let min=Math.min(0,...values),max=Math.max(0,...values); if(min===max)max=min+100;
+    const rough=(max-min)/4; const power=10**Math.floor(Math.log10(Math.max(1,rough))); const normalized=rough/power; const factor=normalized<=1?1:normalized<=2?2:normalized<=5?5:10; const step=factor*power;
+    min=Math.floor(min/step)*step; max=Math.ceil(max/step)*step; if(min===max)max+=step;
+    return {min,max,step,ticks:Array.from({length:Math.round((max-min)/step)+1},(_,i)=>min+i*step)};
+  }
+
+  function smoothChartPath(points) {
+    if(!points.length)return ''; if(points.length===1)return `M ${points[0].x} ${points[0].y}`; if(points.length===2)return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+    let path=`M ${points[0].x} ${points[0].y}`;
+    for(let i=0;i<points.length-1;i++){const p0=points[i-1]||points[i],p1=points[i],p2=points[i+1],p3=points[i+2]||p2;const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6,c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;path+=` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;}
+    return path;
+  }
+
+  function analyticsChartFrame(buckets,values,{height=250}={}) {
+    const width=760,left=66,right=16,top=18,bottom=40,innerW=width-left-right,innerH=height-top-bottom,domain=niceMoneyDomain(values);
+    const x=index=>left+(buckets.length===1?innerW/2:index*innerW/(buckets.length-1)); const y=value=>top+innerH-((value-domain.min)/(domain.max-domain.min))*innerH;
+    const grid=`<g class="chart-grid">${domain.ticks.map(tick=>`<line class="${tick===0?'zero':''}" x1="${left}" x2="${width-right}" y1="${y(tick)}" y2="${y(tick)}"/><text class="axis-value" x="${left-10}" y="${y(tick)+3}" text-anchor="end">${moneyAxisLabel(tick)}</text>`).join('')}</g>`;
+    return {width,height,left,right,top,bottom,innerW,innerH,domain,x,y,grid,labelEvery:Math.max(1,Math.ceil(buckets.length/8))};
+  }
+
+  function analyticsNetFlowChart(buckets) {
+    const useAllExpenses=ui.analyticsNetExpenseBasis==='all';
+    const expenseAmount=bucket=>useAllExpenses?bucket.allExpenses:bucket.expenses;
+    const expenseLabel=useAllExpenses?'all Expenses':'business-use Expenses';
+    if(!buckets.length||!buckets.some(x=>x.received||expenseAmount(x)))return `<div class="analytics-empty"><strong>No activity in this range</strong><small>Net movement will appear from Payments and ${expenseLabel}.</small></div>`;
+    const values=buckets.map(x=>x.received-expenseAmount(x)),frame=analyticsChartFrame(buckets,values,{height:360}),points=values.map((value,i)=>({x:frame.x(i),y:frame.y(value),value})),path=smoothChartPath(points),baseline=frame.y(0);
+    const area=`${path} L ${points[points.length-1].x} ${baseline} L ${points[0].x} ${baseline} Z`;
+    return `<svg class="analytics-svg scrubbable-chart" data-scrub-mode="net" viewBox="0 0 ${frame.width} ${frame.height}" role="img" aria-label="Monthly net movement with a proportional money axis. Touch and drag to inspect each month."><defs><linearGradient id="netFlowFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#72deb0" stop-opacity=".25"/><stop offset="1" stop-color="#72deb0" stop-opacity="0"/></linearGradient></defs>${frame.grid}<path class="chart-area net" d="${area}"/><path class="chart-line net" d="${path}"/>${buckets.map((bucket,i)=>`<g class="chart-hit net-hit" data-chart-index="${i}" data-chart-x="${points[i].x}" data-chart-y="${points[i].y}" data-chart-value="${points[i].value}" data-chart-label="${escapeHtml(bucket.label)}"><rect x="${Math.max(frame.left,points[i].x-Math.max(12,frame.innerW/Math.max(2,buckets.length)/2))}" y="${frame.top}" width="${Math.max(24,frame.innerW/Math.max(1,buckets.length))}" height="${frame.innerH}"/>${i%frame.labelEvery===0||i===buckets.length-1?`<text x="${points[i].x}" y="${frame.height-10}" text-anchor="middle">${escapeHtml(bucket.label)}</text>`:''}<title>${escapeHtml(bucket.label)} · ${formatMoney(points[i].value)} net movement</title></g>`).join('')}<g class="chart-scrubber" aria-hidden="true"><line x1="0" x2="0" y1="${frame.top}" y2="${frame.top+frame.innerH}"/><circle class="net" cx="0" cy="0" r="6"/><g class="scrub-tooltip"><rect x="-54" y="-42" width="108" height="32" rx="9"/><text class="scrub-label" x="0" y="-29" text-anchor="middle"></text><text class="scrub-value" x="0" y="-17" text-anchor="middle"></text></g></g></svg>`;
+  }
+
+  function analyticsIncomeExpenseChart(buckets) {
+    if(!buckets.length||!buckets.some(x=>x.received||x.expenses))return '<div class="analytics-empty"><strong>No income or expenses in this range</strong><small>The comparison updates from Payments and business-use Expenses.</small></div>';
+    const frame=analyticsChartFrame(buckets,buckets.flatMap(x=>[x.received,x.expenses]),{height:230}); const income=buckets.map((x,i)=>({x:frame.x(i),y:frame.y(x.received),value:x.received})),expense=buckets.map((x,i)=>({x:frame.x(i),y:frame.y(x.expenses),value:x.expenses}));const incomePath=smoothChartPath(income),expensePath=smoothChartPath(expense),base=frame.y(0);
+    const incomeArea=`${incomePath} L ${income[income.length-1].x} ${base} L ${income[0].x} ${base} Z`,expenseArea=`${expensePath} L ${expense[expense.length-1].x} ${base} L ${expense[0].x} ${base} Z`;
+    return `<svg class="analytics-svg comparison-svg scrubbable-chart" data-scrub-mode="comparison" viewBox="0 0 ${frame.width} ${frame.height}" role="img" aria-label="Income received versus business-use expenses by month. Touch and drag to inspect each month."><defs><linearGradient id="incomeAreaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#72deb0" stop-opacity=".20"/><stop offset="1" stop-color="#72deb0" stop-opacity="0"/></linearGradient><linearGradient id="expenseAreaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ef9dba" stop-opacity=".18"/><stop offset="1" stop-color="#ef9dba" stop-opacity="0"/></linearGradient></defs>${frame.grid}<path class="chart-area income" d="${incomeArea}"/><path class="chart-area expense" d="${expenseArea}"/><path class="chart-line income" d="${incomePath}"/><path class="chart-line expense" d="${expensePath}"/>${buckets.map((bucket,i)=>`<g class="chart-hit" data-chart-index="${i}" data-chart-x="${income[i].x}" data-chart-income-y="${income[i].y}" data-chart-expense-y="${expense[i].y}" data-chart-income-value="${income[i].value}" data-chart-expense-value="${expense[i].value}" data-chart-label="${escapeHtml(bucket.label)}"><rect x="${Math.max(frame.left,income[i].x-Math.max(12,frame.innerW/Math.max(2,buckets.length)/2))}" y="${frame.top}" width="${Math.max(24,frame.innerW/Math.max(1,buckets.length))}" height="${frame.innerH}"/><circle class="income" cx="${income[i].x}" cy="${income[i].y}" r="3.5"/><circle class="expense" cx="${expense[i].x}" cy="${expense[i].y}" r="3.5"/>${i%frame.labelEvery===0||i===buckets.length-1?`<text x="${income[i].x}" y="${frame.height-10}" text-anchor="middle">${escapeHtml(bucket.label)}</text>`:''}<title>${escapeHtml(bucket.label)} · ${formatMoney(bucket.received)} income · ${formatMoney(bucket.expenses)} expenses</title></g>`).join('')}<g class="chart-scrubber comparison-scrubber" aria-hidden="true"><line x1="0" x2="0" y1="${frame.top}" y2="${frame.top+frame.innerH}"/><circle class="income" cx="0" cy="0" r="5.5"/><circle class="expense" cx="0" cy="0" r="5.5"/><g class="scrub-tooltip comparison-tooltip"><rect x="-67" y="-54" width="134" height="44" rx="9"/><text class="scrub-label" x="0" y="-41" text-anchor="middle"></text><text class="scrub-income" x="0" y="-29" text-anchor="middle"></text><text class="scrub-expense" x="0" y="-17" text-anchor="middle"></text></g></g></svg>`;
+  }
+
+  function analyticsPaymentClient(payment) {
+    const invoice=payment.invoiceId?invoiceById(payment.invoiceId):null; const client=payment.clientId?clientById(payment.clientId):invoice?.clientId?clientById(invoice.clientId):null;
+    return {id:client?.id||payment.clientId||invoice?.clientId||'',name:client?.displayName||payment.clientNameSnapshot||invoice?.recipientSnapshot?.displayName||payment.sourceName||'Other income'};
+  }
+
+  const ANALYTICS_PIE_COLORS=['#f0b64f','#4da8ef','#64cf83','#ef7667','#a56ee8','#c3d5df','#8fd0c5','#d9c56e','#7da9ef','#cf91c9'];
+  const CATEGORY_COLUMN_ORDER=['food','gas','parking','car','subscriptions','misc'];
+  const CATEGORY_COLUMN_COLORS={food:'#f0b64f',gas:'#4da8ef',parking:'#64cf83',car:'#ef7667',subscriptions:'#a56ee8',misc:'#c3d5df'};
+  // Temporary review fixture. These records are virtual and never enter the
+  // ledger, evidence vault, backups, or localStorage. Set to false (or remove
+  // the helpers) when device review of the chart is complete.
+  const ANALYTICS_REVIEW_SAMPLE_DATA=true;
+
+  function analyticsReviewRandom(seed=0x41a7c9) {
+    let state=seed>>>0;
+    return ()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296};
+  }
+
+  function analyticsReviewFixture() {
+    const random=analyticsReviewRandom();
+    const months=['2026-04','2026-05','2026-06','2026-07','2026-08','2026-09'];
+    const monthShape=[.88,1.24,.71,1.43,.96,1.17];
+    const sources=[
+      {name:'R.B 1',base:126000,rate:5000},
+      {name:'Clinic',base:98000,rate:6200},
+      {name:'Client imagine omg',base:76000,rate:4100},
+      {name:'Small help guy',base:52000,rate:3600},
+      {name:'Workshop referrals',base:38000,rate:4500}
+    ];
+    const categories=[
+      {key:'food',base:28000,merchants:['Trader Joe’s','Local café','Meal stop']},
+      {key:'gas',base:39000,merchants:['Shell','Chevron','Fuel station']},
+      {key:'parking',base:13500,merchants:['City parking','Campus garage','Meter parking']},
+      {key:'car',base:47000,merchants:['Auto service','Car wash','Parts shop']},
+      {key:'subscriptions',base:21500,merchants:['Cloud tools','Scheduling app','Business software']},
+      {key:'misc',base:18000,merchants:['Local supply','General purchase','Office stop']},
+      {key:'fees',base:11000,merchants:['Payment processor','Bank fee','Platform fee']},
+      {key:'work_equipment',base:36000,merchants:['Office equipment','Work supplies','Device accessory']}
+    ];
+    const payments=[],expenses=[],sessions=[];
+    months.forEach((month,monthIndex)=>{
+      sources.forEach((source,sourceIndex)=>{
+        const active=sourceIndex<2||random()>.28;
+        if(!active)return;
+        const volatility=.62+random()*.82;
+        const amountCents=Math.max(15000,Math.round(source.base*monthShape[monthIndex]*volatility/500)*500);
+        payments.push({id:`analytics-review-payment-${monthIndex}-${sourceIndex}`,kind:'direct',sourceName:source.name,clientNameSnapshot:source.name,receivedDate:`${month}-${String(5+sourceIndex*4+(monthIndex%3)).padStart(2,'0')}`,amountCents,method:['zelle','bank_transfer','check','cash'][Math.floor(random()*4)],analyticsReviewSample:true});
+      });
+      categories.forEach((category,categoryIndex)=>{
+        const active=categoryIndex<3||random()>.22;
+        if(!active)return;
+        const occasionalSpike=(monthIndex===1&&category.key==='work_equipment')||(monthIndex===3&&category.key==='car')?1.9:1;
+        const businessCents=Math.max(2500,Math.round(category.base*(.52+random()*1.08)*occasionalSpike/250)*250);
+        const mixed=random()>.72;const totalCents=mixed?Math.round(businessCents/(.55+random()*.3)):businessCents;
+        expenses.push({id:`analytics-review-expense-${monthIndex}-${categoryIndex}`,merchant:category.merchants[(monthIndex+categoryIndex)%category.merchants.length],date:`${month}-${String(4+categoryIndex*3+(monthIndex%2)).padStart(2,'0')}`,totalCents,businessCents,category:category.key,classification:mixed?'mixed':'business',reviewStatus:random()>.9?'needs_review':'ready',analyticsReviewSample:true});
+      });
+      const sessionCount=3+Math.floor(random()*5);
+      for(let sessionIndex=0;sessionIndex<sessionCount;sessionIndex+=1){
+        const source=sources[(sessionIndex+monthIndex*2)%sources.length];const startMinutes=8*60+Math.floor(random()*8)*30;const duration=[90,135,180,225,300,360][Math.floor(random()*6)];const endMinutes=Math.min(23*60+55,startMinutes+duration);const time=minutes=>`${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
+        sessions.push({id:`analytics-review-session-${monthIndex}-${sessionIndex}`,clientId:'',clientNameSnapshot:source.name,date:`${month}-${String(3+sessionIndex*4+(monthIndex%3)).padStart(2,'0')}`,startTime:time(startMinutes),endTime:time(endMinutes),rateCents:source.rate,invoiceStatus:random()>.38?'invoiced':'uninvoiced',analyticsReviewSample:true});
+      }
+    });
+    return {payments,expenses,sessions};
+  }
+
+  const ANALYTICS_REVIEW_FIXTURE=analyticsReviewFixture();
+
+  function analyticsReviewSampleData() {
+    if(!ANALYTICS_REVIEW_SAMPLE_DATA||document.body?.dataset.analyticsSample!=='true')return {payments:[],expenses:[],sessions:[]};
+    const businessId=activeBusiness().id;
+    return Object.fromEntries(Object.entries(ANALYTICS_REVIEW_FIXTURE).map(([key,records])=>[key,records.map(record=>({...record,businessId}))]));
+  }
+
+  function analyticsPaymentsForReview() { const sample=analyticsReviewSampleData();return sample.payments.length?sample.payments:businessPayments(); }
+  function analyticsExpensesForReview() { const sample=analyticsReviewSampleData();return sample.expenses.length?sample.expenses:businessExpenses(); }
+  function analyticsSessionsForReview() { const sample=analyticsReviewSampleData();return sample.sessions.length?sample.sessions:businessSessions(); }
+
+  function analyticsExpenseCategoryChart(buckets,expenses) {
+    const categoryTotals=new Map();
+    expenses.forEach(expense=>{const cents=Number(expense.businessCents||0);if(cents<=0)return;categoryTotals.set(expense.category,(categoryTotals.get(expense.category)||0)+cents)});
+    const ranked=[...categoryTotals].sort((a,b)=>{const aIndex=CATEGORY_COLUMN_ORDER.indexOf(a[0]),bIndex=CATEGORY_COLUMN_ORDER.indexOf(b[0]);if(aIndex>=0||bIndex>=0)return (aIndex<0?999:aIndex)-(bIndex<0?999:bIndex);return b[1]-a[1]});
+    if(!ranked.length)return '<div class="analytics-empty"><strong>No categorized business expenses</strong><small>Monthly category stacks will appear from saved business-use expense amounts.</small></div>';
+    const leading=ranked.length>8?ranked.slice(0,7):ranked; const remainder=ranked.length>8?ranked.slice(7):[];
+    const series=leading.map(([key,total],index)=>({key,label:expenseCategoryLabel(key),total,color:CATEGORY_COLUMN_COLORS[key]||ANALYTICS_PIE_COLORS[(index+6)%ANALYTICS_PIE_COLORS.length]}));
+    if(remainder.length)series.push({key:'other',label:'Other',total:remainder.reduce((n,item)=>n+item[1],0),keys:remainder.map(item=>item[0]),color:ANALYTICS_PIE_COLORS[7]});
+    const monthValues=buckets.map(bucket=>{const values=new Map(series.map(item=>[item.key,0]));expenses.filter(expense=>String(expense.date||'').slice(0,7)===bucket.key).forEach(expense=>{const cents=Number(expense.businessCents||0);if(cents<=0)return;const key=values.has(expense.category)?expense.category:(remainder.some(item=>item[0]===expense.category)?'other':'');if(key)values.set(key,values.get(key)+cents)});return values});
+    const totals=monthValues.map(values=>[...values.values()].reduce((n,value)=>n+value,0));
+    const frame=analyticsChartFrame(buckets,totals,{height:330});const baseline=frame.y(0);const slot=frame.innerW/Math.max(1,buckets.length);const categoryX=index=>frame.left+(index+.5)*slot;const barWidth=Math.min(68,Math.max(34,slot*.58));
+    const gradientDefs=series.map((item,index)=>`<linearGradient id="categoryColumnFill${index}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${item.color}" stop-opacity=".98"/><stop offset=".48" stop-color="${item.color}" stop-opacity=".82"/><stop offset="1" stop-color="${item.color}" stop-opacity=".95"/></linearGradient>`).join('');
+    const columnClipDefs=buckets.map((bucket,index)=>{const columnTop=totals[index]>0?frame.y(totals[index]):baseline;const columnHeight=Math.max(0,baseline-columnTop);return `<clipPath id="categoryColumnClip${index}"><rect x="${categoryX(index)-barWidth/2}" y="${columnTop}" width="${barWidth}" height="${columnHeight}" rx="6"/></clipPath>`}).join('');
+    const bars=buckets.map((bucket,index)=>{let cumulative=0;
+      const x=categoryX(index);const segments=series.map((item,seriesIndex)=>{const value=monthValues[index].get(item.key)||0;if(value<=0)return '';const start=cumulative,end=cumulative+value; cumulative=end;const top=frame.y(end),bottom=frame.y(start),height=bottom-top;const tooltipLabel=`${bucket.label} · ${item.label}`;return `<rect class="category-column-segment" data-category="${escapeHtml(item.key)}" data-category-label="${escapeHtml(item.label)}" data-category-color="${item.color}" data-month-label="${escapeHtml(bucket.label)}" data-segment-cents="${value}" tabindex="0" aria-label="${escapeHtml(`${tooltipLabel}: ${formatMoney(value)}`)}" x="${x-barWidth/2}" y="${top}" width="${barWidth}" height="${Math.max(.5,height)}" fill="url(#categoryColumnFill${seriesIndex})" style="--category-color:${item.color}"><title>${escapeHtml(tooltipLabel)} · ${formatMoney(value)}</title></rect>`}).join('');
+      const columnTop=totals[index]>0?frame.y(totals[index]):baseline;const columnHeight=Math.max(0,baseline-columnTop);const totalY=Math.max(14,columnTop-9);
+      return `<g class="category-month">${totals[index]>0?`<g class="category-column-fill" clip-path="url(#categoryColumnClip${index})">${segments}</g><rect class="category-column-frame" x="${x-barWidth/2}" y="${columnTop}" width="${barWidth}" height="${columnHeight}" rx="6"/><rect class="category-column-sheen" x="${x-barWidth/2+1.5}" y="${columnTop+1.5}" width="${barWidth-3}" height="${Math.max(1,columnHeight-3)}" rx="4.75"/>`:''}${totals[index]>0?`<text class="category-column-total" x="${x}" y="${totalY}" text-anchor="middle">${formatMoney(totals[index])}</text>`:''}<text class="category-month-label" x="${x}" y="${frame.height-10}" text-anchor="middle">${escapeHtml(bucket.label)}</text></g>`}).join('');
+    const legend=series.map(item=>`<span><i style="--category-color:${item.color}"></i>${escapeHtml(item.label)}</span>`).join('');
+    return `<svg class="analytics-svg category-stack-svg category-column-chart" viewBox="0 0 ${frame.width} ${frame.height}" role="img" aria-label="Business-use expenses shown as continuous monthly columns stacked by category. Hover or focus a category section to see its amount."><defs>${gradientDefs}${columnClipDefs}</defs>${frame.grid}${bars}</svg><div class="category-segment-tooltip" data-category-tooltip role="status" aria-live="polite" aria-hidden="true"><span></span><strong></strong></div><div class="category-stack-legend" aria-label="Expense categories">${legend}</div>`;
+  }
+
+  function analyticsPagination(kind,page,totalPages,totalItems) {
+    if(totalPages<=1)return '';
+    return `<div class="analytics-pagination" aria-label="${kind==='client'?'Income source':'Expense category'} pages"><button type="button" data-analytics-page="${kind}" data-page-delta="-1" aria-label="Previous page" ${page<=1?'disabled':''}>‹</button><span><strong>${page}</strong> / ${totalPages}<small>${totalItems} items</small></span><button type="button" data-analytics-page="${kind}" data-page-delta="1" aria-label="Next page" ${page>=totalPages?'disabled':''}>›</button></div>`;
+  }
+
+  function analyticsShare(cents,total) {
+    return total>0?Math.max(0,Math.min(100,Number(cents||0)/total*100)):0;
+  }
+
+  function analyticsShareLabel(cents,total) {
+    const rounded=Math.round(analyticsShare(cents,total)*10)/10;
+    return `${Number.isInteger(rounded)?rounded:rounded.toFixed(1)}%`;
+  }
+
+  function analyticsSourceColor(row,index,total) {
+    const client=row.id?clientById(row.id):null;
+    if(client)return `var(--client-${clientColorKey(client)})`;
+    return ANALYTICS_PIE_COLORS[total>5&&index>=5?5:index%ANALYTICS_PIE_COLORS.length];
+  }
+
+  function renderAnalytics() {
+    const host=$('[data-home-panel="analytics"]'); if(!host)return;
+    const bounds=analyticsRangeBounds(); const trend=analyticsTrendBounds(bounds); const inCurrent=v=>dateInBounds(v,bounds.start,bounds.end);
+    syncAnalyticsPeriodControls();
+    const payments=analyticsPaymentsForReview().filter(x=>inCurrent(x.receivedDate));
+    const expenses=analyticsExpensesForReview().filter(x=>inCurrent(x.date));
+    const sessions=analyticsSessionsForReview().filter(x=>inCurrent(x.date));
+    const invoices=businessInvoices().filter(x=>inCurrent(x.issueDate));
+    const received=payments.reduce((n,x)=>n+Number(x.amountCents||0),0); const spent=expenses.reduce((n,x)=>n+Number(x.businessCents||0),0); const minutes=sessions.reduce((n,x)=>n+sessionMinutes(x),0); const net=received-spent;
+    const trendPayments=analyticsPaymentsForReview().filter(x=>dateInBounds(x.receivedDate,trend.currentStart,trend.currentEnd)); const previousPayments=analyticsPaymentsForReview().filter(x=>dateInBounds(x.receivedDate,trend.previousStart,trend.previousEnd));
+    const trendExpenses=analyticsExpensesForReview().filter(x=>dateInBounds(x.date,trend.currentStart,trend.currentEnd)); const previousExpenses=analyticsExpensesForReview().filter(x=>dateInBounds(x.date,trend.previousStart,trend.previousEnd));
+    const trendSessions=analyticsSessionsForReview().filter(x=>dateInBounds(x.date,trend.currentStart,trend.currentEnd)); const previousSessions=analyticsSessionsForReview().filter(x=>dateInBounds(x.date,trend.previousStart,trend.previousEnd));
+    const monthReceived=trendPayments.reduce((n,x)=>n+Number(x.amountCents||0),0); const previousReceived=previousPayments.reduce((n,x)=>n+Number(x.amountCents||0),0);
+    const monthSpent=trendExpenses.reduce((n,x)=>n+Number(x.businessCents||0),0); const previousSpent=previousExpenses.reduce((n,x)=>n+Number(x.businessCents||0),0);
+    const monthMinutes=trendSessions.reduce((n,x)=>n+sessionMinutes(x),0); const previousMinutes=previousSessions.reduce((n,x)=>n+sessionMinutes(x),0);
+    const kpis=[['received','Received',received,monthReceived,previousReceived,'money'],['expenses','Business-use expenses',spent,monthSpent,previousSpent,'money'],['net','Net Received',net,monthReceived-monthSpent,previousReceived-previousSpent,'money'],['hours','Hours logged',minutes,monthMinutes,previousMinutes,'hours']];
+    $('#analyticsKpis').innerHTML=kpis.map(([kind,label,total,currentMonth,previousMonth,type])=>{const comp=analyticsComparison(currentMonth,previousMonth,{money:type==='money',hours:type==='hours'});const display=type==='hours'?`${(total/60).toFixed(total%60?1:0)}h`:formatMoney(total,activeBusiness().currency);const change=comp.pct==null?'—':`${comp.direction==='up'?'↑':comp.direction==='down'?'↓':'→'} ${Math.abs(comp.pct)}%`;return `<button class="analytics-kpi" data-analytics-evidence="${kind}"><span>${label}</span><strong>${display}</strong><small class="comparison ${comp.direction}"><span class="comparison-change">${change}</span><em>from last month</em></small></button>`}).join('');
+    const netBasisLabels={business:'Business',all:'All'};
+    $('#analyticsNetBasisLabel').textContent=netBasisLabels[ui.analyticsNetExpenseBasis]||netBasisLabels.business;
+    $('#analyticsNetBasisBtn').setAttribute('aria-label',`Net movement calculation: received minus ${ui.analyticsNetExpenseBasis==='all'?'all expenses':'business expenses'}`);
+    const buckets=analyticsMonthBuckets(bounds); $('#analyticsCashflowChart').innerHTML=analyticsNetFlowChart(buckets); $('#analyticsIncomeExpenseChart').innerHTML=analyticsIncomeExpenseChart(buckets); $('#analyticsExpenseCategoryChart').innerHTML=analyticsExpenseCategoryChart(buckets,expenses);
+    const clientMap=new Map(); payments.forEach(payment=>{const c=analyticsPaymentClient(payment);const key=c.id||`name:${c.name}`;const row=clientMap.get(key)||{key,id:c.id,name:c.name,cents:0,count:0,minutes:0,sessions:0};row.cents+=Number(payment.amountCents||0);row.count++;clientMap.set(key,row)});
+    sessions.forEach(session=>{const client=clientById(session.clientId);const name=client?.displayName||session.clientNameSnapshot||'Unassigned work';const key=client?.id||session.clientId||`name:${name}`;const row=clientMap.get(key)||{key,id:client?.id||session.clientId||'',name,cents:0,count:0,minutes:0,sessions:0};row.minutes+=sessionMinutes(session);row.sessions++;clientMap.set(key,row)});
+    const clients=[...clientMap.values()].sort((a,b)=>b.cents-a.cents||b.minutes-a.minutes);const clientPages=Math.max(1,Math.ceil(clients.length/ui.analyticsPageSize));ui.analyticsClientPage=Math.min(clientPages,Math.max(1,ui.analyticsClientPage));const clientStart=(ui.analyticsClientPage-1)*ui.analyticsPageSize;const visibleClients=clients.slice(clientStart,clientStart+ui.analyticsPageSize);
+    $('#analyticsClients').innerHTML=clients.length?`${visibleClients.map((x,index)=>{const globalIndex=clientStart+index;const shareColor=analyticsSourceColor(x,globalIndex,clients.length);return `<button class="analytics-rank-row" style="--slice-color:${shareColor};--share-color:${shareColor}" data-analytics-client="${escapeHtml(x.key)}"><span><span class="analytics-rank-title"><strong>${escapeHtml(x.name)}</strong><b class="analytics-share">${analyticsShareLabel(x.cents,received)}</b></span><small>${x.count} ${x.count===1?'payment':'payments'} · ${(x.minutes/60).toFixed(x.minutes%60?1:0)}h logged</small></span><span class="rank-track" aria-hidden="true"><i style="--rank:${analyticsShare(x.cents,received)}%"></i></span><strong>${formatMoney(x.cents,activeBusiness().currency)}</strong></button>`}).join('')}${analyticsPagination('client',ui.analyticsClientPage,clientPages,clients.length)}`:'<div class="analytics-empty"><strong>No client activity yet</strong><small>Income and workload appear from Payments and Work Sessions.</small></div>';
+    $('#analyticsIncomeTotal').textContent=formatMoney(received,activeBusiness().currency);
+    const categoryMap=new Map(); expenses.forEach(expense=>{const cents=Number(expense.businessCents||0);if(cents<=0)return;const row=categoryMap.get(expense.category)||{key:expense.category,label:expenseCategoryLabel(expense.category),cents:0,count:0};row.cents+=cents;row.count++;categoryMap.set(expense.category,row)});const categories=[...categoryMap.values()].sort((a,b)=>b.cents-a.cents);const categoryPages=Math.max(1,Math.ceil(categories.length/ui.analyticsPageSize));ui.analyticsExpensePage=Math.min(categoryPages,Math.max(1,ui.analyticsExpensePage));const categoryStart=(ui.analyticsExpensePage-1)*ui.analyticsPageSize;const visibleCategories=categories.slice(categoryStart,categoryStart+ui.analyticsPageSize);
+    $('#analyticsExpenses').innerHTML=categories.length?`${visibleCategories.map((x,index)=>{const globalIndex=categoryStart+index;return `<button class="analytics-rank-row" style="--slice-color:${ANALYTICS_PIE_COLORS[categories.length>5&&globalIndex>=5?5:globalIndex%ANALYTICS_PIE_COLORS.length]};--share-color:#efb66c" data-analytics-category="${x.key}"><span><span class="analytics-rank-title"><strong>${escapeHtml(x.label)}</strong><b class="analytics-share">${analyticsShareLabel(x.cents,spent)}</b></span><small>${x.count} ${x.count===1?'record':'records'}</small></span><span class="rank-track expense" aria-hidden="true"><i style="--rank:${analyticsShare(x.cents,spent)}%"></i></span><strong>${formatMoney(x.cents,activeBusiness().currency)}</strong></button>`}).join('')}${analyticsPagination('expense',ui.analyticsExpensePage,categoryPages,categories.length)}`:'<div class="analytics-empty"><strong>No business-use expenses</strong><small>Category patterns will appear as expenses are recorded.</small></div>';
+    $('#analyticsExpenseTotal').textContent=formatMoney(spent,activeBusiness().currency);
+    const openInvoices=invoices.filter(x=>x.status==='sent'&&invoiceBalanceCents(x)>0);const overdue=openInvoices.filter(x=>invoiceDisplayStatus(x)==='Overdue');const paid=invoices.filter(x=>invoiceDisplayStatus(x)==='Paid');const billed=invoices.filter(x=>x.status!=='void').reduce((n,x)=>n+invoiceTotalCents(x),0);const collected=invoices.reduce((n,x)=>n+invoicePaidCents(x),0);const rate=billed?Math.min(100,Math.round(collected/billed*100)):0;const healthState=!billed?'neutral':rate>80?'healthy':rate>=50?'watch':'critical';
+    $('#analyticsInvoiceBadge').textContent=`${openInvoices.length} open`;
+    $('#analyticsInvoiceHealth').innerHTML=`<button class="invoice-health-ring health-${healthState}" data-analytics-invoices="all" style="--collection:${rate}%"><span><strong>${rate}%</strong><small>collected</small></span></button><div class="invoice-health-stats"><button data-analytics-invoices="open"><span class="semantic-outstanding">Outstanding</span><strong>${formatMoney(openInvoices.reduce((n,x)=>n+invoiceBalanceCents(x),0))}</strong><small>${openInvoices.length} open</small></button><button data-analytics-invoices="overdue"><span class="semantic-overdue">Overdue</span><strong>${overdue.length}</strong><small>${formatMoney(overdue.reduce((n,x)=>n+invoiceBalanceCents(x),0))} due</small></button><button data-analytics-invoices="paid"><span class="semantic-paid">Paid</span><strong>${paid.length}</strong><small>${formatMoney(collected)} received</small></button></div>`;
+    bindAnalyticsInteractions(bounds);
+  }
+
+  function bindAnalyticsScrubber(host) {
+    const svg=$('svg.scrubbable-chart',host); if(!svg)return;
+    const mode=svg.dataset.scrubMode||'net'; const pointNodes=$$('[data-chart-index]',svg); const scrubber=$('.chart-scrubber',svg); if(!pointNodes.length||!scrubber)return;
+    const points=pointNodes.map(node=>({x:Number(node.dataset.chartX),y:Number(node.dataset.chartY),value:Number(node.dataset.chartValue),incomeY:Number(node.dataset.chartIncomeY),expenseY:Number(node.dataset.chartExpenseY),incomeValue:Number(node.dataset.chartIncomeValue),expenseValue:Number(node.dataset.chartExpenseValue),label:node.dataset.chartLabel}));
+    const guide=$('line',scrubber),tooltip=$('.scrub-tooltip',scrubber),label=$('.scrub-label',scrubber),value=$('.scrub-value',scrubber),netDot=$('circle.net',scrubber),incomeDot=$('circle.income',scrubber),expenseDot=$('circle.expense',scrubber),incomeValue=$('.scrub-income',scrubber),expenseValue=$('.scrub-expense',scrubber),netPath=$('.chart-line.net',svg),incomePath=$('.chart-line.income',svg),expensePath=$('.chart-line.expense',svg); let tracking=false,pendingX=null,frame=null,hideTimer=null,startClientX=0,moved=false,hapticsActive=false,lastHapticIndex=-1,lastHapticAt=0;
+    const curvePointForX=(path,x,fallbackY)=>{if(!path?.getTotalLength||!path?.getPointAtLength)return{x,y:fallbackY};const length=path.getTotalLength();let low=0,high=length,point=path.getPointAtLength(0);for(let i=0;i<18;i++){const mid=(low+high)/2;point=path.getPointAtLength(mid);if(point.x<x)low=mid;else high=mid}return path.getPointAtLength((low+high)/2)};
+    const pulse=index=>{if(!hapticsActive||index===lastHapticIndex)return;lastHapticIndex=index;const now=Date.now();if(now-lastHapticAt<38)return;lastHapticAt=now;try{navigator.vibrate?.(5)}catch(error){/* Haptics are an optional browser capability. */}};
+    const clearInspection=()=>{svg.classList.remove('is-scrubbing');pointNodes.forEach(node=>node.classList.remove('is-inspected'));scrubber.classList.remove('active')};
+    const paint=()=>{frame=null;if(pendingX==null)return;const x=Math.max(points[0].x,Math.min(points[points.length-1].x,pendingX));let nearestIndex=0;for(let i=1;i<points.length;i++)if(Math.abs(points[i].x-x)<Math.abs(points[nearestIndex].x-x))nearestIndex=i;const nearest=points[nearestIndex];pulse(nearestIndex);svg.classList.add('is-scrubbing');pointNodes.forEach((node,index)=>node.classList.toggle('is-inspected',index===nearestIndex));
+      if(mode==='comparison'){const incomeCurve=curvePointForX(incomePath,x,nearest.incomeY),expenseCurve=curvePointForX(expensePath,x,nearest.expenseY),tooltipX=Math.max(70,Math.min(690,x)),tooltipY=Math.max(70,Math.min(incomeCurve.y,expenseCurve.y));guide.setAttribute('x1',x);guide.setAttribute('x2',x);incomeDot?.setAttribute('cx',incomeCurve.x);incomeDot?.setAttribute('cy',incomeCurve.y);expenseDot?.setAttribute('cx',expenseCurve.x);expenseDot?.setAttribute('cy',expenseCurve.y);tooltip.setAttribute('transform',`translate(${tooltipX} ${tooltipY})`);label.textContent=nearest.label;incomeValue.textContent=`Income ${formatMoney(nearest.incomeValue,activeBusiness().currency)}`;expenseValue.textContent=`Expenses ${formatMoney(nearest.expenseValue,activeBusiness().currency)}`;}
+      else {const curve=mode==='net'?curvePointForX(netPath,x,nearest.y):{x:nearest.x,y:nearest.y};const tooltipX=Math.max(60,Math.min(700,curve.x)),tooltipY=Math.max(58,curve.y);guide.setAttribute('x1',curve.x);guide.setAttribute('x2',curve.x);(netDot||expenseDot)?.setAttribute('cx',curve.x);(netDot||expenseDot)?.setAttribute('cy',curve.y);tooltip.setAttribute('transform',`translate(${tooltipX} ${tooltipY})`);label.textContent=nearest.label;value.textContent=formatMoney(nearest.value,activeBusiness().currency);}
+      scrubber.classList.add('active')};
+    const queue=event=>{const rect=svg.getBoundingClientRect();if(!rect.width)return;pendingX=(event.clientX-rect.left)/rect.width*760;if(!frame)frame=requestAnimationFrame(paint)};
+    svg.addEventListener('pointerdown',event=>{tracking=true;moved=false;hapticsActive=event.pointerType!=='mouse';lastHapticIndex=-1;startClientX=event.clientX;clearTimeout(hideTimer);svg.setPointerCapture?.(event.pointerId);queue(event)});
+    svg.addEventListener('pointermove',event=>{if(tracking&&Math.abs(event.clientX-startClientX)>6)moved=true;if(tracking||event.pointerType==='mouse')queue(event)});
+    svg.addEventListener('pointerup',event=>{tracking=false;hapticsActive=false;svg.releasePointerCapture?.(event.pointerId);if(event.pointerType!=='mouse')hideTimer=setTimeout(clearInspection,1400);setTimeout(()=>{moved=false},0)});
+    svg.addEventListener('pointercancel',()=>{tracking=false;hapticsActive=false;clearInspection()});
+    svg.addEventListener('pointerleave',event=>{if(!tracking&&event.pointerType==='mouse')clearInspection()});
+  }
+
+  function bindCategorySegmentTooltips(host) {
+    if(!host)return;
+    const tooltip=$('[data-category-tooltip]',host);const segments=$$('.category-column-segment',host);if(!tooltip||!segments.length)return;
+    const label=$('span',tooltip),amount=$('strong',tooltip);let hideTimer=null;
+    const place=(segment,event)=>{const hostRect=host.getBoundingClientRect(),segmentRect=segment.getBoundingClientRect(),tooltipRect=tooltip.getBoundingClientRect();const pointerX=Number.isFinite(event?.clientX)?event.clientX:segmentRect.left+segmentRect.width/2;const pointerY=Number.isFinite(event?.clientY)?event.clientY:segmentRect.top+segmentRect.height/2;const localX=Math.max(tooltipRect.width/2+8,Math.min(hostRect.width-tooltipRect.width/2-8,pointerX-hostRect.left));const localY=Math.max(8,Math.min(hostRect.height-8,pointerY-hostRect.top));tooltip.style.setProperty('--tooltip-x',`${localX}px`);tooltip.style.setProperty('--tooltip-y',`${localY}px`);tooltip.classList.toggle('below',localY<tooltipRect.height+24)};
+    const show=(segment,event)=>{clearTimeout(hideTimer);label.textContent=`${segment.dataset.monthLabel} · ${segment.dataset.categoryLabel}`;amount.textContent=formatMoney(Number(segment.dataset.segmentCents||0),activeBusiness().currency);tooltip.style.setProperty('--tooltip-color',segment.dataset.categoryColor||'#8dcff1');tooltip.setAttribute('aria-hidden','false');tooltip.classList.add('is-visible');place(segment,event)};
+    const hide=(delay=0)=>{clearTimeout(hideTimer);hideTimer=setTimeout(()=>{tooltip.classList.remove('is-visible');tooltip.setAttribute('aria-hidden','true')},delay)};
+    segments.forEach(segment=>{segment.addEventListener('pointerenter',event=>show(segment,event));segment.addEventListener('pointermove',event=>place(segment,event));segment.addEventListener('pointerleave',()=>hide());segment.addEventListener('pointercancel',()=>hide());segment.addEventListener('focus',()=>show(segment));segment.addEventListener('blur',()=>hide());segment.addEventListener('pointerdown',event=>{show(segment,event);if(event.pointerType!=='mouse')hide(1800)})});
+  }
+
+  function bindAnalyticsInteractions(bounds) {
+    const netBasisButton=$('#analyticsNetBasisBtn');
+    if(netBasisButton)netBasisButton.onclick=event=>openFilterMenu(event.currentTarget,[
+      {value:'business',label:'Received minus business expenses'},
+      {value:'all',label:'Received minus all expenses'}
+    ],ui.analyticsNetExpenseBasis,value=>{ui.analyticsNetExpenseBasis=value;renderAnalytics()});
+    $$('[data-analytics-evidence]').forEach(btn=>btn.addEventListener('click',()=>openAnalyticsEvidence(btn.dataset.analyticsEvidence,{bounds})));
+    $$('[data-analytics-client]').forEach(btn=>btn.addEventListener('click',()=>openAnalyticsEvidence('client',{bounds,clientKey:btn.dataset.analyticsClient})));
+    $$('[data-analytics-category]').forEach(btn=>btn.addEventListener('click',()=>openAnalyticsEvidence('category',{bounds,category:btn.dataset.analyticsCategory})));
+    $$('[data-analytics-invoices]').forEach(btn=>btn.addEventListener('click',()=>openAnalyticsEvidence('invoices',{bounds,status:btn.dataset.analyticsInvoices})));
+    $$('[data-analytics-page]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.analyticsPage==='client'?'analyticsClientPage':'analyticsExpensePage';ui[key]=Math.max(1,ui[key]+Number(btn.dataset.pageDelta||0));renderAnalytics()}));
+    bindAnalyticsScrubber($('#analyticsCashflowChart'));
+    bindAnalyticsScrubber($('#analyticsIncomeExpenseChart'));
+    bindCategorySegmentTooltips($('#analyticsExpenseCategoryChart'));
+  }
+
+  function openAnalyticsEvidence(kind,{bounds=analyticsRangeBounds(),month='',clientKey='',clientKeys=[],category='',categoryKeys=[],status='all'}={}) {
+    const start=month?`${month}-01`:bounds.start; const monthEnd=month?dateOnlyFromDate(new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0))):bounds.end; const end=month?monthEnd:bounds.end;
+    let title='Analytics evidence'; let note='This view is derived directly from source records.'; let rows=[]; let totalLabel='TOTAL'; let total='0';
+    const payments=analyticsPaymentsForReview().filter(x=>dateInBounds(x.receivedDate,start,end)); const expenses=analyticsExpensesForReview().filter(x=>dateInBounds(x.date,start,end)); const sessions=analyticsSessionsForReview().filter(x=>dateInBounds(x.date,start,end)); const invoices=businessInvoices().filter(x=>dateInBounds(x.issueDate,start,end));
+    const paymentRow=p=>{const source=p.kind==='invoice'?(p.invoiceNumberSnapshot||invoiceById(p.invoiceId)?.number||'Invoice payment'):(p.sourceName||'Other income');const contents=`<span><strong>${escapeHtml(source)}</strong><small>${formatDate(p.receivedDate)} · ${escapeHtml(analyticsPaymentClient(p).name)}</small></span><strong>${formatMoney(p.amountCents||0)}</strong><span>${p.analyticsReviewSample?'Sample':'›'}</span>`;return p.analyticsReviewSample?`<div class="evidence-record-row is-review-sample">${contents}</div>`:`<button class="evidence-record-row" data-evidence-payment="${p.id}">${contents}</button>`};
+    const expenseRow=e=>{const contents=`<span><strong>${escapeHtml(e.merchant||expenseCategoryLabel(e.category))}</strong><small>${formatDate(e.date)} · ${escapeHtml(expenseCategoryLabel(e.category))}${e.receiptId?' · Receipt':''}</small></span><strong>${formatMoney(e.businessCents||0)}</strong><span>${e.analyticsReviewSample?'Sample':'›'}</span>`;return e.analyticsReviewSample?`<div class="evidence-record-row is-review-sample">${contents}</div>`:`<button class="evidence-record-row" data-evidence-expense="${e.id}">${contents}</button>`};
+    const sessionRow=s=>{const contents=`<span><strong>${escapeHtml(clientById(s.clientId)?.displayName||s.clientNameSnapshot||'Work session')}</strong><small>${formatDate(s.date)} · ${escapeHtml(sessionTimeRangeLabel(s))}</small></span><strong>${hoursLabel(sessionMinutes(s))}</strong><span>${s.analyticsReviewSample?'Sample':'›'}</span>`;return s.analyticsReviewSample?`<div class="evidence-record-row is-review-sample">${contents}</div>`:`<button class="evidence-record-row" data-evidence-session="${s.id}">${contents}</button>`};
+    const invoiceRow=i=>`<button class="evidence-record-row" data-evidence-invoice="${i.id}"><span><strong>${escapeHtml(i.number)}</strong><small>${formatDate(i.issueDate)} · ${escapeHtml(i.recipientSnapshot?.displayName||'Client')} · ${escapeHtml(invoiceDisplayStatus(i))}</small></span><strong>${formatMoney(i.status==='void'?0:invoiceBalanceCents(i))}</strong><span>›</span></button>`;
+    if(kind==='received'){title='Received income';total=formatMoney(payments.reduce((n,x)=>n+Number(x.amountCents||0),0));rows=payments.map(paymentRow);note='Payment records are the only source of received-income totals.';}
+    else if(kind==='expenses'){title='Business expenses';total=formatMoney(expenses.reduce((n,x)=>n+Number(x.businessCents||0),0));rows=expenses.filter(x=>Number(x.businessCents||0)>0).map(expenseRow);note='Each expense contributes only its saved business-use amount.';}
+    else if(kind==='net'||kind==='cashflow'){title=month?`${new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(parseDateOnlyUtc(`${month}-01`))} business flow`:'Net Received';const income=payments.reduce((n,x)=>n+Number(x.amountCents||0),0),spent=expenses.reduce((n,x)=>n+Number(x.businessCents||0),0);total=formatMoney(income-spent);rows=[...payments.map(paymentRow),...expenses.filter(x=>Number(x.businessCents||0)>0).map(expenseRow)];note=`${formatMoney(income)} received minus ${formatMoney(spent)} in saved business-use expense amounts. This is an operational view, not bank reconciliation or formal accounting profit.`;}
+    else if(kind==='hours'){title=month?'Monthly work evidence':'Hours logged';const minutes=sessions.reduce((n,x)=>n+sessionMinutes(x),0);total=hoursLabel(minutes);totalLabel='TOTAL HOURS';rows=sessions.map(sessionRow);note='Hours come from saved Work Session start and end times.';}
+    else if(kind==='client'){const matching=payments.filter(p=>{const c=analyticsPaymentClient(p);return (c.id||`name:${c.name}`)===clientKey});const matchingSessions=sessions.filter(s=>{const c=clientById(s.clientId);const name=c?.displayName||s.clientNameSnapshot||'Unassigned work';return (c?.id||s.clientId||`name:${name}`)===clientKey});const name=matching[0]?analyticsPaymentClient(matching[0]).name:matchingSessions[0]?(clientById(matchingSessions[0].clientId)?.displayName||matchingSessions[0].clientNameSnapshot):'Client';title=`${name} activity`;total=formatMoney(matching.reduce((n,x)=>n+Number(x.amountCents||0),0));rows=[...matching.map(paymentRow),...matchingSessions.map(sessionRow)];note=`Received income is attributed from Payment links or snapshots; workload comes from ${hoursLabel(matchingSessions.reduce((n,x)=>n+sessionMinutes(x),0))} of source Work Sessions.`;}
+    else if(kind==='clientGroup'){const keySet=new Set(clientKeys);const matching=payments.filter(p=>{const c=analyticsPaymentClient(p);return keySet.has(c.id||`name:${c.name}`)});title=clientKeys.length===1?(matching[0]?`${analyticsPaymentClient(matching[0]).name} income`:'Income source'):'Grouped income sources';total=formatMoney(matching.reduce((n,x)=>n+Number(x.amountCents||0),0));rows=matching.map(paymentRow);note='This pie segment is composed only from Payment records attributed to the selected source or grouped smaller sources.';}
+    else if(kind==='category'){const matching=expenses.filter(x=>x.category===category&&Number(x.businessCents||0)>0);title=matching.length?expenseCategoryLabel(category):'Expense category';total=formatMoney(matching.reduce((n,x)=>n+Number(x.businessCents||0),0));rows=matching.map(expenseRow);note='This category total uses business-use amounts, not original transaction totals.';}
+    else if(kind==='categoryGroup'){const keySet=new Set(categoryKeys);const matching=expenses.filter(x=>keySet.has(x.category)&&Number(x.businessCents||0)>0);title=categoryKeys.length===1?(matching[0]?expenseCategoryLabel(matching[0].category):'Expense category'):'Grouped expense categories';total=formatMoney(matching.reduce((n,x)=>n+Number(x.businessCents||0),0));rows=matching.map(expenseRow);note='This pie segment is composed from saved business-use Expense amounts in the selected category or grouped smaller categories.';}
+    else if(kind==='invoices'){let matching=invoices;if(status==='open')matching=matching.filter(x=>x.status==='sent'&&invoiceBalanceCents(x)>0);if(status==='overdue')matching=matching.filter(x=>invoiceDisplayStatus(x)==='Overdue');if(status==='paid')matching=matching.filter(x=>invoiceDisplayStatus(x)==='Paid');title=status==='all'?'Invoice collection evidence':`${status[0].toUpperCase()+status.slice(1)} invoices`;total=status==='paid'?formatMoney(matching.reduce((n,x)=>n+invoicePaidCents(x),0)):formatMoney(matching.reduce((n,x)=>n+(x.status==='void'?0:invoiceBalanceCents(x)),0));totalLabel=status==='paid'?'COLLECTED':'BALANCE';rows=matching.map(invoiceRow);note='Invoice health uses issued invoice snapshots and linked Payment records; it never treats the invoice itself as cash.';}
+    $('#detailEyebrow').textContent='ANALYTICS · EVIDENCE'; $('#detailTitle').textContent=title;
+    $('#detailBody').innerHTML=`<div class="evidence-total-card"><small>${totalLabel}</small><strong>${total}</strong><span>${rows.length} source ${rows.length===1?'record':'records'} · ${formatDate(start,{month:'short',day:'numeric',year:'numeric'})}–${formatDate(end,{month:'short',day:'numeric',year:'numeric'})}</span></div><div class="trace-banner evidence-explanation"><span>↳</span><div><strong>How this was built</strong><small>${escapeHtml(note)}</small></div></div><div class="detail-section evidence-source-section"><div class="panel-title-row"><p class="eyebrow">SOURCE RECORDS</p><span class="quiet-badge green">Traceable</span></div><div class="evidence-record-list">${rows.join('')||'<div class="inline-empty"><small>No source records contribute to this view.</small></div>'}</div></div>`;
+    openModal($('#detailPanel'));
+    $$('[data-evidence-payment]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openPaymentDetail(btn.dataset.evidencePayment)));
+    $$('[data-evidence-expense]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openExpenseDetail(btn.dataset.evidenceExpense)));
+    $$('[data-evidence-session]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openSessionDetail(btn.dataset.evidenceSession)));
+    $$('[data-evidence-invoice]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openInvoiceDetail(btn.dataset.evidenceInvoice)));
+  }
+
+  function randomSample(items, count) {
+    const copy = items.slice();
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy.slice(0, Math.min(count, copy.length));
+  }
+
+  function bindHomeRecentSessionClicks() {
+    $$('[data-session-detail]', $('#recentSessions')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
+  }
+
+  function pickHomeRecentSessions(sessions) {
+    // Keep the card chronological: newest date first, then newest start time.
+    return sessions.slice().sort((a,b) => {
+      const dateCompare=String(b.date||'').localeCompare(String(a.date||''));
+      return dateCompare || String(b.startTime||'').localeCompare(String(a.startTime||''));
+    }).slice(0,4);
+  }
+
+  function renderRandomHomeSessions(sessions = businessSessions(), animate = true) {
+    const host = $('#recentSessions');
+    if (!host) return;
+    if (!sessions.length) {
+      homeRecentSignature = '';
+      host.dataset.transitioning = 'false';
+      host.classList.remove('is-crossfading');
+      host.style.height = '';
+      host.innerHTML = `<div class="inline-empty"><strong>No sessions yet</strong><small>Add your first work session and it will appear here.</small></div>`;
+      return;
+    }
+
+    const chosen = pickHomeRecentSessions(sessions);
+    const nextSignature = chosen.map(item => item.id).sort().join('|');
+    const incomingHtml = chosen.map(sessionRowCompact).join('');
+    const commit = () => {
+      host.dataset.transitioning = 'false';
+      host.classList.remove('is-crossfading');
+      host.style.height = '';
+      host.innerHTML = incomingHtml;
+      homeRecentSignature = nextSignature;
+      bindHomeRecentSessionClicks();
+    };
+
+    clearTimeout(homeRecentSwapTimer);
+    if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      commit();
+      return;
+    }
+    if (host.dataset.transitioning === 'true') return;
+
+    const outgoingHtml = host.innerHTML;
+    const currentHeight = Math.max(host.getBoundingClientRect().height, 1);
+    host.dataset.transitioning = 'true';
+    host.classList.add('is-crossfading');
+    host.style.height = `${currentHeight}px`;
+    host.innerHTML = `
+      <div class="recent-transition-layer recent-transition-outgoing">${outgoingHtml}</div>
+      <div class="recent-transition-layer recent-transition-incoming">${incomingHtml}</div>`;
+
+    const outgoingRows = $$('.recent-transition-outgoing .recent-row', host);
+    const incomingRows = $$('.recent-transition-incoming .recent-row', host);
+    outgoingRows.forEach((row, index) => row.style.setProperty('--recent-stagger', `${index * 110}ms`));
+    incomingRows.forEach((row, index) => row.style.setProperty('--recent-stagger', `${index * 120}ms`));
+
+    // Keep both sets alive during the transition so this is a true dissolve/crossfade,
+    // not an opacity fade followed by an abrupt DOM replacement.
+    homeRecentSwapTimer = setTimeout(commit, 2550);
+  }
+
+  function startHomeRecentRotation() {
+    clearInterval(homeRecentRotationTimer);
+    homeRecentRotationTimer = null;
+  }
+
+  function stopHomeRecentRotation() { clearInterval(homeRecentRotationTimer); homeRecentRotationTimer=null; }
+
+  function sessionRowCompact(s) {
+    const client = clientById(s.clientId);
+    return `<button class="recent-row" data-session-detail="${s.id}"><span class="recent-date"><strong>${formatDate(s.date,{month:'short'})}</strong><small>${formatDate(s.date,{day:'numeric'})}</small></span><span class="recent-main"><strong>${escapeHtml(client?.displayName || s.clientNameSnapshot || 'Unassigned')}</strong><small>${escapeHtml(sessionTimeRangeLabel(s))} · ${hoursLabel(sessionMinutes(s))}</small></span><span class="recent-amount">${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</span></button>`;
+  }
+
+  function renderSessions() {
+    const term = ($('#sessionSearch')?.value || '').toLowerCase().trim();
+    const availableClients = businessClients();
+    const availableClientIds = new Set(availableClients.map(client => client.id));
+    ui.sessionClientFilters = (ui.sessionClientFilters || []).filter(clientId => availableClientIds.has(clientId));
+    const selectedSessionClients = ui.sessionClientFilters.map(clientById).filter(Boolean);
+    const sessionClientLabel = selectedSessionClients.length === 1 ? selectedSessionClients[0].displayName : `${selectedSessionClients.length} clients selected`;
+    syncSubfilterTrigger($('#sessionClientSubfilterBtn'), { active:selectedSessionClients.length > 0, label:sessionClientLabel, colorKey:selectedSessionClients.length === 1 ? clientColorKey(selectedSessionClients[0]) : '' });
+    const sessionFilterLabels = { all:'All sessions', uninvoiced:'Uninvoiced', linked:'In invoice' };
+    $('#sessionFilterBtn').textContent = sessionFilterLabels[ui.sessionFilter] || 'All sessions';
+    const allSessions = businessSessions().slice().sort((a,b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`));
+    const sessions = allSessions.filter(s => {
+      const client = clientById(s.clientId);
+      const matchesTerm = !term || `${client?.displayName || s.clientNameSnapshot || ''} ${s.date || ''} ${s.notes || ''}`.toLowerCase().includes(term);
+      const matchesFilter = ui.sessionFilter === 'all' || (ui.sessionFilter === 'uninvoiced' ? s.invoiceStatus === 'uninvoiced' : s.invoiceStatus !== 'uninvoiced');
+      const matchesClient = !ui.sessionClientFilters.length || ui.sessionClientFilters.includes(s.clientId);
+      return matchesTerm && matchesFilter && matchesClient;
+    });
+
+    const pageSize = ui.sessionPageSize || 7;
+    const totalPages = Math.max(1, Math.ceil(sessions.length / pageSize));
+    ui.sessionPage = Math.min(Math.max(1, ui.sessionPage || 1), totalPages);
+    const pageStart = (ui.sessionPage - 1) * pageSize;
+    const pageSessions = sessions.slice(pageStart, pageStart + pageSize);
+    const pagination = sessions.length > pageSize ? `
+      <div class="session-pagination" aria-label="Session pages">
+        <button type="button" class="pagination-arrow" data-session-page-prev aria-label="Previous session page" ${ui.sessionPage === 1 ? 'disabled' : ''}>←</button>
+        <span class="pagination-copy"><strong>Page ${ui.sessionPage}</strong><small>of ${totalPages} · ${sessions.length} sessions</small></span>
+        <button type="button" class="pagination-arrow" data-session-page-next aria-label="Next session page" ${ui.sessionPage === totalPages ? 'disabled' : ''}>→</button>
+      </div>` : '';
+
+    $('#sessionsContainer').innerHTML = sessions.length ? `
+      <div class="table-head session-grid"><span>Client</span><span>Date</span><span>Time</span><span>Value</span><span>Status</span></div>
+      ${pageSessions.map(s => {
+        const client = clientById(s.clientId);
+        return `<button class="table-row session-grid" data-session-detail="${s.id}"><span><strong class="client-session-name ${clientColorClass(client)}">${escapeHtml(client?.displayName || 'Unassigned')}</strong><small>${escapeHtml(s.notes || 'No session note')}</small></span><span><strong>${formatDate(s.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(s.date,{weekday:'short'})}</small></span><span><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong><small>${hoursLabel(sessionMinutes(s))}</small></span><span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong><small>@ ${formatMoney(s.rateCents || 0)}/hr</small></span><span><span class="status-pill ${sessionInvoiceStatusClass(s)}">${sessionInvoiceStatusLabel(s)}</span></span></button>`;
+      }).join('')}${pagination}` : allSessions.length ? emptyState('No sessions match these filters', 'Clear the status, client, or search filter to see more work.', 'Clear session filters', 'clear-session-filters') : emptyState('No work sessions yet', 'Log completed work here. The same record can then flow into invoices and analytics.', 'Add work session', 'add-session');
+
+    $$('[data-session-detail]', $('#sessionsContainer')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
+    $('[data-session-page-prev]', $('#sessionsContainer'))?.addEventListener('click', () => {
+      if (ui.sessionPage > 1) { ui.sessionPage -= 1; renderSessions(); }
+    });
+    $('[data-session-page-next]', $('#sessionsContainer'))?.addEventListener('click', () => {
+      if (ui.sessionPage < totalPages) { ui.sessionPage += 1; renderSessions(); }
+    });
+
+    if (sessions.length > pageSize) {
+      const host = $('#sessionsContainer');
+      let touchStartX = null;
+      let touchStartY = null;
+      host.addEventListener('touchstart', event => {
+        const touch = event.changedTouches?.[0];
+        if (!touch) return;
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      }, { passive:true });
+      host.addEventListener('touchend', event => {
+        const touch = event.changedTouches?.[0];
+        if (!touch || touchStartX === null || touchStartY === null) return;
+        const dx = touch.clientX - touchStartX;
+        const dy = touch.clientY - touchStartY;
+        touchStartX = touchStartY = null;
+        if (Math.abs(dx) < 60 || Math.abs(dx) <= Math.abs(dy) * 1.15) return;
+        if (dx < 0 && ui.sessionPage < totalPages) { ui.sessionPage += 1; renderSessions(); }
+        if (dx > 0 && ui.sessionPage > 1) { ui.sessionPage -= 1; renderSessions(); }
+      }, { passive:true });
+    }
+    bindEmptyActions();
+  }
+
+  function renderClients() {
+    const term = ($('#clientSearch')?.value || '').toLowerCase().trim();
+    const clientFilterLabels = { all:'All clients', active:'Active', inactive:'Inactive' };
+    $('#clientFilterBtn').textContent = clientFilterLabels[ui.clientFilter] || 'Active';
+    const clients = businessClients().filter(c => {
+      const matchesTerm = !term || `${c.displayName} ${c.notes || ''}`.toLowerCase().includes(term);
+      const matchesFilter = ui.clientFilter === 'all' || c.status === ui.clientFilter;
+      return matchesTerm && matchesFilter;
+    });
+    $('#clientsContainer').innerHTML = clients.length ? clients.map(c => {
+      const sessions = businessSessions().filter(s => s.clientId === c.id);
+      const minutes = sessions.reduce((sum,s) => sum + sessionMinutes(s), 0);
+      return `<button class="client-card" data-client-detail="${c.id}"><div class="client-top"><span class="client-avatar client-avatar-color client-bg-${clientColorKey(c)}">${escapeHtml(initials(c.displayName))}</span><span class="status-pill ${c.status === 'active' ? 'success' : ''}">${escapeHtml(c.status)}</span></div><strong>${escapeHtml(c.displayName)}</strong><small>${escapeHtml(c.notes || 'No notes yet')}</small><div class="client-meta"><span><b>${formatMoney(c.defaultRateCents || 0)}</b><small>/hr default</small></span><span><b>${sessions.length}</b><small>sessions</small></span><span><b>${hoursLabel(minutes)}</b><small>logged</small></span></div></button>`;
+    }).join('') : emptyState(businessClients().length ? 'No clients match this filter' : 'No clients yet', businessClients().length ? 'Choose another client status to see the rest.' : 'Add the people or organizations you do work for. Names can be aliases if you prefer.', businessClients().length ? 'Show all clients' : 'Add first client', businessClients().length ? 'all-clients' : 'add-client');
+    $$('[data-client-detail]').forEach(btn => btn.addEventListener('click', () => openClientDetail(btn.dataset.clientDetail)));
+    bindEmptyActions();
+  }
+
+  function emptyState(title, copy, actionLabel, action) {
+    return `<div class="large-empty"><div class="placeholder-icon small">＋</div><strong>${escapeHtml(title)}</strong><p>${escapeHtml(copy)}</p><button class="secondary-btn" data-empty-action="${action}">${escapeHtml(actionLabel)}</button></div>`;
+  }
+
+  function bindEmptyActions() {
+    $$('[data-empty-action]').forEach(btn => btn.addEventListener('click', () => {
+      if (btn.dataset.emptyAction === 'add-client') { openClientForm(); return; }
+      if (btn.dataset.emptyAction === 'add-session') { openSessionForm(); return; }
+      if (btn.dataset.emptyAction === 'clear-session-filters') { ui.sessionFilter = 'all'; ui.sessionClientFilters = []; ui.sessionPage = 1; if ($('#sessionSearch')) $('#sessionSearch').value = ''; renderSessions(); return; }
+      if (btn.dataset.emptyAction === 'all-clients') { ui.clientFilter = 'all'; renderClients(); }
+    }));
+  }
+
+  function renderWork() { renderSessions(); renderClients(); }
+
+  function invoiceStatusClass(invoice) {
+    const status = invoiceDisplayStatus(invoice).toLowerCase();
+    if (status === 'paid') return 'success';
+    if (status === 'partially paid') return 'accent';
+    if (status === 'overdue') return 'danger';
+    if (status === 'draft') return 'accent';
+    if (status === 'sent') return 'sent';
+    if (status === 'void') return 'void';
+    return '';
+  }
+
+  function paymentKindLabel(payment) {
+    return payment.kind === 'invoice' ? 'Invoice payment' : 'Other income';
+  }
+
+  function paymentMethodLabel(method) {
+    return ({ cash:'Cash', check:'Check', zelle:'Zelle', venmo:'Venmo', ach:'ACH', direct_deposit:'Direct deposit', card:'Card', other:'Other' })[method] || 'Other';
+  }
+
+  function expenseCategoryLabel(category) { return EXPENSE_CATEGORY_LABELS[category] || 'Misc'; }
+  function expenseCategorySubfilterItems() {
+    const keys = [...new Set([...EXPENSE_CATEGORIES.map(([value]) => value), ...businessExpenses().map(expense => expense.category).filter(Boolean)])];
+    return keys.map(value => ({ value, label:expenseCategoryLabel(value) })).sort((a,b) => a.label.localeCompare(b.label));
+  }
+  function expenseClassLabel(value) { return ({ business:'Business', mixed:'Mixed', personal:'Personal' })[value] || 'Business'; }
+  function expenseClassStatus(value) { return value === 'business' ? 'success' : value === 'mixed' ? 'accent' : 'void'; }
+  function fileSizeLabel(bytes = 0) { if (bytes < 1024) return `${bytes} B`; if (bytes < 1024*1024) return `${(bytes/1024).toFixed(1)} KB`; return `${(bytes/1024/1024).toFixed(1)} MB`; }
+
+  function renderMoney() {
+    const invoices = businessInvoices().slice().sort((a,b) => `${b.issueDate || ''}${b.createdAt || ''}`.localeCompare(`${a.issueDate || ''}${a.createdAt || ''}`));
+    const payments = businessPayments().slice().sort((a,b) => `${b.receivedDate || ''}${b.createdAt || ''}`.localeCompare(`${a.receivedDate || ''}${a.createdAt || ''}`));
+    const expenses = businessExpenses().slice().sort((a,b) => `${b.date || ''}${b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.createdAt || ''}`));
+    const visibleInvoices = invoices.filter(invoice => ui.invoiceFilter === 'all' || invoiceDisplayStatus(invoice).toLowerCase().replace(/ /g,'_') === ui.invoiceFilter);
+    const visiblePayments = payments.filter(payment => ui.paymentFilter === 'all' || payment.kind === ui.paymentFilter);
+    const visibleExpenses = expenses.filter(expense => {
+      const matchesPrimary = ui.expenseFilter === 'all' || (ui.expenseFilter === 'needs_review' ? expense.reviewStatus === 'needs_review' : expense.classification === ui.expenseFilter);
+      const matchesCategory = !ui.expenseCategoryFilters.length || ui.expenseCategoryFilters.includes(expense.category);
+      return matchesPrimary && matchesCategory;
+    });
+    const sentInvoices = invoices.filter(invoice => invoice.status === 'sent');
+    const receivedTotal = payments.reduce((sum, payment) => sum + Number(payment.amountCents || 0), 0);
+    const outstandingTotal = sentInvoices.reduce((sum, invoice) => sum + invoiceBalanceCents(invoice), 0);
+    const overdueCount = invoices.filter(invoice => invoiceDisplayStatus(invoice) === 'Overdue').length;
+
+    $('#moneyReceivedTotal').textContent = formatMoney(receivedTotal, activeBusiness().currency);
+    $('#moneyOutstandingTotal').textContent = formatMoney(outstandingTotal, activeBusiness().currency);
+    $('#moneyOverdueCount').textContent = overdueCount;
+    $('#invoiceCount').textContent = invoices.length;
+    $('#paymentCount').textContent = payments.length;
+    $('#expenseCount').textContent = expenses.length;
+    const invoiceFilterLabels = { all:'All invoices', draft:'Draft', sent:'Sent', partially_paid:'Partially paid', paid:'Paid', overdue:'Overdue', void:'Void' };
+    $('#invoiceFilterBtn').textContent = invoiceFilterLabels[ui.invoiceFilter] || 'All invoices';
+    $('#invoiceFilterBtn').dataset.semanticStatus = ['paid','overdue'].includes(ui.invoiceFilter) ? ui.invoiceFilter : '';
+    const paymentFilterLabels = { all:'All payments', invoice:'Invoice payments', direct:'Other income' };
+    $('#paymentFilterBtn').textContent = paymentFilterLabels[ui.paymentFilter] || 'All payments';
+    const expenseFilterLabels = { all:'All expenses', business:'Business', mixed:'Mixed', personal:'Personal', needs_review:'Needs review' };
+    $('#expenseFilterBtn').textContent = expenseFilterLabels[ui.expenseFilter] || 'All expenses';
+    const availableExpenseCategories = new Set(expenseCategorySubfilterItems().map(item => item.value));
+    ui.expenseCategoryFilters = (ui.expenseCategoryFilters || []).filter(category => availableExpenseCategories.has(category));
+    const selectedExpenseLabels = ui.expenseCategoryFilters.map(expenseCategoryLabel);
+    const selectedExpenseLabel = selectedExpenseLabels.length === 1 ? selectedExpenseLabels[0] : `${selectedExpenseLabels.length} categories selected`;
+    syncSubfilterTrigger($('#expenseCategorySubfilterBtn'), { active:selectedExpenseLabels.length > 0, label:selectedExpenseLabel, category:true });
+    const monthExpenses = expenses.filter(expense => expense.date?.slice(0,7) === businessMonthKey());
+    $('#expenseMonthTotal').textContent = `${formatMoney(monthExpenses.reduce((sum, expense) => sum + Number(expense.totalCents || 0), 0), activeBusiness().currency)} this month`;
+    $('#expenseBusinessTotal').textContent = `${formatMoney(monthExpenses.reduce((sum, expense) => sum + Number(expense.businessCents || 0), 0), activeBusiness().currency)} business portion`;
+
+    const invoicePageSize = ui.invoicePageSize || 7;
+    const invoiceTotalPages = Math.max(1, Math.ceil(visibleInvoices.length / invoicePageSize));
+    ui.invoicePage = Math.min(Math.max(1, ui.invoicePage || 1), invoiceTotalPages);
+    const invoiceStart = (ui.invoicePage - 1) * invoicePageSize;
+    const invoicePageRecords = visibleInvoices.slice(invoiceStart, invoiceStart + invoicePageSize);
+    const invoicePagination = visibleInvoices.length > invoicePageSize ? `
+      <div class="session-pagination" aria-label="Invoice pages">
+        <button type="button" class="pagination-arrow" data-invoice-page-prev aria-label="Previous invoice page" ${ui.invoicePage === 1 ? 'disabled' : ''}>←</button>
+        <span class="pagination-copy"><strong>Page ${ui.invoicePage}</strong><small>of ${invoiceTotalPages} · ${visibleInvoices.length} invoices</small></span>
+        <button type="button" class="pagination-arrow" data-invoice-page-next aria-label="Next invoice page" ${ui.invoicePage === invoiceTotalPages ? 'disabled' : ''}>→</button>
+      </div>` : '';
+
+    const paymentPageSize = ui.paymentPageSize || 7;
+    const paymentTotalPages = Math.max(1, Math.ceil(visiblePayments.length / paymentPageSize));
+    ui.paymentPage = Math.min(Math.max(1, ui.paymentPage || 1), paymentTotalPages);
+    const paymentStart = (ui.paymentPage - 1) * paymentPageSize;
+    const paymentPageRecords = visiblePayments.slice(paymentStart, paymentStart + paymentPageSize);
+    const paymentPagination = visiblePayments.length > paymentPageSize ? `
+      <div class="session-pagination" aria-label="Payment pages">
+        <button type="button" class="pagination-arrow" data-payment-page-prev aria-label="Previous payment page" ${ui.paymentPage === 1 ? 'disabled' : ''}>←</button>
+        <span class="pagination-copy"><strong>Page ${ui.paymentPage}</strong><small>of ${paymentTotalPages} · ${visiblePayments.length} payments</small></span>
+        <button type="button" class="pagination-arrow" data-payment-page-next aria-label="Next payment page" ${ui.paymentPage === paymentTotalPages ? 'disabled' : ''}>→</button>
+      </div>` : '';
+
+    const expensePageSize = ui.expensePageSize || 7;
+    const expenseTotalPages = Math.max(1, Math.ceil(visibleExpenses.length / expensePageSize));
+    ui.expensePage = Math.min(Math.max(1, ui.expensePage || 1), expenseTotalPages);
+    const expenseStart = (ui.expensePage - 1) * expensePageSize;
+    const expensePageRecords = visibleExpenses.slice(expenseStart, expenseStart + expensePageSize);
+    const expensePagination = visibleExpenses.length > expensePageSize ? `
+      <div class="session-pagination" aria-label="Expense pages">
+        <button type="button" class="pagination-arrow" data-expense-page-prev aria-label="Previous expense page" ${ui.expensePage === 1 ? 'disabled' : ''}>←</button>
+        <span class="pagination-copy"><strong>Page ${ui.expensePage}</strong><small>of ${expenseTotalPages} · ${visibleExpenses.length} expenses</small></span>
+        <button type="button" class="pagination-arrow" data-expense-page-next aria-label="Next expense page" ${ui.expensePage === expenseTotalPages ? 'disabled' : ''}>→</button>
+      </div>` : '';
+
+    $('#invoicesContainer').innerHTML = visibleInvoices.length ? `
+      <div class="table-head invoice-grid"><span>Invoice</span><span>Client</span><span>Issued</span><span>Due</span><span>Balance</span><span>Status</span></div>
+      ${invoicePageRecords.map(invoice => {
+        const paid = invoicePaidCents(invoice);
+        const balance = invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice);
+        const total = invoiceTotalCents(invoice);
+        const paymentNote = invoice.status === 'void' ? 'Voided' : paid ? `${formatMoney(paid, activeBusiness().currency)} paid of ${formatMoney(total, activeBusiness().currency)}` : `${formatMoney(total, activeBusiness().currency)} total`;
+        return `<button class="table-row invoice-grid" data-invoice-detail="${invoice.id}"><span><strong>${escapeHtml(invoice.number)}</strong><small>${(invoice.lineItems || []).length} ${(invoice.lineItems || []).length === 1 ? 'item' : 'items'}</small></span><span><strong>${escapeHtml(invoice.recipientSnapshot?.displayName || clientById(invoice.clientId)?.displayName || 'Client')}</strong><small>${escapeHtml(invoice.recipientSnapshot?.billingEmail || 'No billing email')}</small></span><span><strong>${formatDate(invoice.issueDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(invoice.issueDate,{year:'numeric'})}</small></span><span><strong>${formatDate(invoice.dueDate,{month:'short',day:'numeric'})}</strong><small>${invoice.dueDate ? formatDate(invoice.dueDate,{weekday:'short'}) : '—'}</small></span><span><strong>${formatMoney(balance, activeBusiness().currency)}</strong><small>${escapeHtml(paymentNote)}</small></span><span><span class="status-pill ${invoiceStatusClass(invoice)}">${escapeHtml(invoiceDisplayStatus(invoice))}</span></span></button>`;
+      }).join('')}${invoicePagination}`
+      : emptyState(invoices.length ? 'No invoices match this filter' : 'No invoices yet', invoices.length ? 'Choose another invoice status to see the rest.' : 'Turn completed work into a clean invoice without entering the hours twice.', invoices.length ? 'Show all invoices' : 'Create first invoice', invoices.length ? 'all-invoices' : 'add-invoice');
+
+    $('#paymentsContainer').innerHTML = visiblePayments.length ? `
+      <div class="table-head payment-grid"><span>Source</span><span>Received</span><span>Type</span><span>Method</span><span>Amount</span></div>
+      ${paymentPageRecords.map(payment => {
+        const invoice = payment.invoiceId ? invoiceById(payment.invoiceId) : null;
+        const sourcePrimary = payment.kind === 'invoice' ? (payment.invoiceNumberSnapshot || invoice?.number || 'Invoice') : (payment.sourceName || payment.clientNameSnapshot || 'Other income');
+        const sourceSecondary = payment.kind === 'invoice' ? (payment.clientNameSnapshot || invoice?.recipientSnapshot?.displayName || 'Client') : (payment.description || 'Direct income');
+        return `<button class="table-row payment-grid" data-payment-detail="${payment.id}"><span><strong>${escapeHtml(sourcePrimary)}</strong><small>${escapeHtml(sourceSecondary)}</small></span><span><strong>${formatDate(payment.receivedDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(payment.receivedDate,{year:'numeric'})}</small></span><span><span class="status-pill ${payment.kind === 'invoice' ? 'accent' : 'success'}">${escapeHtml(paymentKindLabel(payment))}</span></span><span><strong>${escapeHtml(paymentMethodLabel(payment.method))}</strong><small>${escapeHtml(payment.reference || 'No reference')}</small></span><span><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong><small>Received</small></span></button>`;
+      }).join('')}${paymentPagination}`
+      : emptyState(payments.length ? 'No payments match this filter' : 'No payments recorded yet', payments.length ? 'Choose another payment type to see the rest.' : 'Record actual money received. Link it to an invoice or capture income that did not require one.', payments.length ? 'Show all payments' : 'Record first payment', payments.length ? 'all-payments' : 'add-payment');
+
+
+    const receiptColumnClass = ui.expenseReceiptsOpen ? 'receipts-open' : 'receipts-closed';
+    $('#expensesContainer').innerHTML = visibleExpenses.length ? `
+      <div class="table-head expense-grid ${receiptColumnClass}"><span>Date</span><span>Merchant / expense</span><span>Amount</span><span>Category</span><span class="expense-receipt-head"><span class="expense-receipt-label">Receipt</span><button type="button" class="expense-receipt-toggle" data-expense-receipts-toggle aria-expanded="${ui.expenseReceiptsOpen}" aria-label="${ui.expenseReceiptsOpen ? 'Collapse receipt column' : 'Expand receipt column'}" title="${ui.expenseReceiptsOpen ? 'Collapse receipts' : 'Show receipts'}"><span aria-hidden="true">${ui.expenseReceiptsOpen ? '‹' : '▧'}</span></button></span></div>
+      ${expensePageRecords.map(expense => {
+        const receipt = expense.receiptId ? receiptById(expense.receiptId) : null;
+        const client = expense.clientId ? clientById(expense.clientId) : null;
+        const secondary = expense.description || expense.businessPurpose || client?.displayName || 'No description';
+        return `<button class="table-row expense-grid ${receiptColumnClass}" data-expense-detail="${expense.id}"><span><strong>${formatDate(expense.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(expense.date,{year:'numeric'})}</small></span><span><strong>${escapeHtml(expense.merchant || 'Expense')}</strong><small>${escapeHtml(secondary)}</small></span><span><strong>${formatMoney(expense.totalCents || 0, activeBusiness().currency)}</strong><small>${expense.classification === 'personal' ? 'Personal' : `${formatMoney(expense.businessCents || 0, activeBusiness().currency)} business`}</small></span><span><strong>${escapeHtml(expenseCategoryLabel(expense.category))}</strong><small>${expense.reviewStatus === 'needs_review' ? '<span class="review-inline">Needs review</span>' : 'Recorded'}</small></span><span class="expense-receipt-cell" aria-hidden="${!ui.expenseReceiptsOpen}"><span class="receipt-mini ${receipt ? 'has-receipt' : ''}">${receipt ? '▧ Receipt' : '—'}</span></span></button>`;
+      }).join('')}${expensePagination}`
+      : emptyState(expenses.length ? 'No expenses match these filters' : 'No expenses yet', expenses.length ? 'Choose another classification, review state, or category.' : 'Capture money spent once and attach the receipt or business purpose while it is still fresh.', expenses.length ? 'Clear expense filters' : 'Add first expense', expenses.length ? 'all-expenses' : 'add-expense');
+
+    $$('[data-invoice-detail]', $('#invoicesContainer')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
+    $$('[data-payment-detail]', $('#paymentsContainer')).forEach(btn => btn.addEventListener('click', () => openPaymentDetail(btn.dataset.paymentDetail)));
+    $$('[data-expense-detail]', $('#expensesContainer')).forEach(btn => btn.addEventListener('click', () => openExpenseDetail(btn.dataset.expenseDetail)));
+    $('[data-expense-receipts-toggle]', $('#expensesContainer'))?.addEventListener('click', event => {
+      event.stopPropagation();
+      ui.expenseReceiptsOpen = !ui.expenseReceiptsOpen;
+      renderMoney();
+    });
+    $('[data-invoice-page-prev]', $('#invoicesContainer'))?.addEventListener('click', () => {
+      if (ui.invoicePage > 1) { ui.invoicePage -= 1; renderMoney(); }
+    });
+    $('[data-invoice-page-next]', $('#invoicesContainer'))?.addEventListener('click', () => {
+      if (ui.invoicePage < invoiceTotalPages) { ui.invoicePage += 1; renderMoney(); }
+    });
+    $('[data-payment-page-prev]', $('#paymentsContainer'))?.addEventListener('click', () => {
+      if (ui.paymentPage > 1) { ui.paymentPage -= 1; renderMoney(); }
+    });
+    $('[data-payment-page-next]', $('#paymentsContainer'))?.addEventListener('click', () => {
+      if (ui.paymentPage < paymentTotalPages) { ui.paymentPage += 1; renderMoney(); }
+    });
+    $('[data-expense-page-prev]', $('#expensesContainer'))?.addEventListener('click', () => { if (ui.expensePage > 1) { ui.expensePage -= 1; renderMoney(); } });
+    $('[data-expense-page-next]', $('#expensesContainer'))?.addEventListener('click', () => { if (ui.expensePage < expenseTotalPages) { ui.expensePage += 1; renderMoney(); } });
+    bindMoneyEmptyActions();
+  }
+
+  function bindMoneyEmptyActions() {
+    $$('[data-empty-action="add-invoice"]').forEach(btn => btn.addEventListener('click', () => openInvoiceForm()));
+    $$('[data-empty-action="all-invoices"]').forEach(btn => btn.addEventListener('click', () => { ui.invoiceFilter = 'all'; ui.invoicePage = 1; renderMoney(); }));
+    $$('[data-empty-action="add-payment"]').forEach(btn => btn.addEventListener('click', () => openPaymentForm()));
+    $$('[data-empty-action="all-payments"]').forEach(btn => btn.addEventListener('click', () => { ui.paymentFilter = 'all'; ui.paymentPage = 1; renderMoney(); }));
+    $$('[data-empty-action="add-expense"]').forEach(btn => btn.addEventListener('click', () => openExpenseForm()));
+    $$('[data-empty-action="all-expenses"]').forEach(btn => btn.addEventListener('click', () => { ui.expenseFilter = 'all'; ui.expenseCategoryFilters = []; ui.expensePage = 1; renderMoney(); }));
+  }
+
+  function syncMoneyTabs() {
+    $$('[data-money-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.moneyTab === ui.moneyTab));
+    $$('[data-money-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.moneyPanel === ui.moneyTab));
+  }
+
+  function invoiceSessionDescription(session) {
+    return `Work session · ${formatDate(session.date,{month:'short',day:'numeric',year:'numeric'})} · ${sessionTimeRangeLabel(session)}`;
+  }
+
+  function invoiceSessionLine(session, existingLineId = null) {
+    return {
+      id: existingLineId || uid('line'),
+      type: 'session',
+      sessionId: session.id,
+      description: invoiceSessionDescription(session),
+      quantityMinutes: sessionMinutes(session),
+      rateCents: session.rateCents || 0,
+      amountCents: sessionAmountCents(session)
+    };
+  }
+
+  function eligibleInvoiceSessions(clientId) {
+    const existing = ui.invoiceFormId ? invoiceById(ui.invoiceFormId) : null;
+    return businessSessions()
+      .filter(session => session.clientId === clientId && (session.invoiceStatus === 'uninvoiced' || session.invoiceId === existing?.id))
+      .sort((a,b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`));
+  }
+
+  function invoiceSelectedSessionIds() {
+    return new Set($$('input[name="invoiceSession"]:checked', $('#invoiceSessionChoices')).map(input => input.value));
+  }
+
+  function invoiceMonthKey(date) {
+    return /^\d{4}-\d{2}/.test(date || '') ? `${date.slice(0,7)}-01` : `${businessToday().slice(0,7)}-01`;
+  }
+
+  function shiftInvoiceMonth(monthKey, offset) {
+    const [year, month] = invoiceMonthKey(monthKey).split('-').map(Number);
+    const shifted = new Date(year, month - 1 + offset, 1);
+    return `${shifted.getFullYear()}-${String(shifted.getMonth()+1).padStart(2,'0')}-01`;
+  }
+
+  function initialInvoiceCalendarMonth(sessions, selectedIds, issueDate) {
+    const selected = sessions.filter(session => selectedIds.has(session.id));
+    if (selected.length) return invoiceMonthKey(selected[0].date);
+    const issueMonth = issueDate?.slice(0,7);
+    if (sessions.some(session => session.date?.startsWith(issueMonth))) return invoiceMonthKey(issueDate);
+    return invoiceMonthKey(sessions.at(-1)?.date || issueDate);
+  }
+
+  function openInvoiceForm({ existingId = null, clientId = null, sessionId = null } = {}) {
+    const clients = businessClients().filter(client => client.status === 'active' || client.id === clientId || client.id === invoiceById(existingId)?.clientId);
+    if (!clients.length) {
+      showToast('Add a client before creating an invoice.');
+      openClientForm();
+      return;
+    }
+    const existing = existingId ? invoiceById(existingId) : null;
+    if (existing?.status === 'void') { showToast('Voided invoices are preserved as read-only records.'); return; }
+    if (existing && invoicePayments(existing).length) { showToast('Correct or delete linked payments before editing this invoice.'); return; }
+    ui.invoiceFormId = existingId;
+    const rememberedClientId = entryDefaultsFor('invoice').clientId || mostRecentRecord(businessInvoices(),'issueDate')?.clientId;
+    const selectedClientId = existing?.clientId || clientId || (sessionId ? data.sessions.find(s => s.id === sessionId)?.clientId : '') || (clients.some(client => client.id === rememberedClientId) ? rememberedClientId : '') || (clients.length === 1 ? clients[0].id : '');
+    const today = businessToday();
+    const issueDate = existing?.issueDate || today;
+    const dueDate = existing?.dueDate || addDays(issueDate, activeBusiness().invoiceSettings?.defaultDueDays ?? 7);
+    const selectedSessionIds = new Set((existing?.lineItems || []).filter(item => item.type === 'session').map(item => item.sessionId));
+    if (sessionId) selectedSessionIds.add(sessionId);
+
+    $('#invoiceEyebrow').textContent = existing ? 'EDIT INVOICE · CALENDAR SWEEP' : 'CALENDAR SWEEP';
+    $('#invoiceTitle').textContent = existing ? existing.number : 'Create invoice';
+    $('#invoiceSubmitBtn').textContent = existing ? 'Save changes' : 'Save draft';
+    $('#invoiceClient').innerHTML = `<option value="">Choose client</option>${clients.map(client => `<option value="${client.id}" ${client.id === selectedClientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}`;
+    $('#invoiceClient').value = selectedClientId;
+    $('#invoiceClient').dataset.currentClientId = selectedClientId;
+    $('#invoiceNumberDisplay').value = existing?.number || invoiceNumberPreview();
+    $('#invoiceIssueDate').value = issueDate;
+    $('#invoiceDueDate').value = dueDate;
+    $('#invoiceNote').value = existing?.note || '';
+    $('#invoiceManualItems').innerHTML = '';
+    (existing?.lineItems || []).filter(item => item.type === 'manual').forEach(item => addManualInvoiceRow(item));
+    $('#invoiceCustomDetails').open = Boolean((existing?.lineItems || []).some(item => item.type === 'manual'));
+    $('#invoiceNoteDetails').open = Boolean(existing?.note);
+    $('#invoiceClientChangeConfirm').hidden = true;
+    ui.invoicePendingClientId = null;
+    $('#invoiceSheet').dataset.selectedSessions = JSON.stringify([...selectedSessionIds]);
+    const eligibleSessions = eligibleInvoiceSessions(selectedClientId);
+    ui.invoiceCalendarMonth = initialInvoiceCalendarMonth(eligibleSessions, selectedSessionIds, issueDate);
+    renderInvoiceSessionChoices(selectedClientId, selectedSessionIds);
+    updateInvoiceDraftTotal();
+    openModal($('#invoiceSheet'));
+  }
+
+  function updateInvoiceSelectionActions() {
+    const inputs = $$('input[name="invoiceSession"]', $('#invoiceSessionChoices'));
+    const selectedCount = inputs.filter(input => input.checked).length;
+    const selectAllBtn = $('#selectAllInvoiceSessions');
+    const clearBtn = $('#clearInvoiceSessions');
+    if (selectAllBtn) selectAllBtn.disabled = !inputs.length || selectedCount === inputs.length;
+    if (clearBtn) clearBtn.disabled = selectedCount === 0;
+    if ($('#invoiceCalendarClear')) $('#invoiceCalendarClear').disabled = selectedCount === 0;
+  }
+
+  function renderInvoiceSessionChoices(clientId, selected = new Set()) {
+    const sessions = eligibleInvoiceSessions(clientId);
+    const host = $('#invoiceSessionChoices');
+    const client = clientById(clientId);
+    const colorKey = clientColorKey(client);
+    $('#invoiceSheet').dataset.invoiceClientColor = colorKey;
+    $('#invoiceCalendar').dataset.clientColor = colorKey;
+    if (!clientId) {
+      host.innerHTML = `<div class="inline-empty invoice-empty"><small>Choose a client to see uninvoiced work.</small></div>`;
+      renderInvoiceCalendar('', [], selected);
+      updateInvoiceSelectionActions();
+      return;
+    }
+    if (!sessions.length) {
+      host.innerHTML = `<div class="inline-empty invoice-empty"><strong>No uninvoiced sessions</strong><small>You can still add a custom line item below.</small></div>`;
+      renderInvoiceCalendar(clientId, [], selected);
+      updateInvoiceSelectionActions();
+      return;
+    }
+    host.innerHTML = sessions.map(session => `<label class="invoice-session-option"><input type="checkbox" name="invoiceSession" value="${session.id}" data-session-date="${session.date}" ${selected.has(session.id) ? 'checked' : ''}/><span class="invoice-check">✓</span><span class="invoice-session-date"><strong>${formatDate(session.date,{month:'short',day:'numeric'})}</strong><small>${formatDate(session.date,{weekday:'short'})}</small></span><span class="invoice-session-main"><strong>${escapeHtml(sessionTimeRangeLabel(session))}</strong><small>${hoursLabel(sessionMinutes(session))} · ${session.notes ? escapeHtml(session.notes) : 'Work session'}</small></span><strong class="invoice-session-amount">${formatMoney(sessionAmountCents(session), activeBusiness().currency)}</strong></label>`).join('');
+    $$('input[name="invoiceSession"]', host).forEach(input => input.addEventListener('change', () => { updateInvoiceDraftTotal(); updateInvoiceSelectionActions(); syncInvoiceCalendarSelection(); }));
+    renderInvoiceCalendar(clientId, sessions, selected);
+    updateInvoiceSelectionActions();
+  }
+
+  function invoiceCalendarDateLabel(date) {
+    return formatDate(date,{month:'short',day:'numeric'});
+  }
+
+  function renderInvoiceCalendar(clientId, sessions = eligibleInvoiceSessions(clientId), selected = invoiceSelectedSessionIds()) {
+    const monthKey = invoiceMonthKey(ui.invoiceCalendarMonth || $('#invoiceIssueDate').value);
+    ui.invoiceCalendarMonth = monthKey;
+    const [year, month] = monthKey.split('-').map(Number);
+    const firstWeekday = new Date(year, month - 1, 1).getDay();
+    const gridStart = new Date(year, month - 1, 1 - firstWeekday);
+    const byDate = new Map();
+    sessions.forEach(session => {
+      if (!byDate.has(session.date)) byDate.set(session.date, []);
+      byDate.get(session.date).push(session);
+    });
+    const selectedDates = sessions.filter(session => selected.has(session.id)).map(session => session.date).sort();
+    const rangeStart = selectedDates[0] || '';
+    const rangeEnd = selectedDates.at(-1) || '';
+    $('#invoiceCalendarMonth').textContent = new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(`${monthKey}T12:00:00Z`));
+    const cells = [];
+    for (let index = 0; index < 42; index += 1) {
+      const day = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + index);
+      const date = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+      const daySessions = byDate.get(date) || [];
+      const checkedCount = daySessions.filter(session => selected.has(session.id)).length;
+      const totalMinutes = daySessions.reduce((sum, session) => sum + sessionMinutes(session), 0);
+      const totalCents = daySessions.reduce((sum, session) => sum + sessionAmountCents(session), 0);
+      const outside = day.getMonth() !== month - 1;
+      const inRange = rangeStart && date >= rangeStart && date <= rangeEnd;
+      const stateClass = checkedCount && checkedCount === daySessions.length ? 'selected' : checkedCount ? 'partial' : '';
+      const classes = ['invoice-calendar-day', outside ? 'outside' : '', daySessions.length ? 'has-sessions' : '', inRange ? 'in-range' : '', stateClass].filter(Boolean).join(' ');
+      const workLabel = daySessions.length ? `<span class="invoice-calendar-work"><span>${hoursLabel(totalMinutes)} · ${formatMoney(totalCents, activeBusiness().currency)}</span><i aria-hidden="true">${checkedCount === daySessions.length ? '✓' : checkedCount ? '–' : ''}</i></span>` : '';
+      const aria = daySessions.length ? `${invoiceCalendarDateLabel(date)}, ${hoursLabel(totalMinutes)}, ${formatMoney(totalCents, activeBusiness().currency)}, ${checkedCount === daySessions.length ? 'selected' : checkedCount ? 'partially selected' : 'not selected'}` : invoiceCalendarDateLabel(date);
+      cells.push(`<button type="button" class="${classes}" data-invoice-date="${date}" aria-label="${escapeHtml(aria)}" aria-pressed="${checkedCount > 0}" ${daySessions.length ? '' : 'disabled'}><span class="invoice-calendar-number">${day.getDate()}</span>${workLabel}</button>`);
+    }
+    $('#invoiceCalendarGrid').innerHTML = cells.join('');
+    bindInvoiceCalendarSweep();
+    updateInvoiceCalendarRange(selectedDates, sessions.length);
+  }
+
+  function invoiceInputsForDate(date) {
+    return $$(`input[name="invoiceSession"][data-session-date="${date}"]`, $('#invoiceSessionChoices'));
+  }
+
+  function setInvoiceDateSelection(date, checked) {
+    const inputs = invoiceInputsForDate(date);
+    if (!inputs.length) return;
+    inputs.forEach(input => { input.checked = checked; });
+    updateInvoiceDraftTotal();
+    updateInvoiceSelectionActions();
+    syncInvoiceCalendarSelection();
+  }
+
+  function toggleInvoiceDateSelection(date) {
+    const inputs = invoiceInputsForDate(date);
+    if (!inputs.length) return;
+    setInvoiceDateSelection(date, !inputs.every(input => input.checked));
+  }
+
+  function syncInvoiceCalendarSelection() {
+    const selectedInputs = $$('input[name="invoiceSession"]:checked', $('#invoiceSessionChoices'));
+    const selectedDates = selectedInputs.map(input => input.dataset.sessionDate).filter(Boolean).sort();
+    $$('[data-invoice-date]', $('#invoiceCalendarGrid')).forEach(cell => {
+      const inputs = invoiceInputsForDate(cell.dataset.invoiceDate);
+      const checkedCount = inputs.filter(input => input.checked).length;
+      cell.classList.toggle('selected', Boolean(inputs.length) && checkedCount === inputs.length);
+      cell.classList.toggle('partial', checkedCount > 0 && checkedCount < inputs.length);
+      cell.setAttribute('aria-pressed', checkedCount > 0 ? 'true' : 'false');
+      const mark = $('.invoice-calendar-work i', cell);
+      if (mark) mark.textContent = checkedCount === inputs.length ? '✓' : checkedCount ? '–' : '';
+    });
+    updateInvoiceCalendarRange(selectedDates, $$('input[name="invoiceSession"]', $('#invoiceSessionChoices')).length);
+  }
+
+  function updateInvoiceCalendarRange(selectedDates, availableCount) {
+    const uniqueDates = [...new Set(selectedDates)].sort();
+    const start = uniqueDates[0];
+    const end = uniqueDates.at(-1);
+    $('#invoiceCalendarRange').textContent = start ? (start === end ? invoiceCalendarDateLabel(start) : `${invoiceCalendarDateLabel(start)} — ${invoiceCalendarDateLabel(end)}`) : 'Select session dates';
+    const selectedCount = $$('input[name="invoiceSession"]:checked', $('#invoiceSessionChoices')).length;
+    $('#invoiceSessionRangeCaption').textContent = selectedCount ? `${selectedCount} selected · ${$('#invoiceCalendarRange').textContent}` : availableCount ? `${availableCount} uninvoiced ${availableCount === 1 ? 'session' : 'sessions'} available` : 'No uninvoiced sessions for this client.';
+    $$('[data-invoice-date]', $('#invoiceCalendarGrid')).forEach(cell => cell.classList.toggle('in-range', Boolean(start) && cell.dataset.invoiceDate >= start && cell.dataset.invoiceDate <= end));
+  }
+
+  function bindInvoiceCalendarSweep() {
+    const grid = $('#invoiceCalendarGrid');
+    if (grid.dataset.sweepBound === 'true') return;
+    grid.dataset.sweepBound = 'true';
+    let sweeping = false;
+    let targetState = true;
+    let lastDate = '';
+    let suppressClickUntil = 0;
+    const dateButton = target => target?.closest?.('[data-invoice-date].has-sessions');
+    const apply = button => {
+      if (!button || button.dataset.invoiceDate === lastDate) return;
+      lastDate = button.dataset.invoiceDate;
+      setInvoiceDateSelection(lastDate, targetState);
+    };
+    grid.addEventListener('pointerdown', event => {
+      const button = dateButton(event.target);
+      if (!button) return;
+      event.preventDefault();
+      const inputs = invoiceInputsForDate(button.dataset.invoiceDate);
+      targetState = !inputs.length || !inputs.every(input => input.checked);
+      sweeping = true;
+      // Pointer-down performs the tap immediately. Keep the following synthetic
+      // click from toggling the date a second time (notably on iPad Safari).
+      suppressClickUntil = Date.now() + 750;
+      lastDate = '';
+      button.setPointerCapture?.(event.pointerId);
+      apply(button);
+    });
+    grid.addEventListener('pointermove', event => {
+      if (!sweeping) return;
+      const target = document.elementFromPoint?.(event.clientX, event.clientY);
+      apply(dateButton(target));
+    });
+    const finish = () => { sweeping = false; lastDate = ''; };
+    grid.addEventListener('pointerup', finish);
+    grid.addEventListener('pointercancel', finish);
+    grid.addEventListener('click', event => {
+      const button = dateButton(event.target);
+      if (!button) return;
+      if (Date.now() < suppressClickUntil) { event.preventDefault(); return; }
+      toggleInvoiceDateSelection(button.dataset.invoiceDate);
+    });
+  }
+
+  function addManualInvoiceRow(item = {}) {
+    const row = document.createElement('div');
+    row.className = 'manual-line-row';
+    row.dataset.lineId = item.id || uid('line');
+    const quantity = item.quantity ?? 1;
+    row.innerHTML = `<label><span>Description</span><input class="manual-description" maxlength="180" placeholder="Service, reimbursement, or flat-rate item" value="${escapeHtml(item.description || '')}" /></label><label class="manual-qty"><span>Qty</span><input class="manual-quantity" type="number" min="0.01" step="any" inputmode="decimal" value="${escapeHtml(quantity)}" /></label><label class="manual-rate"><span>Rate</span><div class="money-input compact"><span>$</span><input class="manual-rate-input" type="number" min="0" step="0.01" inputmode="decimal" value="${item.rateCents != null ? (item.rateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div></label><button type="button" class="line-remove" aria-label="Remove line item">×</button>`;
+    $('#invoiceManualItems').appendChild(row);
+    $$('input', row).forEach(input => input.addEventListener('input', updateInvoiceDraftTotal));
+    $('.line-remove', row).addEventListener('click', () => { row.remove(); updateInvoiceDraftTotal(); });
+    updateInvoiceDraftTotal();
+  }
+
+  function validateManualInvoiceRows() {
+    for (const row of $$('.manual-line-row', $('#invoiceManualItems'))) {
+      const description = $('.manual-description', row).value.trim();
+      const quantityInput = $('.manual-quantity', row);
+      const rateInput = $('.manual-rate-input', row);
+      const hasAnyEntry = description || quantityInput.value.trim() || rateInput.value.trim();
+      if (!hasAnyEntry) continue;
+
+      const quantity = Number(quantityInput.value);
+      const rate = Number(rateInput.value || 0);
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        quantityInput.focus();
+        showToast('Quantity must be greater than 0.');
+        return false;
+      }
+      if (!Number.isFinite(rate) || rate < 0) {
+        rateInput.focus();
+        showToast('Rate cannot be negative.');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function collectInvoiceLineItems() {
+    const lines = [];
+    $$('input[name="invoiceSession"]:checked', $('#invoiceSessionChoices')).forEach(input => {
+      const session = data.sessions.find(s => s.id === input.value);
+      if (!session) return;
+      const existingLine = ui.invoiceFormId ? invoiceById(ui.invoiceFormId)?.lineItems?.find(item => item.type === 'session' && item.sessionId === session.id) : null;
+      lines.push(invoiceSessionLine(session, existingLine?.id));
+    });
+    $$('.manual-line-row', $('#invoiceManualItems')).forEach(row => {
+      const description = $('.manual-description', row).value.trim();
+      const quantity = Number($('.manual-quantity', row).value || 0);
+      const rateCents = Math.round(Number($('.manual-rate-input', row).value || 0) * 100);
+      if (!description && !rateCents) return;
+      lines.push({ id: row.dataset.lineId || uid('line'), type: 'manual', description: description || 'Custom item', quantity, rateCents, amountCents: Math.round(quantity * rateCents) });
+    });
+    return lines;
+  }
+
+  function updateInvoiceDraftTotal() {
+    const lines = collectInvoiceLineItems();
+    const total = lines.reduce((sum, item) => sum + item.amountCents, 0);
+    const totalMinutes = lines.reduce((sum, item) => item.type === 'session' ? sum + Number(item.quantityMinutes || 0) : sum, 0);
+    const count = lines.length;
+    const sessionCount = lines.filter(item => item.type === 'session').length;
+    $('#invoiceDraftSessionCount').textContent = sessionCount;
+    $('#invoiceDraftHours').textContent = hoursLabel(totalMinutes);
+    $('#invoiceDraftTotal').textContent = formatMoney(total, activeBusiness().currency);
+    $('#invoiceDraftItemCount').textContent = `${durationExactLabel(totalMinutes)} · ${count} ${count === 1 ? 'line item' : 'line items'}`;
+  }
+
+  function releaseInvoiceSessions(invoice) {
+    (invoice?.lineItems || []).filter(item => item.type === 'session').forEach(item => {
+      const session = data.sessions.find(s => s.id === item.sessionId);
+      if (session?.invoiceId === invoice.id) Object.assign(session, { invoiceId: null, invoiceStatus: 'uninvoiced', updatedAt: nowIso() });
+    });
+  }
+
+  function assignInvoiceSessions(invoice) {
+    (invoice?.lineItems || []).filter(item => item.type === 'session').forEach(item => {
+      const session = data.sessions.find(s => s.id === item.sessionId);
+      if (session) Object.assign(session, { invoiceId: invoice.id, invoiceStatus: invoice.status === 'sent' ? 'invoiced' : 'draft', updatedAt: nowIso() });
+    });
+  }
+
+  function saveInvoice(event) {
+    event.preventDefault();
+    const clientId = $('#invoiceClient').value;
+    const client = clientById(clientId);
+    if (!validateManualInvoiceRows()) return;
+    const lineItems = collectInvoiceLineItems();
+    if (!client) { showToast('Choose a client for this invoice.'); return; }
+    if (!lineItems.length) { showToast('Add at least one work session or custom line item.'); return; }
+    const issueDate = $('#invoiceIssueDate').value;
+    const dueDate = $('#invoiceDueDate').value;
+    if (!issueDate || !dueDate) { showToast('Choose both an issue date and due date.'); return; }
+    if (dueDate < issueDate) { showToast('Due date cannot be before the issue date.'); return; }
+    const recipientSnapshot = { displayName: client.displayName, billingEmail: client.billingEmail || '', billingAddress: client.billingAddress || '' };
+    const sender = activeBusiness();
+    const senderSnapshot = { displayName: sender.legalName || sender.displayName, senderEmail: sender.invoiceSettings?.senderEmail || '', senderPhone: sender.invoiceSettings?.senderPhone || '', senderAddress: sender.invoiceSettings?.senderAddress || '', paymentInstructions: sender.invoiceSettings?.paymentInstructions || '' };
+
+    const creating = !ui.invoiceFormId;
+    let invoice;
+    if (ui.invoiceFormId) {
+      invoice = invoiceById(ui.invoiceFormId);
+      if (!invoice) return;
+      const before = deepClone(invoice);
+      releaseInvoiceSessions(invoice);
+      Object.assign(invoice, { clientId, recipientSnapshot, senderSnapshot, issueDate, dueDate, note: $('#invoiceNote').value.trim(), lineItems, updatedAt: nowIso() });
+      assignInvoiceSessions(invoice);
+      persist('updated', 'Invoice', invoice.id, { before, after: deepClone(invoice) });
+      showToast(`${invoice.number} updated`);
+    } else {
+      invoice = { id: uid('invoice'), businessId: data.activeBusinessId, number: nextInvoiceNumber(), clientId, recipientSnapshot, senderSnapshot, issueDate, dueDate, note: $('#invoiceNote').value.trim(), status: 'draft', lineItems, createdAt: nowIso(), updatedAt: nowIso(), sentAt: null, voidedAt: null };
+      data.invoices.push(invoice);
+      assignInvoiceSessions(invoice);
+      persist('created', 'Invoice', invoice.id, { number: invoice.number });
+      showToast(`${invoice.number} saved as draft`);
+    }
+    if (creating) rememberEntryDefaults('invoice', { clientId });
+    ui.invoiceFormId = null;
+    closeModal();
+    renderAll();
+    setView('money');
+    setTimeout(() => openInvoiceDetail(invoice.id), 40);
+  }
+
+  function openInvoiceDetail(id) {
+    const invoice = invoiceById(id); if (!invoice) return;
+    const displayStatus = invoiceDisplayStatus(invoice);
+    const payments = invoicePayments(invoice).slice().sort((a,b) => `${b.receivedDate}${b.createdAt}`.localeCompare(`${a.receivedDate}${a.createdAt}`));
+    const paidCents = invoicePaidCents(invoice);
+    const balanceCents = invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice);
+    const hasPayments = payments.length > 0;
+    const canEdit = invoice.status !== 'void' && !hasPayments;
+    $('#detailEyebrow').textContent = 'INVOICE';
+    $('#detailTitle').textContent = invoice.number;
+    const lineRows = (invoice.lineItems || []).map(item => {
+      const qty = item.type === 'session' ? `${hoursLabel(item.quantityMinutes || 0)}` : `${Number(item.quantity || 0).toLocaleString('en-US',{maximumFractionDigits:2})}`;
+      return `<div class="invoice-preview-line"><span><strong>${escapeHtml(item.description)}</strong><small>${item.type === 'session' ? 'Linked work session' : 'Custom line item'}</small></span><span>${escapeHtml(qty)}</span><span>${formatMoney(item.rateCents || 0, activeBusiness().currency)}</span><strong>${formatMoney(item.amountCents || 0, activeBusiness().currency)}</strong></div>`;
+    }).join('');
+    const primaryAction = invoice.status === 'draft'
+      ? `<button class="primary-btn" data-mark-invoice-sent="${invoice.id}">Mark sent</button>`
+      : invoice.status === 'sent' && balanceCents > 0
+        ? `<button class="primary-btn" data-record-invoice-payment="${invoice.id}">＋ Record payment</button>`
+        : '';
+    const destructive = invoice.status === 'draft'
+      ? `<button type="button" class="danger-menu-item" data-delete-invoice="${invoice.id}">Delete draft</button>`
+      : invoice.status === 'sent'
+        ? hasPayments
+          ? `<button type="button" class="disabled-menu-item" disabled title="Delete linked payments first">Payments lock invoice reversal</button>`
+          : `<button type="button" data-invoice-draft="${invoice.id}">Move back to draft</button><button type="button" class="danger-menu-item" data-void-invoice="${invoice.id}">Void invoice</button>`
+        : '';
+    const summary = paidCents > 0
+      ? `<div><span>Total hours</span><strong>${durationExactLabel(invoiceTotalMinutes(invoice))}</strong></div><div><span>Invoice total</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div><div><span class="semantic-paid">Paid</span><strong>${formatMoney(paidCents, activeBusiness().currency)}</strong></div><div class="invoice-preview-amount"><span>Amount due</span><strong>${formatMoney(balanceCents, activeBusiness().currency)}</strong></div>`
+      : `<div><span>Total hours</span><strong>${durationExactLabel(invoiceTotalMinutes(invoice))}</strong></div><div class="invoice-preview-amount"><span>Amount due</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div>`;
+    const paymentHistory = payments.length ? `<div class="invoice-payment-history"><div class="panel-title-row"><div><p class="eyebrow">PAYMENTS</p><h3>Received toward this invoice</h3></div><span class="quiet-badge green">${formatMoney(paidCents, activeBusiness().currency)}</span></div><div class="payment-mini-list">${payments.map(payment => `<button data-payment-detail="${payment.id}"><span><strong>${formatDate(payment.receivedDate)}</strong><small>${escapeHtml(paymentMethodLabel(payment.method))}${payment.reference ? ` · ${escapeHtml(payment.reference)}` : ''}</small></span><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong></button>`).join('')}</div></div>` : '';
+    const lockNote = hasPayments ? `<div class="trace-banner payment-lock-banner"><span>✓</span><div><strong>Payment-linked invoice</strong><small>This invoice has received money. Its billable contents and reversal actions are locked until the linked payment records are corrected or removed.</small></div></div>` : '';
+    $('#detailBody').innerHTML = `<div class="detail-actions invoice-detail-actions"><button class="secondary-btn" data-print-invoice="${invoice.id}">Print / Save PDF</button>${canEdit ? `<button class="secondary-btn" data-edit-invoice="${invoice.id}">Edit</button>` : ''}${primaryAction}${destructive ? `<details class="record-more"><summary aria-label="More invoice actions" title="More actions">•••</summary><div class="record-more-popover">${destructive}</div></details>` : ''}</div><div id="detailDeleteConfirm"></div>
+      <div class="invoice-preview-card">
+        <div class="invoice-preview-top"><div><span class="invoice-wordmark">${escapeHtml(invoice.senderSnapshot?.displayName || activeBusiness().displayName)}</span><small>${escapeHtml(invoice.senderSnapshot?.senderEmail || '')}${invoice.senderSnapshot?.senderEmail && invoice.senderSnapshot?.senderPhone ? ' · ' : ''}${escapeHtml(invoice.senderSnapshot?.senderPhone || '')}</small></div><div class="invoice-preview-number"><span class="status-pill ${invoiceStatusClass(invoice)}">${escapeHtml(displayStatus)}</span><strong>${escapeHtml(invoice.number)}</strong></div></div>
+        <div class="invoice-preview-parties"><div><small>BILL TO</small><strong>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')}</strong><p>${escapeHtml(invoice.recipientSnapshot?.billingEmail || '')}${invoice.recipientSnapshot?.billingEmail && invoice.recipientSnapshot?.billingAddress ? '<br>' : ''}${escapeHtml(invoice.recipientSnapshot?.billingAddress || '')}</p></div><div class="invoice-date-pair"><span><small>Issued</small><strong>${formatDate(invoice.issueDate)}</strong></span><span><small>Due</small><strong>${formatDate(invoice.dueDate)}</strong></span></div></div>
+        <div class="invoice-preview-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span></div>${lineRows}
+        <div class="invoice-preview-summary">${summary}</div>
+        ${invoice.note ? `<div class="invoice-preview-note"><small>NOTE</small><p>${escapeHtml(invoice.note)}</p></div>` : ''}
+        ${invoice.senderSnapshot?.paymentInstructions ? `<div class="invoice-preview-note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}
+      </div>
+      ${paymentHistory}${lockNote}
+      <div class="trace-banner"><span>↳</span><div><strong>${(invoice.lineItems || []).filter(item => item.type === 'session').length} linked work ${(invoice.lineItems || []).filter(item => item.type === 'session').length === 1 ? 'session' : 'sessions'}</strong><small>The invoice stores its own client, sender, rate, and line-item snapshots. Payments are separate cash records and never make the invoice itself count as cash received twice.</small></div></div>${evidenceTimelineHtml('Invoice', invoice.id)}`;
+    openModal($('#detailPanel'));
+    $('[data-edit-invoice]')?.addEventListener('click', () => openInvoiceForm({ existingId: id }));
+    $('[data-print-invoice]')?.addEventListener('click', () => printInvoice(id));
+    $('[data-mark-invoice-sent]')?.addEventListener('click', () => markInvoiceSent(id));
+    $('[data-record-invoice-payment]')?.addEventListener('click', () => openPaymentForm({ invoiceId: id }));
+    $('[data-invoice-draft]')?.addEventListener('click', () => moveInvoiceToDraft(id));
+    $('[data-delete-invoice]')?.addEventListener('click', () => showInvoiceActionConfirmation('delete', id));
+    $('[data-void-invoice]')?.addEventListener('click', () => showInvoiceActionConfirmation('void', id));
+    $$('[data-payment-detail]', $('#detailBody')).forEach(btn => btn.addEventListener('click', () => openPaymentDetail(btn.dataset.paymentDetail)));
+  }
+
+  function markInvoiceSent(id) {
+    const invoice = invoiceById(id); if (!invoice || invoice.status !== 'draft') return;
+    const before = deepClone(invoice);
+    invoice.status = 'sent'; invoice.sentAt = nowIso(); invoice.updatedAt = nowIso();
+    assignInvoiceSessions(invoice);
+    persist('status_changed', 'Invoice', invoice.id, { from: before.status, to: 'sent' });
+    renderAll(); openInvoiceDetail(id); showToast(`${invoice.number} marked sent`);
+  }
+
+  function moveInvoiceToDraft(id) {
+    const invoice = invoiceById(id); if (!invoice || invoice.status !== 'sent') return;
+    if (invoicePayments(invoice).length) { showToast('Delete or correct linked payments before moving this invoice back to Draft.'); return; }
+    invoice.status = 'draft'; invoice.sentAt = null; invoice.updatedAt = nowIso();
+    assignInvoiceSessions(invoice);
+    persist('status_changed', 'Invoice', invoice.id, { to: 'draft' });
+    renderAll(); openInvoiceDetail(id); showToast(`${invoice.number} moved to draft`);
+  }
+
+  function showInvoiceActionConfirmation(action, id) {
+    const invoice = invoiceById(id); const host = $('#detailDeleteConfirm'); if (!invoice || !host) return;
+    $('.record-more[open]', $('#detailBody'))?.removeAttribute('open');
+    const isVoid = action === 'void';
+    host.innerHTML = `<div class="delete-confirm-card"><div><strong>${isVoid ? `Void ${escapeHtml(invoice.number)}?` : `Delete ${escapeHtml(invoice.number)}?`}</strong><p>${isVoid ? 'The invoice will stay in your records as Void, and its linked work sessions will become available to invoice again.' : 'This draft will be permanently removed and its linked work sessions will become uninvoiced again.'}</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-invoice-action>${isVoid ? 'Void invoice' : 'Delete draft'}</button></div></div>`;
+    $('[data-cancel-delete]', host).addEventListener('click', () => { host.innerHTML = ''; });
+    $('[data-confirm-invoice-action]', host).addEventListener('click', () => isVoid ? voidInvoice(id) : deleteDraftInvoice(id));
+  }
+
+  function deleteDraftInvoice(id) {
+    const invoice = invoiceById(id); if (!invoice || invoice.status !== 'draft') return;
+    preserveEvidenceSnapshot('Invoice', invoice, invoice.number);
+    releaseInvoiceSessions(invoice);
+    data.invoices = data.invoices.filter(item => item.id !== id);
+    data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Invoice', entityId: id, details: { number: invoice.number }, occurredAt: nowIso() });
+    repository.save(data); closeModal(); renderAll(); setView('money'); showToast(`${invoice.number} deleted`);
+  }
+
+  function voidInvoice(id) {
+    const invoice = invoiceById(id); if (!invoice || invoice.status !== 'sent') return;
+    if (invoicePayments(invoice).length) { showToast('Delete or correct linked payments before voiding this invoice.'); return; }
+    invoice.status = 'void'; invoice.voidedAt = nowIso(); invoice.updatedAt = nowIso();
+    releaseInvoiceSessions(invoice);
+    persist('status_changed', 'Invoice', invoice.id, { to: 'void' });
+    renderAll(); openInvoiceDetail(id); showToast(`${invoice.number} voided`);
+  }
+
+  function printInvoice(id) {
+    const invoice = invoiceById(id); if (!invoice) return;
+    const payments = invoicePayments(invoice).slice().sort((a,b) => `${a.receivedDate}${a.createdAt}`.localeCompare(`${b.receivedDate}${b.createdAt}`));
+    const paidCents = invoicePaidCents(invoice);
+    const balanceCents = invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice);
+    const lineRows = (invoice.lineItems || []).map(item => `<tr><td><strong>${escapeHtml(item.description)}</strong></td><td>${item.type === 'session' ? hoursLabel(item.quantityMinutes || 0) : Number(item.quantity || 0).toLocaleString('en-US',{maximumFractionDigits:2})}</td><td>${formatMoney(item.rateCents || 0, activeBusiness().currency)}</td><td><strong>${formatMoney(item.amountCents || 0, activeBusiness().currency)}</strong></td></tr>`).join('');
+    const paymentRows = payments.map(payment => `<tr><td>${formatDate(payment.receivedDate)}</td><td>${escapeHtml(paymentMethodLabel(payment.method))}</td><td>${escapeHtml(payment.reference || '—')}</td><td><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong></td></tr>`).join('');
+    const popup = window.open('', '_blank');
+    if (!popup) { showToast('Allow pop-ups to print or save the invoice as PDF.'); return; }
+    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(invoice.number)}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#15171b;margin:0;padding:48px}*{box-sizing:border-box}.top{display:flex;justify-content:space-between;gap:30px;margin-bottom:50px}.brand{font-size:24px;font-weight:800}.num{text-align:right}.num strong{display:block;font-size:28px;margin-top:8px}.meta{display:grid;grid-template-columns:1fr auto;gap:40px;margin-bottom:38px}.meta small,.note small,.payments small{color:#7b8088;font-weight:700;letter-spacing:.08em}.dates{display:flex;gap:34px}.dates span{display:flex;flex-direction:column;gap:5px}table{width:100%;border-collapse:collapse}th{font-size:11px;color:#7b8088;text-align:left;border-bottom:1px solid #ddd;padding:10px 8px}td{padding:14px 8px;border-bottom:1px solid #eee;font-size:13px}th:last-child,td:last-child{text-align:right}.invoice-summary{display:flex;justify-content:flex-end;gap:38px;padding:22px 8px 4px;flex-wrap:wrap}.invoice-summary>div{display:flex;flex-direction:column;gap:5px;min-width:105px}.invoice-summary span{font-size:11px;color:#7b8088;font-weight:700;letter-spacing:.04em}.invoice-summary strong{font-size:18px}.invoice-summary .amount{text-align:right}.invoice-summary .amount strong{font-size:22px}.note{margin-top:30px;max-width:650px;white-space:pre-wrap}.payments{margin-top:32px}.payments h3{margin:5px 0 8px}.muted{color:#777}@media print{body{padding:20px}}</style></head><body><div class="top"><div><div class="brand">${escapeHtml(invoice.senderSnapshot?.displayName || activeBusiness().displayName)}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderEmail || '')}${invoice.senderSnapshot?.senderPhone ? ` · ${escapeHtml(invoice.senderSnapshot.senderPhone)}` : ''}</div><div class="muted">${escapeHtml(invoice.senderSnapshot?.senderAddress || '')}</div></div><div class="num"><span>INVOICE</span><strong>${escapeHtml(invoice.number)}</strong></div></div><div class="meta"><div><small>BILL TO</small><h3>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')}</h3><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingEmail || '')}</div><div class="muted">${escapeHtml(invoice.recipientSnapshot?.billingAddress || '')}</div></div><div class="dates"><span><small>ISSUED</small><strong>${formatDate(invoice.issueDate)}</strong></span><span><small>DUE</small><strong>${formatDate(invoice.dueDate)}</strong></span></div></div><table><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${lineRows}</tbody></table><div class="invoice-summary"><div><span>TOTAL HOURS</span><strong>${durationExactLabel(invoiceTotalMinutes(invoice))}</strong></div><div><span>INVOICE TOTAL</span><strong>${formatMoney(invoiceTotalCents(invoice), activeBusiness().currency)}</strong></div>${paidCents ? `<div><span>PAID</span><strong>${formatMoney(paidCents, activeBusiness().currency)}</strong></div>` : ''}<div class="amount"><span>AMOUNT DUE</span><strong>${formatMoney(balanceCents, activeBusiness().currency)}</strong></div></div>${payments.length ? `<div class="payments"><small>PAYMENTS RECEIVED</small><h3>${formatMoney(paidCents, activeBusiness().currency)} received</h3><table><thead><tr><th>Date</th><th>Method</th><th>Reference</th><th>Amount</th></tr></thead><tbody>${paymentRows}</tbody></table></div>` : ''}${invoice.note ? `<div class="note"><small>NOTE</small><p>${escapeHtml(invoice.note)}</p></div>` : ''}${invoice.senderSnapshot?.paymentInstructions ? `<div class="note"><small>PAYMENT</small><p>${escapeHtml(invoice.senderSnapshot.paymentInstructions)}</p></div>` : ''}<script>window.onload=()=>setTimeout(()=>window.print(),150);<\/script></body></html>`);
+    popup.document.close();
+  }
+
+  function eligiblePaymentInvoices(existingPayment = null) {
+    return businessInvoices().filter(invoice => {
+      if (invoice.status !== 'sent') return false;
+      const currentAmount = existingPayment?.invoiceId === invoice.id ? Number(existingPayment.amountCents || 0) : 0;
+      const remainingBeforeCurrent = invoiceTotalCents(invoice) - Math.max(0, invoicePaidCents(invoice) - currentAmount);
+      return remainingBeforeCurrent > 0 || existingPayment?.invoiceId === invoice.id;
+    }).sort((a,b) => `${b.issueDate || ''}${b.createdAt || ''}`.localeCompare(`${a.issueDate || ''}${a.createdAt || ''}`));
+  }
+
+  function paymentRemainingBeforeCurrent(invoice, existingPayment = null) {
+    if (!invoice) return 0;
+    const currentAmount = existingPayment?.invoiceId === invoice.id ? Number(existingPayment.amountCents || 0) : 0;
+    return Math.max(0, invoiceTotalCents(invoice) - Math.max(0, invoicePaidCents(invoice) - currentAmount));
+  }
+
+  function openPaymentForm({ existingId = null, invoiceId = null } = {}) {
+    $('#formSheet').classList.remove('session-form-sheet');
+    const existing = existingId ? paymentById(existingId) : null;
+    const invoices = eligiblePaymentInvoices(existing);
+    const preselectedInvoice = invoiceId ? invoiceById(invoiceId) : existing?.invoiceId ? invoiceById(existing.invoiceId) : null;
+    const remembered = entryDefaultsFor('payment');
+    const recentPayment = mostRecentRecord(businessPayments(),'receivedDate');
+    const priorKind = remembered.kind || recentPayment?.kind;
+    const rememberedKind = priorKind === 'direct' || (priorKind === 'invoice' && invoices.length) ? priorKind : null;
+    const defaultKind = preselectedInvoice ? 'invoice' : existing?.kind ? existing.kind : rememberedKind || (invoices.length ? 'invoice' : 'direct');
+    ui.formMode = 'payment';
+    ui.formRecordId = existingId;
+    $('#formEyebrow').textContent = existing ? 'EDIT PAYMENT' : 'MONEY RECEIVED';
+    $('#formTitle').textContent = existing ? 'Edit payment' : 'Record payment';
+    $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Record payment';
+    const today = businessToday();
+    const selectedInvoiceId = preselectedInvoice?.id || (defaultKind === 'invoice' && invoices.length === 1 ? invoices[0].id : '');
+    const selectedInvoice = selectedInvoiceId ? invoiceById(selectedInvoiceId) : null;
+    const startingAmountCents = existing?.amountCents ?? (selectedInvoice ? paymentRemainingBeforeCurrent(selectedInvoice, existing) : 0);
+    const clients = businessClients();
+    const paymentMethods = new Set(['zelle','venmo','ach','direct_deposit','cash','check','card','other']);
+    const rememberedMethod = remembered.method || recentPayment?.method;
+    const defaultMethod = existing?.method || (paymentMethods.has(rememberedMethod) ? rememberedMethod : 'zelle');
+    $('#formFields').innerHTML = `
+      <label class="compose-prompt"><span>Quick entry <em>optional</em></span><input id="paymentCompose" autocomplete="off" maxlength="180" placeholder="$750 from Jordan via Zelle" aria-describedby="paymentComposeHint" /></label>
+      <p class="compose-hint" id="paymentComposeHint">Describe the amount, payer, and optional method. Type and invoice linkage stay explicit.</p>
+      <input type="hidden" name="kind" id="paymentKind" value="${defaultKind}" />
+      <div class="compose-details-heading"><span>Interpreted details</span><small>Edit if needed</small></div>
+      <div class="compose-chips payment-compose-chips">
+        <label class="field"><span>Type</span><select id="paymentKindSelect" aria-label="Payment type"><option value="direct" ${defaultKind === 'direct' ? 'selected' : ''}>Other income</option><option value="invoice" ${defaultKind === 'invoice' ? 'selected' : ''}>Invoice payment</option></select></label>
+        <label class="field" id="paymentDirectChip" ${defaultKind === 'direct' ? '' : 'hidden'}><span>Payer / source</span><input name="sourceName" id="paymentSourceName" maxlength="120" placeholder="Who paid you?" value="${escapeHtml(existing?.sourceName || '')}" /></label>
+        <label class="field" id="paymentInvoiceChip" ${defaultKind === 'invoice' ? '' : 'hidden'}><span>Invoice</span><select name="invoiceId" id="paymentInvoice">${invoices.length ? `<option value="">Choose invoice</option>${invoices.map(invoice => `<option value="${invoice.id}" ${invoice.id === selectedInvoiceId ? 'selected' : ''}>${escapeHtml(invoice.number)} · ${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(paymentRemainingBeforeCurrent(invoice, existing), activeBusiness().currency)} left</option>`).join('')}` : '<option value="">No unpaid sent invoices</option>'}</select></label>
+        <label class="field"><span>Amount · USD</span><input name="amount" id="paymentAmount" required inputmode="decimal" min="0.01" step="0.01" type="number" value="${startingAmountCents ? (startingAmountCents/100).toFixed(2) : ''}" placeholder="0.00" /></label>
+        <label class="field"><span>Method</span><select name="method" id="paymentMethod"><option value="zelle" ${defaultMethod === 'zelle' ? 'selected' : ''}>Zelle</option><option value="venmo" ${defaultMethod === 'venmo' ? 'selected' : ''}>Venmo</option><option value="ach" ${defaultMethod === 'ach' ? 'selected' : ''}>ACH</option><option value="direct_deposit" ${defaultMethod === 'direct_deposit' ? 'selected' : ''}>Direct deposit</option><option value="cash" ${defaultMethod === 'cash' ? 'selected' : ''}>Cash</option><option value="check" ${defaultMethod === 'check' ? 'selected' : ''}>Check</option><option value="card" ${defaultMethod === 'card' ? 'selected' : ''}>Card</option><option value="other" ${defaultMethod === 'other' ? 'selected' : ''}>Other</option></select></label>
+        <label class="field"><span>Date</span><input name="receivedDate" id="paymentReceivedDate" type="date" required value="${escapeHtml(existing?.receivedDate || today)}" /></label>
+      </div>
+      <details class="compose-details payment-compose-details" ${existing?.clientId || existing?.description || existing?.reference || existing?.notes ? 'open' : ''}><summary>Link invoice or add details <span aria-hidden="true">⌄</span></summary><div class="compose-details-body">
+        <p class="payment-invoice-hint" id="paymentInvoiceHint">${selectedInvoice ? `${formatMoney(paymentRemainingBeforeCurrent(selectedInvoice, existing), activeBusiness().currency)} can be applied to this invoice.` : 'Invoice payments require an explicit invoice selection.'}</p>
+        <div id="paymentDirectDetails" ${defaultKind === 'direct' ? '' : 'hidden'}><div class="field-row"><label class="field"><span>Client <em>optional</em></span><select name="directClientId" id="paymentDirectClient"><option value="">No linked client</option>${clients.map(client => `<option value="${client.id}" ${client.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}</select></label><label class="field"><span>Description <em>optional</em></span><input name="description" maxlength="180" placeholder="What was this income for?" value="${escapeHtml(existing?.description || '')}" /></label></div></div>
+        <div class="field-row"><label class="field"><span>Reference <em>optional</em></span><input name="reference" maxlength="100" placeholder="Confirmation, check #, memo…" value="${escapeHtml(existing?.reference || '')}" /></label><label class="field"><span>Note <em>optional</em></span><input name="notes" maxlength="500" placeholder="Anything useful about this payment…" value="${escapeHtml(existing?.notes || '')}" /></label></div>
+        <div class="form-info-note payment-trace-note"><strong>Received-money rule:</strong> this payment becomes money received. A linked invoice remains the billing record and is not counted again as a second cash entry.</div>
+      </div></details>`;
+    openModal($('#formSheet'));
+    setupPaymentFormInteractions(existing, defaultKind);
+  }
+
+  function setupPaymentFormInteractions(existing = null, initialKind = 'direct') {
+    const kindInput = $('#paymentKind');
+    const kindSelect = $('#paymentKindSelect');
+    const invoiceChip = $('#paymentInvoiceChip');
+    const directChip = $('#paymentDirectChip');
+    const directDetails = $('#paymentDirectDetails');
+    const invoiceSelect = $('#paymentInvoice');
+    const amountInput = $('#paymentAmount');
+    const methodSelect = $('#paymentMethod');
+    const sourceInput = $('#paymentSourceName');
+    const compose = $('#paymentCompose');
+    const composeHint = $('#paymentComposeHint');
+    const hint = $('#paymentInvoiceHint');
+
+    function setKind(kind) {
+      kindInput.value = kind;
+      kindSelect.value = kind;
+      invoiceChip.hidden = kind !== 'invoice';
+      directChip.hidden = kind !== 'direct';
+      directDetails.hidden = kind !== 'direct';
+      hint.hidden = kind !== 'invoice';
+      if (kind === 'invoice') refreshInvoice(false);
+      if (compose.value.trim()) applyCompose();
+    }
+
+    function refreshInvoice(forceAmount = true) {
+      const invoice = invoiceById(invoiceSelect?.value);
+      if (!invoice) {
+        if (hint) hint.textContent = 'Invoice payments require an explicit unpaid sent invoice.';
+        return;
+      }
+      const remaining = paymentRemainingBeforeCurrent(invoice, existing);
+      if (hint) hint.textContent = `${formatMoney(remaining, activeBusiness().currency)} can be applied to this invoice.`;
+      if (forceAmount && amountInput) amountInput.value = remaining ? (remaining/100).toFixed(2) : '';
+    }
+
+    function applyCompose() {
+      const parsed = parsePaymentCompose(compose.value);
+      compose.setCustomValidity(parsed.error || '');
+      if (parsed.error) { composeHint.textContent = parsed.error; return; }
+      if (!parsed.amount) {
+        composeHint.textContent = 'Describe the amount, payer, and optional method. Type and invoice linkage stay explicit.';
+        return;
+      }
+      amountInput.value = parsed.amount;
+      if (parsed.method) methodSelect.value = parsed.method;
+      if (kindInput.value === 'direct') {
+        sourceInput.value = parsed.source;
+        composeHint.textContent = 'Amount, payer, and recognized method filled in. Review, then record payment.';
+      } else {
+        composeHint.textContent = 'Amount and recognized method filled in. Choose the invoice explicitly, then record payment.';
+      }
+    }
+
+    function clearComposeAfterEdit() {
+      if (!compose.value) return;
+      compose.value = '';
+      compose.setCustomValidity('');
+      composeHint.textContent = 'Using your edited fields. Type and invoice linkage stay explicit.';
+    }
+
+    compose.addEventListener('input', applyCompose);
+    [amountInput, sourceInput].forEach(input => input?.addEventListener('input', clearComposeAfterEdit));
+    methodSelect.addEventListener('change', clearComposeAfterEdit);
+    kindSelect.addEventListener('change', event => setKind(event.target.value));
+    invoiceSelect?.addEventListener('change', () => { clearComposeAfterEdit(); refreshInvoice(true); });
+    setKind(kindInput.value || initialKind);
+  }
+
+  // Deliberately narrow and local: it never guesses payment type or invoice linkage.
+  function parsePaymentCompose(text) {
+    if (!text.trim()) return {};
+    const match = text.trim().match(/^\$?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s+from\s+(.+)$/i);
+    const invalid = 'Use “750 from Jordan via Zelle” with a positive amount and payer, or clear quick entry and edit the fields.';
+    if (!match) return { error: invalid };
+    const numericAmount = Number(match[1].replace(/,/g, ''));
+    let source = match[2].trim();
+    let method = '';
+    const viaIndex = source.toLowerCase().lastIndexOf(' via ');
+    if (viaIndex >= 0) {
+      const methodText = source.slice(viaIndex + 5).trim().toLowerCase().replace(/[._-]+/g, ' ').replace(/\s+/g, ' ');
+      source = source.slice(0, viaIndex).trim();
+      const methodAliases = { zelle:'zelle', venmo:'venmo', ach:'ach', 'direct deposit':'direct_deposit', cash:'cash', check:'check', cheque:'check', card:'card', other:'other' };
+      method = methodAliases[methodText] || '';
+      if (!method) return { error: 'Method not recognized. Try Zelle, Venmo, ACH, direct deposit, cash, check, card, or omit “via”.' };
+    }
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0 || !source || source.length > 120) return { error: invalid };
+    return { amount: numericAmount.toFixed(2), source, method };
+  }
+
+  function savePayment(form) {
+    const kind = form.get('kind');
+    const amountCents = Math.round(Number(form.get('amount')) * 100);
+    const receivedDate = form.get('receivedDate');
+    if (!Number.isFinite(amountCents) || amountCents <= 0) { showToast('Payment amount must be greater than $0.'); return false; }
+    if (!receivedDate) { showToast('Choose the date the money was received.'); return false; }
+
+    const existing = ui.formRecordId ? paymentById(ui.formRecordId) : null;
+    let payload;
+    if (kind === 'invoice') {
+      const invoiceId = form.get('invoiceId');
+      const invoice = invoiceById(invoiceId);
+      if (!invoice || invoice.status !== 'sent') { showToast('Choose a sent invoice with an outstanding balance.'); return false; }
+      const remainingBeforeCurrent = paymentRemainingBeforeCurrent(invoice, existing);
+      if (amountCents > remainingBeforeCurrent) {
+        showToast(`This invoice has ${formatMoney(remainingBeforeCurrent, activeBusiness().currency)} remaining. Record any extra as Other income.`);
+        return false;
+      }
+      payload = {
+        kind: 'invoice', invoiceId: invoice.id, invoiceNumberSnapshot: invoice.number,
+        clientId: invoice.clientId || null, clientNameSnapshot: invoice.recipientSnapshot?.displayName || clientById(invoice.clientId)?.displayName || 'Client',
+        sourceName: '', description: '', amountCents, receivedDate, method: form.get('method'),
+        reference: (form.get('reference') || '').trim(), notes: (form.get('notes') || '').trim()
+      };
+    } else {
+      const sourceName = (form.get('sourceName') || '').trim();
+      if (!sourceName) { showToast('Add a source or payer for other income.'); return false; }
+      const client = clientById(form.get('directClientId'));
+      payload = {
+        kind: 'direct', invoiceId: null, invoiceNumberSnapshot: '', clientId: client?.id || null,
+        clientNameSnapshot: client?.displayName || '', sourceName, description: (form.get('description') || '').trim(),
+        amountCents, receivedDate, method: form.get('method'), reference: (form.get('reference') || '').trim(), notes: (form.get('notes') || '').trim()
+      };
+    }
+
+    if (existing) {
+      const before = deepClone(existing);
+      Object.assign(existing, payload, { updatedAt: nowIso() });
+      persist('updated', 'Payment', existing.id, { before, after: deepClone(existing) });
+      showToast('Payment updated');
+    } else {
+      const payment = { id: uid('payment'), businessId: data.activeBusinessId, ...payload, createdAt: nowIso(), updatedAt: nowIso() };
+      data.payments.push(payment);
+      rememberEntryDefaults('payment', { kind: payment.kind, method: payment.method });
+      persist('created', 'Payment', payment.id, { kind: payment.kind, invoiceId: payment.invoiceId, amountCents: payment.amountCents });
+      ui.formRecordId = payment.id;
+      showToast(payment.kind === 'invoice' ? `Payment applied to ${payment.invoiceNumberSnapshot}` : 'Income recorded');
+    }
+    return true;
+  }
+
+  function openPaymentDetail(id) {
+    const payment = paymentById(id); if (!payment) return;
+    const invoice = payment.invoiceId ? invoiceById(payment.invoiceId) : null;
+    $('#detailEyebrow').textContent = payment.kind === 'invoice' ? 'PAYMENT' : 'OTHER INCOME';
+    $('#detailTitle').textContent = formatMoney(payment.amountCents || 0, activeBusiness().currency);
+    const sourceTitle = payment.kind === 'invoice' ? (payment.invoiceNumberSnapshot || invoice?.number || 'Invoice') : (payment.sourceName || 'Other income');
+    const sourceSub = payment.kind === 'invoice' ? (payment.clientNameSnapshot || invoice?.recipientSnapshot?.displayName || 'Client') : (payment.clientNameSnapshot || payment.description || 'Direct income');
+    const invoiceBalance = invoice ? invoiceBalanceCents(invoice) : null;
+    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-payment="${payment.id}">Edit</button>${invoice ? `<button class="primary-btn" data-payment-invoice="${invoice.id}">View ${escapeHtml(invoice.number)}</button>` : ''}<details class="record-more"><summary aria-label="More payment actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-payment="${payment.id}">Delete payment</button></div></details></div><div id="detailDeleteConfirm"></div>
+      <div class="detail-metrics payment-detail-metrics"><div><small>Received</small><strong>${formatDate(payment.receivedDate)}</strong></div><div><small>Method</small><strong>${escapeHtml(paymentMethodLabel(payment.method))}</strong></div><div><small>Type</small><strong>${escapeHtml(paymentKindLabel(payment))}</strong></div></div>
+      <div class="payment-hero-card"><small>SOURCE</small><strong>${escapeHtml(sourceTitle)}</strong><span>${escapeHtml(sourceSub)}</span>${invoice ? `<div class="payment-balance-line"><span>Invoice balance now</span><strong>${formatMoney(invoiceBalance, activeBusiness().currency)}</strong></div>` : ''}</div>
+      ${payment.reference ? `<div class="detail-section"><p class="eyebrow">REFERENCE</p><p>${escapeHtml(payment.reference)}</p></div>` : ''}
+      ${payment.description && payment.kind === 'direct' ? `<div class="detail-section"><p class="eyebrow">DESCRIPTION</p><p>${escapeHtml(payment.description)}</p></div>` : ''}
+      ${payment.notes ? `<div class="detail-section"><p class="eyebrow">NOTE</p><p>${escapeHtml(payment.notes)}</p></div>` : ''}
+      <div class="trace-banner"><span>↳</span><div><strong>${payment.kind === 'invoice' ? 'Linked cash record' : 'Direct income record'}</strong><small>${payment.kind === 'invoice' ? `This payment is the cash-received record for ${escapeHtml(payment.invoiceNumberSnapshot || invoice?.number || 'the invoice')}. The invoice itself remains separate and is not counted again as received income.` : 'This income did not require an invoice, so this payment record itself is the source of the received-income entry.'}</small></div></div>${evidenceTimelineHtml('Payment', payment.id)}`;
+    openModal($('#detailPanel'));
+    $('[data-edit-payment]')?.addEventListener('click', () => openPaymentForm({ existingId: id }));
+    $('[data-payment-invoice]')?.addEventListener('click', () => { closeModal(); setView('money'); setTimeout(() => openInvoiceDetail(invoice.id), 20); });
+    $('[data-delete-payment]')?.addEventListener('click', () => showPaymentDeleteConfirmation(id));
+  }
+
+  function showPaymentDeleteConfirmation(id) {
+    const payment = paymentById(id); const host = $('#detailDeleteConfirm'); if (!payment || !host) return;
+    $('.record-more[open]', $('#detailBody'))?.removeAttribute('open');
+    host.innerHTML = `<div class="delete-confirm-card"><div><strong>Delete this ${formatMoney(payment.amountCents || 0, activeBusiness().currency)} payment?</strong><p>${payment.kind === 'invoice' ? `It will be removed from ${escapeHtml(payment.invoiceNumberSnapshot || 'the linked invoice')} and that invoice’s outstanding balance will increase again.` : 'It will be removed from received income.'} This cannot be undone.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-payment-delete>Delete payment</button></div></div>`;
+    $('[data-cancel-delete]', host)?.addEventListener('click', () => { host.innerHTML = ''; });
+    $('[data-confirm-payment-delete]', host)?.addEventListener('click', () => deletePayment(id));
+  }
+
+  function deletePayment(id) {
+    const payment = paymentById(id); if (!payment) return;
+    preserveEvidenceSnapshot('Payment', payment, payment.invoiceNumberSnapshot || payment.sourceName || 'Payment');
+    const invoiceId = payment.invoiceId;
+    data.payments = data.payments.filter(item => item.id !== id);
+    data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Payment', entityId: id, details: { kind: payment.kind, invoiceId, amountCents: payment.amountCents }, occurredAt: nowIso() });
+    repository.save(data);
+    closeModal(); renderAll(); setView('money');
+    showToast('Payment deleted');
+    if (invoiceId && invoiceById(invoiceId)) setTimeout(() => openInvoiceDetail(invoiceId), 35);
+  }
+
+  function expenseSessionOptions(clientId, selectedId = '') {
+    if (!clientId) return '<option value="">No linked session</option>';
+    const sessions = businessSessions().filter(session => session.clientId === clientId).slice().sort((a,b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`));
+    return `<option value="">No linked session</option>${sessions.map(session => `<option value="${session.id}" ${session.id === selectedId ? 'selected' : ''}>${formatDate(session.date,{month:'short',day:'numeric'})} · ${escapeHtml(sessionTimeRangeLabel(session))}</option>`).join('')}`;
+  }
+
+  function openExpenseForm(existingId = null) {
+    $('#formSheet').classList.remove('session-form-sheet');
+    const existing = existingId ? expenseById(existingId) : null;
+    const clients = businessClients();
+    const remembered = entryDefaultsFor('expense');
+    const recentExpense = mostRecentRecord(businessExpenses(),'date');
+    const activeCategoryKeys = new Set(EXPENSE_CATEGORIES.map(([key]) => key));
+    const priorCategory = remembered.category || recentExpense?.category;
+    const priorClassification = remembered.classification || recentExpense?.classification;
+    const selectedCategory = existing?.category || (activeCategoryKeys.has(priorCategory) ? priorCategory : 'food');
+    const classification = existing?.classification || (['business','mixed','personal'].includes(priorClassification) ? priorClassification : 'business');
+    const categoryOptions = existing && !activeCategoryKeys.has(selectedCategory)
+      ? [[selectedCategory, `${expenseCategoryLabel(selectedCategory)} · previous category`], ...EXPENSE_CATEGORIES]
+      : EXPENSE_CATEGORIES;
+    const existingReceipt = existing?.receiptId ? receiptById(existing.receiptId) : null;
+    ui.formMode = 'expense'; ui.formRecordId = existingId;
+    $('#formEyebrow').textContent = existing ? 'EDIT EXPENSE' : 'MONEY SPENT';
+    $('#formTitle').textContent = existing ? (existing.merchant || 'Expense') : 'New expense';
+    $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Save expense';
+    $('#formFields').innerHTML = `
+      <label class="compose-prompt"><span>Quick entry <em>optional</em></span><input id="expenseCompose" autocomplete="off" maxlength="160" placeholder="$40 at Shell" aria-describedby="expenseComposeHint" /></label>
+      <p class="compose-hint" id="expenseComposeHint">Type an amount at a merchant, or use the fields below. Category and use stay as selected.</p>
+      <input type="hidden" name="classification" id="expenseClassification" value="${classification}" />
+      <div class="compose-chips">
+        <label class="field"><span>Use</span><select id="expenseUse">${['personal','business','mixed'].map(value => `<option value="${value}" ${classification === value ? 'selected' : ''}>${value[0].toUpperCase() + value.slice(1)}</option>`).join('')}</select></label>
+        <label class="field"><span>Merchant</span><input name="merchant" id="expenseMerchant" maxlength="120" required placeholder="Merchant" value="${escapeHtml(existing?.merchant || '')}" /></label>
+        <label class="field"><span>Amount · USD</span><input name="total" id="expenseTotal" required inputmode="decimal" min="0.01" step="0.01" type="number" placeholder="0.00" value="${existing ? (existing.totalCents/100).toFixed(2) : ''}" /></label>
+        <label class="field"><span>Category</span><select name="category">${categoryOptions.map(([value,label]) => `<option value="${value}" ${selectedCategory === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select></label>
+        <label class="field"><span>Date</span><input name="date" type="date" required value="${escapeHtml(existing?.date || businessToday())}" /></label>
+      </div>
+      <div id="expenseAmountRow"><label class="field" id="expenseBusinessAmountField" ${classification === 'mixed' ? '' : 'hidden'}><span>Business portion · USD</span><input name="businessAmount" id="expenseBusinessAmount" inputmode="decimal" min="0.01" step="0.01" type="number" placeholder="Less than the total" value="${existing?.classification === 'mixed' ? (existing.businessCents/100).toFixed(2) : ''}" /></label></div>
+      <details class="compose-details" ${existing?.receiptId || existing?.businessPurpose || existing?.clientId || existing?.sessionId || existing?.description || existing?.reviewStatus === 'needs_review' ? 'open' : ''}><summary>Add receipt or details <span aria-hidden="true">⌄</span></summary><div class="compose-details-body">
+      <label class="field" id="expensePurposeField" ${classification === 'personal' ? 'hidden' : ''}><span>Business purpose <em>recommended</em></span><input name="businessPurpose" maxlength="240" placeholder="Why was this needed for the business?" value="${escapeHtml(existing?.businessPurpose || '')}" /></label>
+      <details class="optional-fields" ${existing?.clientId || existing?.sessionId || existing?.description ? 'open' : ''}><summary>Link & describe <span>optional</span></summary><div class="optional-fields-body"><div class="field-row"><label class="field"><span>Client</span><select name="clientId" id="expenseClient"><option value="">No linked client</option>${clients.map(client => `<option value="${client.id}" ${client.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}</select></label><label class="field"><span>Session</span><select name="sessionId" id="expenseSession">${expenseSessionOptions(existing?.clientId || '', existing?.sessionId || '')}</select></label></div><label class="field"><span>Description</span><input name="description" maxlength="220" placeholder="Optional detail about the purchase" value="${escapeHtml(existing?.description || '')}" /></label></div></details>
+      <div class="receipt-upload-card ${existingReceipt ? 'has-file' : ''}" id="receiptUploadCard"><div class="receipt-upload-icon">▧</div><div class="receipt-upload-copy"><strong>${existingReceipt ? escapeHtml(existingReceipt.fileName) : 'Attach receipt'}</strong><small id="receiptUploadMeta">${existingReceipt ? `${escapeHtml(fileSizeLabel(existingReceipt.size))} · choose a file to replace` : 'Image or PDF · optional · up to 12 MB'}</small></div><label class="receipt-upload-button"><input name="receiptFile" id="expenseReceiptFile" type="file" accept="image/*,application/pdf" /><span>${existingReceipt ? 'Replace' : 'Choose file'}</span></label></div>
+      ${existingReceipt ? `<label class="expense-remove-receipt"><input type="checkbox" name="removeReceipt" value="yes" /> Remove current receipt</label>` : ''}
+      <label class="review-toggle"><input type="checkbox" name="needsReview" value="yes" ${existing?.reviewStatus === 'needs_review' || (!existing && classification === 'mixed') ? 'checked' : ''}/><span><strong>Needs review</strong><small>Keep this expense in the Attention queue until you verify it.</small></span></label></div></details>`;
+    openModal($('#formSheet'));
+
+    const classInput = $('#expenseClassification');
+    const mixedField = $('#expenseBusinessAmountField');
+    const purposeField = $('#expensePurposeField');
+    const businessAmount = $('#expenseBusinessAmount');
+    const amountRow = $('#expenseAmountRow');
+    const totalInput = $('#expenseTotal');
+    function setClass(value) {
+      classInput.value = value;
+      $$('[data-expense-class]', $('#formFields')).forEach(btn => btn.classList.toggle('active', btn.dataset.expenseClass === value));
+      mixedField.hidden = value !== 'mixed';
+      amountRow?.classList.toggle('single', value !== 'mixed');
+      purposeField.hidden = value === 'personal';
+      businessAmount.required = value === 'mixed';
+      businessAmount.disabled = value !== 'mixed';
+    }
+    $('#expenseUse').addEventListener('change', event => setClass(event.target.value));
+    const compose = $('#expenseCompose');
+    const merchantInput = $('#expenseMerchant');
+    const hint = $('#expenseComposeHint');
+    compose.addEventListener('input', () => {
+      const parsed = parseExpenseCompose(compose.value);
+      compose.setCustomValidity(parsed.error || '');
+      hint.textContent = parsed.error || 'Category and use stay as selected. Review the fields, then save.';
+      if (parsed.amount) { totalInput.value = parsed.amount; merchantInput.value = parsed.merchant; }
+    });
+    [totalInput, merchantInput].forEach(input => input.addEventListener('input', () => {
+      compose.value = '';
+      compose.setCustomValidity('');
+      hint.textContent = 'Using your edited fields. Category and use stay as selected.';
+    }));
+    $$('[data-expense-class]', $('#formFields')).forEach(btn => btn.addEventListener('click', () => setClass(btn.dataset.expenseClass)));
+    $('#expenseClient')?.addEventListener('change', event => { $('#expenseSession').innerHTML = expenseSessionOptions(event.target.value, ''); });
+    $('#expenseReceiptFile')?.addEventListener('change', event => {
+      const file = event.target.files?.[0]; if (!file) return;
+      $('#receiptUploadCard').classList.add('has-file');
+      $('.receipt-upload-copy strong', $('#receiptUploadCard')).textContent = file.name;
+      $('#receiptUploadMeta').textContent = `${fileSizeLabel(file.size)} · ready to attach`;
+    });
+    setClass(classification);
+  }
+
+  // Deliberately narrow, local syntax: never infer classification or business use.
+  function parseExpenseCompose(text) {
+    if (!text.trim()) return {};
+    const match = text.trim().match(/^\$?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s+at\s+(.+)$/i);
+    if (!match || !Number.isFinite(Number(match[1].replace(/,/g, ''))) || Number(match[1].replace(/,/g, '')) <= 0 || match[2].trim().length > 120) {
+      return { error: 'Use “40 at Shell” with a positive amount and a merchant, or clear quick entry and edit the fields.' };
+    }
+    return { amount: Number(match[1].replace(/,/g, '')).toFixed(2), merchant: match[2].trim() };
+  }
+
+  async function saveExpense(form) {
+    const totalCents = Math.round(Number(form.get('total')) * 100);
+    const classification = form.get('classification');
+    const date = form.get('date');
+    const merchant = (form.get('merchant') || '').trim();
+    if (!date || !merchant) { showToast('Add the expense date and merchant/source.'); return false; }
+    if (!Number.isFinite(totalCents) || totalCents <= 0) { showToast('Expense amount must be greater than $0.'); return false; }
+    if (!['business','mixed','personal'].includes(classification)) { showToast('Choose how this expense was used.'); return false; }
+    let businessCents = classification === 'business' ? totalCents : classification === 'personal' ? 0 : Math.round(Number(form.get('businessAmount')) * 100);
+    if (classification === 'mixed' && (!Number.isFinite(businessCents) || businessCents <= 0 || businessCents >= totalCents)) { showToast('For a mixed expense, the business portion must be greater than $0 and less than the total.'); return false; }
+    const existing = ui.formRecordId ? expenseById(ui.formRecordId) : null;
+    const client = clientById(form.get('clientId'));
+    const session = data.sessions.find(item => item.id === form.get('sessionId'));
+    if (session && client && session.clientId !== client.id) { showToast('The linked session must belong to the selected client.'); return false; }
+    const purpose = classification === 'personal' ? '' : (form.get('businessPurpose') || '').trim();
+    const manualReview = form.get('needsReview') === 'yes';
+    const reviewStatus = manualReview || (classification !== 'personal' && !purpose) ? 'needs_review' : 'ready';
+    let receiptId = existing?.receiptId || null;
+    const file = form.get('receiptFile');
+    const removeReceipt = form.get('removeReceipt') === 'yes';
+    if (file && file instanceof File && file.size > 0) {
+      if (file.size > 12 * 1024 * 1024) { showToast('Receipt files must be 12 MB or smaller.'); return false; }
+      if (!(file.type.startsWith('image/') || file.type === 'application/pdf')) { showToast('Use an image or PDF for the receipt.'); return false; }
+      const newReceiptId = uid('receipt');
+      try { await receiptBlobStore.put(newReceiptId, file); } catch (error) { console.error(error); showToast('Could not store the receipt file in this browser.'); return false; }
+      if (receiptId) { await receiptBlobStore.delete(receiptId).catch(()=>{}); data.receipts = data.receipts.filter(item => item.id !== receiptId); }
+      receiptId = newReceiptId;
+      data.receipts.push({ id:newReceiptId, businessId:data.activeBusinessId, expenseId:existing?.id || null, fileName:file.name, mimeType:file.type, size:file.size, createdAt:nowIso() });
+    } else if (removeReceipt && receiptId) {
+      await receiptBlobStore.delete(receiptId).catch(()=>{});
+      data.receipts = data.receipts.filter(item => item.id !== receiptId);
+      receiptId = null;
+    }
+    const category = form.get('category') || 'misc';
+    const payload = { date, merchant, description:(form.get('description') || '').trim(), totalCents, classification, businessCents, category, businessPurpose:purpose, clientId:client?.id || null, clientNameSnapshot:client?.displayName || existing?.clientNameSnapshot || '', sessionId:session?.id || null, sessionDateSnapshot:session?.date || existing?.sessionDateSnapshot || '', sessionTimeSnapshot:session ? sessionTimeRangeLabel(session) : existing?.sessionTimeSnapshot || '', reviewStatus, receiptId };
+    if (existing) {
+      const before = deepClone(existing); Object.assign(existing, payload, { updatedAt:nowIso() });
+      const receipt = receiptId ? receiptById(receiptId) : null; if (receipt) receipt.expenseId = existing.id;
+      persist('updated','Expense',existing.id,{ before, after:deepClone(existing) });
+      showToast('Expense updated');
+    } else {
+      const expense = { id:uid('expense'), businessId:data.activeBusinessId, ...payload, createdAt:nowIso(), updatedAt:nowIso() };
+      data.expenses.push(expense); const receipt = receiptId ? receiptById(receiptId) : null; if (receipt) receipt.expenseId = expense.id;
+      rememberEntryDefaults('expense', { classification, category });
+      persist('created','Expense',expense.id,{ totalCents, businessCents, classification, category:expense.category, receiptId });
+      ui.formRecordId = expense.id; showToast(receiptId ? 'Expense and receipt saved' : 'Expense saved');
+    }
+    return true;
+  }
+
+  async function hydrateExpenseReceipt(expense) {
+    const host = $('#expenseReceiptPreview'); if (!host || !expense?.receiptId) return;
+    const receipt = receiptById(expense.receiptId); if (!receipt) return;
+    try {
+      const blob = await receiptBlobStore.get(receipt.id);
+      if (!blob) { host.innerHTML = `<div class="receipt-missing"><span>!</span><div><strong>Receipt metadata found, file unavailable</strong><small>The browser may have cleared local file storage.</small></div></div>`; return; }
+      if (receipt.mimeType?.startsWith('image/')) {
+        const url = URL.createObjectURL(blob);
+        host.innerHTML = `<img class="receipt-preview-image" src="${url}" alt="Receipt preview" /><div class="receipt-preview-footer"><span><strong>${escapeHtml(receipt.fileName)}</strong><small>${escapeHtml(fileSizeLabel(receipt.size))}</small></span><button type="button" class="secondary-btn compact-action" data-download-receipt>Download</button></div>`;
+        $('img',host)?.addEventListener('load',()=>setTimeout(()=>URL.revokeObjectURL(url),2000),{once:true});
+      } else {
+        host.innerHTML = `<div class="receipt-file-tile"><span>PDF</span><div><strong>${escapeHtml(receipt.fileName)}</strong><small>${escapeHtml(fileSizeLabel(receipt.size))}</small></div><button type="button" class="secondary-btn compact-action" data-download-receipt>Download</button></div>`;
+      }
+      $('[data-download-receipt]', host)?.addEventListener('click', async () => downloadReceipt(receipt.id));
+    } catch (error) { console.error(error); }
+  }
+
+  async function downloadReceipt(receiptId) {
+    const receipt = receiptById(receiptId); if (!receipt) return;
+    const blob = await receiptBlobStore.get(receiptId).catch(()=>null); if (!blob) { showToast('Receipt file is not available in local storage.'); return; }
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=receipt.fileName || 'receipt'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+
+  function openExpenseDetail(id) {
+    const expense = expenseById(id); if (!expense) return;
+    const client = expense.clientId ? clientById(expense.clientId) : null;
+    const session = expense.sessionId ? data.sessions.find(item => item.id === expense.sessionId) : null;
+    const clientLabel = client?.displayName || expense.clientNameSnapshot || '';
+    const sessionLabel = session ? `${formatDate(session.date,{month:'short',day:'numeric'})} · ${sessionTimeRangeLabel(session)}` : expense.sessionDateSnapshot ? `${formatDate(expense.sessionDateSnapshot,{month:'short',day:'numeric'})}${expense.sessionTimeSnapshot ? ` · ${expense.sessionTimeSnapshot}` : ''}` : '';
+    const receipt = expense.receiptId ? receiptById(expense.receiptId) : null;
+    $('#detailEyebrow').textContent = 'EXPENSE'; $('#detailTitle').textContent = expense.merchant || 'Expense';
+    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-expense="${expense.id}">Edit</button>${expense.reviewStatus === 'needs_review' ? `<button class="primary-btn" data-review-expense="${expense.id}">Mark reviewed</button>` : ''}<details class="record-more"><summary aria-label="More expense actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-expense="${expense.id}">Delete expense</button></div></details></div><div id="detailDeleteConfirm"></div>
+      <div class="detail-metrics"><div><small>Date</small><strong>${formatDate(expense.date)}</strong></div><div><small>Total</small><strong>${formatMoney(expense.totalCents || 0, activeBusiness().currency)}</strong></div><div><small>Business portion</small><strong>${formatMoney(expense.businessCents || 0, activeBusiness().currency)}</strong></div></div>
+      <div class="expense-hero-card"><div><span class="status-pill ${expenseClassStatus(expense.classification)}">${escapeHtml(expenseClassLabel(expense.classification))}</span>${expense.reviewStatus === 'needs_review' ? '<span class="status-pill review">Needs review</span>' : '<span class="status-pill success">Ready</span>'}</div><strong>${escapeHtml(expenseCategoryLabel(expense.category))}</strong><small>${escapeHtml(expense.description || 'No description')}</small></div>
+      ${expense.businessPurpose ? `<div class="detail-section"><p class="eyebrow">BUSINESS PURPOSE</p><p>${escapeHtml(expense.businessPurpose)}</p></div>` : expense.classification !== 'personal' ? `<div class="detail-section subtle-warning"><p class="eyebrow">BUSINESS PURPOSE</p><p>Not documented yet.</p></div>` : ''}
+      ${clientLabel || sessionLabel ? `<div class="detail-section"><p class="eyebrow">LINKED WORK</p>${clientLabel ? `<div class="trace-row"><span>Client</span><strong>${escapeHtml(clientLabel)}</strong></div>` : ''}${sessionLabel ? `<div class="trace-row"><span>Session</span><strong>${escapeHtml(sessionLabel)}</strong></div>` : ''}</div>` : ''}
+      <div class="detail-section"><div class="section-inline-title"><div><p class="eyebrow">RECEIPT</p><h3>${receipt ? 'Attached evidence' : 'No receipt attached'}</h3></div></div><div id="expenseReceiptPreview">${receipt ? '<div class="receipt-loading">Loading receipt…</div>' : '<div class="receipt-empty-detail"><span>▧</span><small>Edit this expense to attach an image or PDF.</small></div>'}</div></div>
+      <div class="trace-banner"><span>↳</span><div><strong>Expense source record</strong><small>The original total and business-use portion stay separate so reporting remains accurate without rewriting what was actually spent.</small></div></div>${evidenceTimelineHtml('Expense', expense.id)}`;
+    openModal($('#detailPanel'));
+    $('[data-edit-expense]')?.addEventListener('click',()=>openExpenseForm(id));
+    $('[data-review-expense]')?.addEventListener('click',()=>markExpenseReviewed(id));
+    $('[data-delete-expense]')?.addEventListener('click',()=>showExpenseDeleteConfirmation(id));
+    hydrateExpenseReceipt(expense);
+  }
+
+  function markExpenseReviewed(id) {
+    const expense = expenseById(id); if (!expense) return; const before = expense.reviewStatus; expense.reviewStatus='ready'; expense.updatedAt=nowIso(); persist('reviewed','Expense',id,{ before, after:'ready' }); renderAll(); openExpenseDetail(id); showToast('Expense marked reviewed');
+  }
+
+  function showExpenseDeleteConfirmation(id) {
+    const expense = expenseById(id); const host=$('#detailDeleteConfirm'); if (!expense || !host) return;
+    $('.record-more[open]', $('#detailBody'))?.removeAttribute('open');
+    host.innerHTML=`<div class="delete-confirm-card"><div><strong>Delete this ${formatMoney(expense.totalCents || 0, activeBusiness().currency)} expense?</strong><p>${escapeHtml(expense.merchant || 'Expense')} and its linked receipt file, if any, will be permanently removed from this local workspace.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-expense-delete>Delete expense</button></div></div>`;
+    $('[data-cancel-delete]',host)?.addEventListener('click',()=>host.innerHTML='');
+    $('[data-confirm-expense-delete]',host)?.addEventListener('click',()=>deleteExpense(id));
+  }
+
+  async function deleteExpense(id) {
+    const expense=expenseById(id); if (!expense) return; const receiptId=expense.receiptId;
+    preserveEvidenceSnapshot('Expense', expense, expense.merchant || 'Expense');
+    data.expenses=data.expenses.filter(item=>item.id!==id); data.receipts=data.receipts.filter(item=>item.expenseId!==id && item.id!==receiptId);
+    data.auditEvents.push({ id:uid('audit'),businessId:data.activeBusinessId,eventType:'deleted',entityType:'Expense',entityId:id,details:{ totalCents:expense.totalCents,businessCents:expense.businessCents,receiptId },occurredAt:nowIso() });
+    repository.save(data); if (receiptId) await receiptBlobStore.delete(receiptId).catch(()=>{}); closeModal(); renderAll(); setView('money'); ui.moneyTab='expenses'; syncMoneyTabs(); showToast('Expense deleted');
+  }
+
+
+  // Taxes, mileage, and vehicle behavior retired in Revision 44.
+
+  function receiptMonthShift(monthKey, offset) {
+    const [year, month] = String(monthKey || businessMonthKey()).split('-').map(Number);
+    const shifted = new Date(Date.UTC(year, (month || 1) - 1 + offset, 1));
+    return shifted.toISOString().slice(0,7);
+  }
+
+  function receiptArchiveEntry(receipt) {
+    const expense = expenseById(receipt.expenseId);
+    if (!expense) return null;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(expense.date || '') ? expense.date : String(receipt.createdAt || businessToday()).slice(0,10);
+    const amount = Number(expense.totalCents || 0) / 100;
+    const monthLong = formatDate(date,{ month:'long', year:'numeric' });
+    const monthShort = formatDate(date,{ month:'short', year:'numeric' });
+    const index = [
+      receipt.fileName, expense.merchant, expense.description, expense.businessPurpose,
+      expenseCategoryLabel(expense.category), expenseClassLabel(expense.classification),
+      expense.reviewStatus === 'needs_review' ? 'needs review attention' : 'recorded',
+      date, formatDate(date,{month:'long',day:'numeric',year:'numeric'}), monthLong, monthShort,
+      amount.toFixed(2), String(amount), `$${amount.toFixed(2)}`, `$${Number.isInteger(amount) ? amount : amount.toFixed(2)}`,
+      receipt.mimeType === 'application/pdf' ? 'pdf' : 'image'
+    ].filter(Boolean).join(' ').toLowerCase();
+    return { receipt, expense, date, monthKey:date.slice(0,7), year:date.slice(0,4), index };
+  }
+
+  function receiptMatchesSearch(entry, rawTerm) {
+    let term = String(rawTerm || '').toLowerCase().trim();
+    if (!term) return true;
+    const phraseRules = [
+      ['this month', () => entry.monthKey === businessMonthKey()],
+      ['last month', () => entry.monthKey === receiptMonthShift(businessMonthKey(), -1)],
+      ['this year', () => entry.year === businessToday().slice(0,4)],
+      ['needs review', () => entry.expense.reviewStatus === 'needs_review']
+    ];
+    for (const [phrase, matcher] of phraseRules) {
+      if (!term.includes(phrase)) continue;
+      if (!matcher()) return false;
+      term = term.replaceAll(phrase, ' ');
+    }
+    const tokens = term.replace(/[,/]+/g,' ').split(/\s+/).filter(Boolean);
+    return tokens.every(token => entry.index.includes(token));
+  }
+
+  function receiptCardHtml(entry) {
+    const { receipt, expense } = entry;
+    return `<button class="receipt-vault-card" data-receipt-expense="${expense.id}"><span class="receipt-vault-icon">${receipt.mimeType === 'application/pdf' ? 'PDF' : '▧'}</span><span class="receipt-vault-main"><strong>${escapeHtml(expense.merchant || 'Expense')}</strong><small>${escapeHtml(receipt.fileName)} · ${escapeHtml(expenseCategoryLabel(expense.category))}</small></span><span class="receipt-vault-meta"><strong>${formatMoney(expense.totalCents || 0, activeBusiness().currency)}</strong><small>${formatDate(entry.date,{month:'short',day:'numeric',year:'numeric'})}</small></span>${expense.reviewStatus === 'needs_review' ? '<span class="receipt-review-dot" title="Needs review"></span>' : ''}</button>`;
+  }
+
+  function receiptSearchHistory() {
+    try { const history=JSON.parse(localStorage.getItem(RECEIPT_SEARCH_HISTORY_KEY) || '[]'); return Array.isArray(history) ? history.filter(Boolean).slice(0,6) : []; }
+    catch { return []; }
+  }
+
+  function rememberReceiptSearch(value) {
+    const term=String(value || '').trim();
+    if (term.length < 2) return;
+    const history=[term,...receiptSearchHistory().filter(item=>item.toLowerCase()!==term.toLowerCase())].slice(0,6);
+    try { localStorage.setItem(RECEIPT_SEARCH_HISTORY_KEY,JSON.stringify(history)); } catch {}
+  }
+
+  function renderReceiptSuggestions(entries) {
+    const datalist=$('#receiptSearchSuggestions');
+    if (!datalist) return;
+    const merchantCounts=new Map();
+    entries.forEach(({expense})=>{ const merchant=String(expense.merchant || '').trim(); if (merchant) merchantCounts.set(merchant,(merchantCounts.get(merchant)||0)+1); });
+    const merchants=[...merchantCounts].sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0])).slice(0,5).map(([merchant])=>merchant);
+    const categories=[...new Set(entries.map(({expense})=>expenseCategoryLabel(expense.category)))].slice(0,5);
+    const suggestions=[...receiptSearchHistory(),...merchants,...categories,'this month','last month','this year','needs review'];
+    datalist.innerHTML=[...new Set(suggestions)].slice(0,16).map(value=>`<option value="${escapeHtml(value)}"></option>`).join('');
+  }
+
+  function bindReceiptArchiveObserver(hasMoreMonths) {
+    receiptArchiveObserver?.disconnect();
+    receiptArchiveObserver=null;
+    const sentinel=$('#receiptArchiveSentinel');
+    if (!hasMoreMonths || !sentinel) return;
+    const revealOlder=()=>{ ui.receiptMonthLimit += 6; renderRecords(); };
+    $('[data-load-older-receipts]',sentinel)?.addEventListener('click',revealOlder);
+    if (!('IntersectionObserver' in window)) return;
+    sentinel.classList.add('auto-load-ready');
+    receiptArchiveObserver=new IntersectionObserver(records=>{
+      if (!records.some(record=>record.isIntersecting)) return;
+      receiptArchiveObserver?.disconnect();
+      revealOlder();
+    },{rootMargin:'180px 0px'});
+    receiptArchiveObserver.observe(sentinel);
+  }
+
+  function renderRecords() {
+    const term=($('#receiptSearch')?.value || '').trim();
+    const allEntries=businessReceipts().map(receiptArchiveEntry).filter(Boolean).sort((a,b)=>`${b.date}${b.receipt.createdAt || ''}`.localeCompare(`${a.date}${a.receipt.createdAt || ''}`));
+    const entries=allEntries.filter(entry=>receiptMatchesSearch(entry,term));
+    renderReceiptSuggestions(allEntries);
+    $('#receiptCount').textContent=term ? `${entries.length} of ${allEntries.length}` : `${allEntries.length} ${allEntries.length === 1 ? 'receipt' : 'receipts'}`;
+
+    const monthMap=new Map();
+    entries.forEach(entry=>{ if (!monthMap.has(entry.monthKey)) monthMap.set(entry.monthKey,[]); monthMap.get(entry.monthKey).push(entry); });
+    const monthGroups=[...monthMap.entries()].map(([monthKey,items])=>({monthKey,year:monthKey.slice(0,4),items,totalCents:items.reduce((sum,item)=>sum+Number(item.expense.totalCents || 0),0)}));
+    const visibleGroups=term ? monthGroups : monthGroups.slice(0,ui.receiptMonthLimit);
+    const currentMonth=businessMonthKey();
+    const defaultOpenMonth=visibleGroups.some(group=>group.monthKey===currentMonth) ? currentMonth : visibleGroups[0]?.monthKey;
+    if (defaultOpenMonth && ui.receiptArchiveBusinessId !== data.activeBusinessId) {
+      ui.receiptArchiveBusinessId=data.activeBusinessId;
+      ui.receiptOpenMonths=defaultOpenMonth ? [defaultOpenMonth] : [];
+    }
+    ui.receiptOpenMonths=(ui.receiptOpenMonths || []).filter(monthKey=>monthMap.has(monthKey));
+    const openMonths=new Set(ui.receiptOpenMonths);
+    const yearTotals=new Map();
+    monthGroups.forEach(group=>{
+      const current=yearTotals.get(group.year) || { count:0,totalCents:0 };
+      current.count+=group.items.length;
+      current.totalCents+=group.totalCents;
+      yearTotals.set(group.year,current);
+    });
+    const years=new Map();
+    visibleGroups.forEach(group=>{ if (!years.has(group.year)) years.set(group.year,[]); years.get(group.year).push(group); });
+
+    let archiveHtml='';
+    if (entries.length) {
+      const searchTotal=entries.reduce((sum,item)=>sum+Number(item.expense.totalCents || 0),0);
+      const searchSummary=term ? `<div class="receipt-search-summary" role="status"><span><strong>${entries.length} ${entries.length===1?'receipt':'receipts'} found</strong><small>Matching “${escapeHtml(term)}”</small></span><b>${formatMoney(searchTotal,activeBusiness().currency)}</b></div>` : '';
+      archiveHtml=searchSummary+[...years.entries()].map(([year,groups])=>{
+        const yearCount=yearTotals.get(year)?.count || 0;
+        const yearTotal=yearTotals.get(year)?.totalCents || 0;
+        return `<section class="receipt-year" aria-labelledby="receipt-year-${year}"><div class="receipt-year-heading" id="receipt-year-${year}"><strong>${year}</strong><span>${yearCount} ${yearCount===1?'receipt':'receipts'} · ${formatMoney(yearTotal,activeBusiness().currency)}</span></div><div class="receipt-month-list">${groups.map(group=>{
+          const isOpen=term || openMonths.has(group.monthKey);
+          return `<details class="receipt-month" data-receipt-month="${group.monthKey}" ${isOpen?'open':''}><summary><span><strong>${formatDate(`${group.monthKey}-01`,{month:'long'})}</strong><small>${group.items.length} ${group.items.length===1?'receipt':'receipts'}</small></span><span class="receipt-month-total"><b>${formatMoney(group.totalCents,activeBusiness().currency)}</b><i aria-hidden="true">⌄</i></span></summary><div class="receipt-month-grid">${group.items.map(receiptCardHtml).join('')}</div></details>`;
+        }).join('')}</div></section>`;
+      }).join('');
+      if (!term && monthGroups.length>visibleGroups.length) archiveHtml+=`<div class="receipt-archive-sentinel" id="receiptArchiveSentinel"><span class="receipt-load-glow" aria-hidden="true"></span><small>More history is ready</small><button type="button" data-load-older-receipts>Show older receipts</button></div>`;
+    } else {
+      archiveHtml=`<div class="large-empty receipt-empty"><div class="placeholder-icon small">▧</div><strong>${term ? 'No receipts match this search' : 'No receipts yet'}</strong><p>${term ? 'Try a merchant, month, category, amount, or classification.' : 'Attach a receipt while saving an expense and it will appear here automatically.'}</p>${term ? '' : '<button class="secondary-btn" data-records-add-expense>Add expense with receipt</button>'}</div>`;
+    }
+    $('#receiptVault').innerHTML=archiveHtml;
+    $$('[data-receipt-expense]', $('#receiptVault')).forEach(btn=>btn.addEventListener('click',()=>openExpenseDetail(btn.dataset.receiptExpense)));
+    $$('[data-receipt-month]', $('#receiptVault')).forEach(details=>details.addEventListener('toggle',()=>{
+      const key=details.dataset.receiptMonth;
+      const months=new Set(ui.receiptOpenMonths || []);
+      if (details.open) months.add(key); else months.delete(key);
+      ui.receiptOpenMonths=[...months];
+    }));
+    $('[data-records-add-expense]', $('#receiptVault'))?.addEventListener('click',()=>openExpenseForm());
+    bindReceiptArchiveObserver(!term && monthGroups.length>visibleGroups.length);
+  }
+
+  function renderCommandPalette() {
+    const term = ($('#commandInput').value || '').toLowerCase().trim();
+    const navigation = [
+      ['home','⌂','Home','Dashboard and attention queue'], ['work','◫','Work','Clients and sessions'], ['money','$','Money','Invoices, payments, and expenses'], ['records','▤','Records','Documents and evidence']
+    ].filter(item => !term || item.slice(2).join(' ').toLowerCase().includes(term));
+    const clients = businessClients().filter(c => term && c.displayName.toLowerCase().includes(term)).slice(0,5);
+    const sessions = businessSessions().filter(s => {
+      const c = clientById(s.clientId); return term && `${c?.displayName || s.clientNameSnapshot || ''} ${s.date} ${s.notes || ''}`.toLowerCase().includes(term);
+    }).slice(0,5);
+    const invoices = businessInvoices().filter(invoice => term && `${invoice.number} ${invoice.recipientSnapshot?.displayName || ''} ${invoiceDisplayStatus(invoice)}`.toLowerCase().includes(term)).slice(0,5);
+    const payments = businessPayments().filter(payment => term && `${paymentSourceLabel(payment)} ${payment.clientNameSnapshot || ''} ${payment.description || ''} ${payment.reference || ''} ${paymentMethodLabel(payment.method)} ${payment.amountCents || 0}`.toLowerCase().includes(term)).slice(0,5);
+    const expenses = businessExpenses().filter(expense => term && `${expense.merchant || ''} ${expense.description || ''} ${expense.businessPurpose || ''} ${expenseCategoryLabel(expense.category)} ${expenseClassLabel(expense.classification)} ${expense.totalCents || 0}`.toLowerCase().includes(term)).slice(0,5);
+
+    $('#commandBody').innerHTML = `${navigation.length ? `<p class="command-label">Navigation</p>${navigation.map(n => `<button class="command-result" data-command-view="${n[0]}"><span>${n[1]}</span><div><strong>${n[2]}</strong><small>${n[3]}</small></div></button>`).join('')}` : ''}
+      ${clients.length ? `<p class="command-label">Clients</p>${clients.map(c => `<button class="command-result" data-command-client="${c.id}"><span>${escapeHtml(initials(c.displayName))}</span><div><strong>${escapeHtml(c.displayName)}</strong><small>Client · ${formatMoney(c.defaultRateCents || 0)}/hr</small></div></button>`).join('')}` : ''}
+      ${sessions.length ? `<p class="command-label">Sessions</p>${sessions.map(s => `<button class="command-result" data-command-session="${s.id}"><span>◫</span><div><strong>${escapeHtml(clientById(s.clientId)?.displayName || s.clientNameSnapshot || 'Unassigned')}</strong><small>${formatDate(s.date)} · ${hoursLabel(sessionMinutes(s))}</small></div></button>`).join('')}` : ''}
+      ${invoices.length ? `<p class="command-label">Invoices</p>${invoices.map(invoice => `<button class="command-result" data-command-invoice="${invoice.id}"><span>▧</span><div><strong>${escapeHtml(invoice.number)}</strong><small>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice), activeBusiness().currency)} due · ${escapeHtml(invoiceDisplayStatus(invoice))}</small></div></button>`).join('')}` : ''}
+      ${payments.length ? `<p class="command-label">Payments</p>${payments.map(payment => `<button class="command-result" data-command-payment="${payment.id}"><span>$</span><div><strong>${escapeHtml(paymentSourceLabel(payment))}</strong><small>${formatMoney(payment.amountCents || 0, activeBusiness().currency)} · ${escapeHtml(paymentMethodLabel(payment.method))} · ${formatDate(payment.receivedDate)}</small></div></button>`).join('')}` : ''}
+      ${expenses.length ? `<p class="command-label">Expenses</p>${expenses.map(expense => `<button class="command-result" data-command-expense="${expense.id}"><span>−</span><div><strong>${escapeHtml(expense.merchant || 'Expense')}</strong><small>${formatMoney(expense.totalCents || 0, activeBusiness().currency)} · ${escapeHtml(expenseCategoryLabel(expense.category))} · ${formatDate(expense.date)}</small></div></button>`).join('')}` : ''}
+      ${term && !navigation.length && !clients.length && !sessions.length && !invoices.length && !payments.length && !expenses.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
+    $$('[data-command-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.commandView)));
+    $$('[data-command-client]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openClientDetail(btn.dataset.commandClient); }));
+    $$('[data-command-session]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openSessionDetail(btn.dataset.commandSession); }));
+    $$('[data-command-invoice]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); openInvoiceDetail(btn.dataset.commandInvoice); }));
+    $$('[data-command-payment]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); ui.moneyTab = 'payments'; syncMoneyTabs(); openPaymentDetail(btn.dataset.commandPayment); }));
+    $$('[data-command-expense]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); ui.moneyTab = 'expenses'; syncMoneyTabs(); openExpenseDetail(btn.dataset.commandExpense); }));
+  }
+
+  function openClientForm(existingId = null) {
+    $('#formSheet').classList.remove('session-form-sheet');
+    const existing = existingId ? data.clients.find(c => c.id === existingId) : null;
+    ui.formMode = 'client'; ui.formRecordId = existingId;
+    $('#formEyebrow').textContent = existing ? 'EDIT CLIENT' : 'ADD CLIENT';
+    $('#formTitle').textContent = existing ? existing.displayName : 'New client';
+    $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Add client';
+    const remembered = entryDefaultsFor('client');
+    const recentClient = mostRecentRecord(businessClients());
+    const priorColorKey = remembered.colorKey || recentClient?.colorKey;
+    const priorStatus = remembered.status || recentClient?.status;
+    const selectedColorKey = clientColorKey(existing || { colorKey: CLIENT_COLOR_KEYS.includes(priorColorKey) ? priorColorKey : defaultClientColorForIndex(businessClients().length) });
+    const selectedStatus = existing?.status || (priorStatus === 'inactive' ? 'inactive' : 'active');
+    $('#formFields').innerHTML = `
+      <label class="field"><span>Client / payer name</span><input name="displayName" required maxlength="100" placeholder="e.g. Client A" value="${escapeHtml(existing?.displayName || '')}" /><small>You can use an alias if you do not want identifying client information in the prototype.</small></label>
+      <fieldset class="client-color-field"><legend>Client color</legend><div class="client-color-picker" role="radiogroup" aria-label="Client color">${CLIENT_COLOR_KEYS.map((key, index) => `<label class="client-color-option" title="${key[0].toUpperCase()+key.slice(1)}"><input type="radio" name="colorKey" value="${key}" ${selectedColorKey === key ? 'checked' : ''}/><span class="client-color-swatch client-bg-${key}" aria-hidden="true"></span><span class="sr-only">${key}</span></label>`).join('')}</div><small>Used as a quick visual identifier in work views.</small></fieldset>
+      <div class="field-row"><label class="field"><span>Default hourly rate</span><div class="money-input"><span>$</span><input name="rate" required inputmode="decimal" min="0" step="0.01" type="number" placeholder="0.00" value="${existing ? (existing.defaultRateCents/100).toFixed(2) : ''}" /></div></label><label class="field"><span>Status</span><select name="status"><option value="active" ${selectedStatus === 'active' ? 'selected' : ''}>Active</option><option value="inactive" ${selectedStatus === 'inactive' ? 'selected' : ''}>Inactive</option></select></label></div>
+      <details class="optional-fields" ${existing?.billingEmail || existing?.billingAddress ? 'open' : ''}><summary>Billing details <span>optional</span></summary><div class="optional-fields-body"><label class="field"><span>Billing email</span><input name="billingEmail" type="email" maxlength="160" placeholder="payer@example.com" value="${escapeHtml(existing?.billingEmail || '')}" /></label><label class="field"><span>Billing address</span><textarea name="billingAddress" rows="2" maxlength="300" placeholder="Optional address shown on invoices">${escapeHtml(existing?.billingAddress || '')}</textarea></label></div></details>
+      <label class="field"><span>Notes <em>optional</em></span><textarea name="notes" rows="3" maxlength="500" placeholder="Billing arrangement, general context, or reminder…">${escapeHtml(existing?.notes || '')}</textarea></label>`;
+    openModal($('#formSheet'));
+  }
+
+  function openSessionForm(existingId = null) {
+    const existing = existingId ? data.sessions.find(s => s.id === existingId) : null;
+    if (existing?.invoiceId && invoiceById(existing.invoiceId)?.status === 'sent') {
+      showToast('This session is on a sent invoice. Move that invoice back to Draft before editing it.');
+      return;
+    }
+    const clients = businessClients().filter(c => c.status === 'active' || c.id === existing?.clientId);
+    if (!clients.length && !existing) {
+      showToast('Add a client before logging a work session.');
+      openClientForm();
+      return;
+    }
+    ui.formMode = 'session'; ui.formRecordId = existingId;
+    $('#formEyebrow').textContent = existing ? 'EDIT WORK SESSION' : 'NEW WORK SESSION';
+    $('#formTitle').textContent = existing ? 'Adjust the session' : 'Mark the session';
+    $('#formSubmitBtn').textContent = existing ? 'Save changes' : 'Save session';
+    const today = businessToday();
+    const clientLocked = Boolean(existing?.invoiceId);
+    const remembered = entryDefaultsFor('session');
+    const recentSession = mostRecentRecord(businessSessions(),'date');
+    const priorClientId = remembered.clientId || recentSession?.clientId;
+    const selectedClientId = existing?.clientId || (clients.some(client=>client.id===priorClientId) ? priorClientId : '') || (clients.length===1 ? clients[0].id : '');
+    const selectedClient = clients.find(client=>client.id===selectedClientId);
+    const priorStart = remembered.startTime || recentSession?.startTime;
+    const priorEnd = remembered.endTime || recentSession?.endTime;
+    const initialStart = existing?.startTime || (timeToMinutes(priorStart) != null ? priorStart : '');
+    const initialEnd = existing?.endTime || (timeToMinutes(priorEnd) != null ? priorEnd : '');
+    $('#formSheet').classList.add('session-form-sheet');
+    $('#formFields').innerHTML = `
+      <section class="paired-clock-picker companion-picker" id="sessionClockPicker" data-client-color="${clientColorKey(selectedClient)}">
+      <div class="paired-session-top">
+        <label class="field"><span>Client</span><select ${clientLocked ? 'disabled' : 'name="clientId"'} id="sessionClient" required><option value="">Choose client</option>${clients.map(c => `<option value="${c.id}" data-rate="${c.defaultRateCents || 0}" data-color="${clientColorKey(c)}" ${c.id === selectedClientId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select>${clientLocked ? `<input type="hidden" name="clientId" value="${escapeHtml(existing.clientId)}" /><small>Client is locked while this session is attached to ${escapeHtml(invoiceById(existing.invoiceId)?.number || 'an invoice')}.</small>` : ''}</label>
+        <label class="field"><span>Date</span><input name="date" type="date" required value="${existing?.date || today}" /></label>
+        <label class="field"><span>Hourly rate</span><div class="money-input"><span>$</span><input name="rate" id="sessionRate" required inputmode="decimal" min="0" step="0.01" type="number" value="${existing ? (existing.rateCents/100).toFixed(2) : selectedClient ? (selectedClient.defaultRateCents/100).toFixed(2) : ''}" placeholder="0.00" /></div></label>
+      </div>
+        <input type="hidden" name="startTime" id="clockStartInput" value="${initialStart}" />
+        <input type="hidden" name="endTime" id="clockEndInput" value="${initialEnd}" />
+        <div class="single-clock-timebar" aria-label="Choose time to edit">
+          <div class="companion-mode"><button type="button" data-clock-target="start" class="active">Set start</button><button type="button" data-clock-target="end">Set end</button></div>
+          <div class="companion-readouts"><div><small>Start time</small><strong id="clockStartLabel">${clockTimeLabel(initialStart)}</strong></div><span aria-hidden="true">→</span><div><small>End time</small><strong id="clockEndLabel">${clockTimeLabel(initialEnd)}</strong></div></div>
+        </div>
+        <div class="single-clock-editor" id="singleClockEditor">
+          <button type="button" id="singleClockUndo" disabled>↶ Undo</button>
+          <button type="button" data-clock-nudge="-5" aria-label="Subtract five minutes">− 5 min</button>
+          <button type="button" data-clock-nudge="5" aria-label="Add five minutes">+ 5 min</button>
+        </div>
+        <div class="single-clock-face" data-clock-face="single">
+          <span class="paired-clock-kicker" id="singleClockTargetLabel">START TIME</span>
+          <div class="paired-clock-dial single-clock-dial" id="singleClockDial" role="slider" tabindex="0" aria-label="Choose selected session time" aria-valuetext="${clockTimeLabel(initialStart)}"><div class="paired-clock-ticks" id="singleClockTicks" aria-hidden="true"></div><div class="paired-clock-numbers" id="singleClockNumbers" aria-hidden="true"></div><div class="paired-clock-hand" id="singleClockHand"><span></span></div><div class="paired-clock-center"><small id="singleClockCenterLabel">START</small><strong id="singleClockReadout">${clockTimeLabel(initialStart) !== '—' ? clockTimeLabel(initialStart) : clockTimeLabel(currentRoundedTime())}</strong></div></div>
+          <div class="paired-period-toggle" aria-label="Selected time AM or PM"><button type="button" data-face-period="single-AM">AM</button><button type="button" data-face-period="single-PM">PM</button></div>
+        </div>
+        <div class="quick-time-bay">
+          <div class="companion-presets-head"><strong>Client presets</strong><button type="button" id="quickTimeAdd">＋ Add preset</button></div>
+          <div class="quick-time-grid" id="sessionQuickTimes" tabindex="0" role="region" aria-label="Client presets, scroll for more"></div>
+          <button type="button" class="quick-time-manage" id="quickTimeManage" hidden>Done</button>
+        <div class="quick-time-editor" id="quickTimeEditor" hidden>
+            <div class="quick-editor-heading"><div><small id="quickTimeEditorTitle">Set quick time</small><span>Reusable start and end for this client</span></div><b aria-hidden="true">↗</b></div>
+            <label class="preset-name"><span>Name · optional</span><input id="quickTimeName" maxlength="40" placeholder="e.g. Morning session" /></label><div class="quick-editor-fields"><label><span>START</span><input type="time" id="quickTimeStart" step="300" /></label><i aria-hidden="true">→</i><label><span>END</span><input type="time" id="quickTimeEnd" step="300" /></label></div>
+            <button type="button" id="quickTimeUseCurrent">Use current session times</button><div class="quick-editor-actions"><button type="button" class="quick-time-remove" id="quickTimeDelete" hidden>Remove</button><span><button type="button" id="quickTimeCancel">Cancel</button><button type="button" id="quickTimeSave">Save preset</button></span></div>
+          </div>
+          <span class="quick-time-help">Up to six per client · scroll for more</span>
+        </div>
+
+        <div class="paired-session-total" id="clockDuration"><span><small>SESSION LENGTH</small><strong id="sessionDurationValue">Select both times</strong></span><i></i><span><small>SESSION VALUE</small><strong id="sessionValue">—</strong></span><em>Snaps to 5 min</em></div>
+        <details class="session-note-disclosure" ${existing?.notes ? 'open' : ''}><summary><span><b>Session note</b><small>Optional billing context or reminder</small></span><span aria-hidden="true">⌄</span></summary><div><textarea name="notes" rows="3" maxlength="500" placeholder="Brief work note or billing context…">${escapeHtml(existing?.notes || '')}</textarea></div></details>
+      </section>`;
+    openModal($('#formSheet'));
+    const select = $('#sessionClient');
+    const picker = initSingleClockTimePicker(initialStart, initialEnd, selectedClientId);
+    select.addEventListener('change', () => {
+      const option = select.selectedOptions[0];
+      if (option?.dataset.rate) $('#sessionRate').value = (Number(option.dataset.rate)/100).toFixed(2);
+      $('#sessionClockPicker').dataset.clientColor = option?.dataset.color || 'blue';
+      picker.switchClient(select.value);
+      picker.updateSummary();
+    });
+    $('#sessionRate').addEventListener('input', picker.updateSummary);
+  }
+
+  // Single-dial session entry: the dial edits whichever time chip is active.
+  // Both values stay visible, while direct time input and one-step undo make corrections painless.
+  function initSingleClockTimePicker(initialStart = '', initialEnd = '', initialClientId = '') {
+    const picker=$('#sessionClockPicker'); if(!picker) return {switchClient(){},updateSummary(){}};
+    const inputs={start:$('#clockStartInput'),end:$('#clockEndInput')};
+    inputs.start.value=initialStart;inputs.end.value=initialEnd;
+    const faces={dial:$('#singleClockDial'),ticks:$('#singleClockTicks'),numbers:$('#singleClockNumbers'),hand:$('#singleClockHand'),readout:$('#singleClockReadout')};
+    let active='start', activeClientId=initialClientId, previous=null, dragging=false, pointerId=null, lastAngle=0, dragMinutes=0, editingSlot=null;
+    const valueFor=target=>inputs[target].value||'';
+    const periodFor=value=>(timeToMinutes(value)??0)>=720?'PM':'AM';
+    const labelFor=target=>target==='start'?'START':'END';
+    const clockMarks=()=>{
+      faces.ticks.innerHTML=Array.from({length:144},(_,i)=>{const degrees=i*2.5,a=degrees*Math.PI/180,x=50+45*Math.sin(a),y=50-45*Math.cos(a);return `<span class="paired-clock-tick ${i%12===0?'hour':i%3===0?'quarter':''}" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${degrees}deg)"></span>`}).join('');
+      faces.numbers.innerHTML=Array.from({length:12},(_,i)=>{const h=i===0?12:i,a=i*30*Math.PI/180,x=50+38*Math.sin(a),y=50-38*Math.cos(a);return `<span style="left:${x}%;top:${y}%">${h}</span>`}).join('');
+    };
+    function updateSummary(){
+      const start=valueFor('start'),end=valueFor('end'),minutes=start&&end?minutesBetween(start,end):0;
+      $('#clockStartLabel').textContent=clockTimeLabel(start);$('#clockEndLabel').textContent=clockTimeLabel(end);
+      $('#sessionDurationValue').textContent=minutes?durationExactLabel(minutes):start||end?'Choose the other time':'Select both times';
+      const rate=Number($('#sessionRate')?.value||0);$('#sessionValue').textContent=minutes&&Number.isFinite(rate)?formatMoney(Math.round(minutes/60*rate*100),activeBusiness().currency):'—';$('#clockDuration').classList.toggle('ready',Boolean(minutes));
+    }
+    function render(){
+      const value=valueFor(active)||currentRoundedTime(),total=timeToMinutes(value)??0,angle=(total%720)/720*360;
+      faces.hand.style.transform=`translateX(-50%) rotate(${angle}deg)`;faces.readout.textContent=clockTimeLabel(value);faces.dial.setAttribute('aria-valuetext',clockTimeLabel(value));
+      $('#singleClockTargetLabel').textContent=`${labelFor(active)} TIME`;$('#singleClockCenterLabel').textContent=labelFor(active);
+      faces.dial.setAttribute('aria-label',`Set ${active} time`);
+      faces.dial.setAttribute('aria-valuemin','0');faces.dial.setAttribute('aria-valuemax','1439');faces.dial.setAttribute('aria-valuenow',String(total));
+      $$('[data-clock-target]',picker).forEach(btn=>{btn.classList.toggle('active',btn.dataset.clockTarget===active);btn.setAttribute('aria-pressed',String(btn.dataset.clockTarget===active));});
+      $$('[data-face-period]',picker).forEach(btn=>btn.classList.toggle('active',btn.dataset.facePeriod.endsWith(periodFor(value))));
+      updateSummary();
+    }
+    function angleFor(event){const rect=faces.dial.getBoundingClientRect(),x=event.clientX-(rect.left+rect.width/2),y=event.clientY-(rect.top+rect.height/2);let a=Math.atan2(x,-y)*180/Math.PI;return a<0?a+360:a;}
+    function setTime(value,remember=true){if(!value)return;if(remember&&inputs[active].value!==value)previous={target:active,value:inputs[active].value};inputs[active].value=value;render();$('#singleClockUndo').disabled=!previous;}
+    const move=event=>{if(!dragging||(pointerId!=null&&event.pointerId!==pointerId))return;if(event.cancelable)event.preventDefault();const a=angleFor(event);let delta=a-lastAngle;if(delta>180)delta-=360;if(delta<-180)delta+=360;dragMinutes=(dragMinutes+delta*2+1440)%1440;lastAngle=a;setTime(minutesToTime(Math.round(dragMinutes/5)*5),false);};
+    const finish=event=>{if(!dragging||(event?.pointerId!=null&&event.pointerId!==pointerId))return;if(event?.type==='pointerup')move(event);dragging=false;pointerId=null;faces.dial.classList.remove('is-adjusting');document.removeEventListener?.('pointermove',move);document.removeEventListener?.('pointerup',finish);document.removeEventListener?.('pointercancel',finish);};
+    faces.dial.addEventListener('pointerdown',event=>{if(event.cancelable)event.preventDefault();const a=angleFor(event),value=valueFor(active)||currentRoundedTime();previous={target:active,value:inputs[active].value};dragging=true;pointerId=event.pointerId;lastAngle=a;dragMinutes=(Math.round((a/360*720)/5)*5%720)+(periodFor(value)==='PM'?720:0);faces.dial.classList.add('is-adjusting');setTime(minutesToTime(dragMinutes),false);try{faces.dial.setPointerCapture?.(event.pointerId)}catch(error){}document.addEventListener('pointermove',move,{passive:false});document.addEventListener('pointerup',finish);document.addEventListener('pointercancel',finish);});
+    faces.dial.addEventListener('pointermove',move,{passive:false});
+    faces.dial.addEventListener('pointerup',finish);
+    faces.dial.addEventListener('pointercancel',finish);
+    faces.dial.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key))return;event.preventDefault();if(event.key==='Enter'||event.key===' '){faces.dial.blur();return;}setTime(addMinutesToTime(valueFor(active)||currentRoundedTime(),event.key==='ArrowLeft'?-5:event.key==='ArrowRight'?5:event.key==='ArrowUp'?60:-60));});
+    $$('[data-clock-target]',picker).forEach(btn=>btn.addEventListener('click',()=>{active=btn.dataset.clockTarget;render();}));
+    $$('[data-clock-nudge]',picker).forEach(btn=>btn.addEventListener('click',()=>setTime(addMinutesToTime(valueFor(active)||currentRoundedTime(),Number(btn.dataset.clockNudge)))));
+    $('#singleClockUndo').addEventListener('click',()=>{if(!previous)return;const restore=previous;previous=null;active=restore.target;if(restore.both){inputs.start.value=restore.both.start;inputs.end.value=restore.both.end;}else{inputs[restore.target].value=restore.value;}render();$('#singleClockUndo').disabled=true;});
+    $$('[data-face-period]',picker).forEach(btn=>btn.addEventListener('click',()=>{const value=valueFor(active)||currentRoundedTime(),minutes=timeToMinutes(value)??0;setTime(minutesToTime(minutes%720+(btn.dataset.facePeriod.endsWith('PM')?720:0)));}));
+    function applyTimes(start,end){previous={target:active,both:{start:inputs.start.value,end:inputs.end.value}};inputs.start.value=start;inputs.end.value=end;render();$('#singleClockUndo').disabled=false;}
+    function openQuickEditor(index){if(!activeClientId){showToast('Choose a client before saving a quick time.');return;}editingSlot=index;const slot=quickTimesForClient(activeClientId)[index];$('#quickTimeEditorTitle').textContent=slot?`Edit quick time ${index+1}`:`Set quick time ${index+1}`;$('#quickTimeStart').value=slot?.startTime||inputs.start.value||'';$('#quickTimeEnd').value=slot?.endTime||inputs.end.value||'';$('#quickTimeName').value=slot?.name||'';$('#quickTimeDelete').hidden=!slot;$('#quickTimeEditor').hidden=false;$('#quickTimeManage').hidden=true;$('#quickTimeStart').focus();}
+    function closeQuickEditor(){editingSlot=null;$('#quickTimeEditor').hidden=true;$('#quickTimeManage').hidden=true;}
+    function renderQuickTimes(switching=false){
+      const host=$('#sessionQuickTimes');if(!host)return;
+      const scroll=host.scrollTop||0;
+      const slots=activeClientId?quickTimesForClient(activeClientId):Array(6).fill(null);
+      let count=Math.max(3,slots.reduce((n,slot,i)=>slot?i+1:n,0));
+      host.innerHTML=slots.slice(0,count).map((slot,index)=>slot?`<div class="quick-time-slot filled"><button type="button" data-quick-apply="${index}"><small>QUICK ${index+1}</small><strong>${escapeHtml(slot.name||`Preset ${index+1}`)}</strong><span>${clockTimeLabel(slot.startTime)} – ${clockTimeLabel(slot.endTime)}</span><i class="preset-duration"><b style="width:${Math.min(100,minutesBetween(slot.startTime,slot.endTime)/1440*100)}%"></b></i><em>${durationExactLabel(minutesBetween(slot.startTime,slot.endTime))}</em></button><button type="button" class="quick-time-edit" data-quick-edit="${index}" aria-label="Edit preset ${index+1}">✎</button></div>`:`<button type="button" class="quick-time-slot empty" data-quick-edit="${index}" ${activeClientId?'':'disabled'}><small>QUICK ${index+1}</small><strong>＋ Create preset</strong><span>Save a frequent time range</span></button>`).join('');
+      host.scrollTop=switching?0:scroll;
+      $('#quickTimeAdd').disabled=!activeClientId||slots.every(Boolean);
+      $$('[data-quick-apply]',host).forEach(btn=>btn.addEventListener('click',()=>{const slot=quickTimesForClient(activeClientId)[Number(btn.dataset.quickApply)];if(slot)applyTimes(slot.startTime,slot.endTime);}));
+      $$('[data-quick-edit]',host).forEach(btn=>btn.addEventListener('click',()=>openQuickEditor(Number(btn.dataset.quickEdit))));
+      if(switching){host.classList.add('is-switching');setTimeout(()=>host.classList.remove('is-switching'),260);}
+    }
+    $('#quickTimeAdd').addEventListener('click',()=>{const index=quickTimesForClient(activeClientId).findIndex(slot=>!slot);if(index>=0)openQuickEditor(index);});
+    $('#quickTimeUseCurrent').addEventListener('click',()=>{$('#quickTimeStart').value=inputs.start.value;$('#quickTimeEnd').value=inputs.end.value;});
+    function switchClient(clientId){activeClientId=clientId;closeQuickEditor();renderQuickTimes(true);}
+    $('#quickTimeCancel').addEventListener('click',closeQuickEditor);$('#quickTimeManage').addEventListener('click',closeQuickEditor);
+    $('#quickTimeDelete').addEventListener('click',()=>{if(editingSlot==null)return;const slots=quickTimesForClient(activeClientId);slots[editingSlot]=null;saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time removed.');});
+    $('#quickTimeSave').addEventListener('click',()=>{const start=$('#quickTimeStart').value,end=$('#quickTimeEnd').value;if(timeToMinutes(start)==null||timeToMinutes(end)==null||start===end){showToast('Choose two different times for this quick entry.');return;}const slots=quickTimesForClient(activeClientId);const name=$('#quickTimeName').value.trim();slots[editingSlot]={startTime:start,endTime:end,...(name?{name}: {})};saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time saved for this client.');});
+    clockMarks();render();renderQuickTimes();return {switchClient,updateSummary};
+  }
+
+  function initPairedClockTimePicker(initialStart = '', initialEnd = '', initialClientId = '') {
+    const picker = $('#sessionClockPicker'); if (!picker) return { switchClient(){}, updateSummary(){} };
+    const inputs = { start: $('#clockStartInput'), end: $('#clockEndInput') };
+    const labels = { start: $('#clockStartLabel'), end: $('#clockEndLabel') };
+    const faces = {
+      start: { dial: $('#clockStartDial'), ticks: $('#clockStartTicks'), numbers: $('#clockStartNumbers'), hand: $('#clockStartHand'), readout: $('#clockStartReadout'), preview: initialStart || currentRoundedTime(), dragging: false },
+      end: { dial: $('#clockEndDial'), ticks: $('#clockEndTicks'), numbers: $('#clockEndNumbers'), hand: $('#clockEndHand'), readout: $('#clockEndReadout'), preview: initialEnd || addMinutesToTime(initialStart || currentRoundedTime(), 60), dragging: false }
+    };
+    let activeClientId = initialClientId;
+    let editingSlot = null;
+
+    function periodFor(value) { return (timeToMinutes(value) ?? 0) >= 720 ? 'PM' : 'AM'; }
+    function clockMarks(face) {
+      face.ticks.innerHTML = Array.from({length:144}, (_, i) => {
+        const degrees=i*2.5, angle=degrees*Math.PI/180, x=50+45*Math.sin(angle), y=50-45*Math.cos(angle);
+        return `<span class="paired-clock-tick ${i%12===0?'hour':i%3===0?'quarter':''}" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${degrees}deg)"></span>`;
+      }).join('');
+      face.numbers.innerHTML = Array.from({length:12}, (_, i) => {
+        const hour=i===0?12:i, angle=i*30*Math.PI/180, x=50+38*Math.sin(angle), y=50-38*Math.cos(angle);
+        return `<span style="left:${x}%;top:${y}%">${hour}</span>`;
+      }).join('');
+    }
+
+    function updateSummary() {
+      const start=inputs.start.value, end=inputs.end.value;
+      labels.start.textContent=clockTimeLabel(start); labels.end.textContent=clockTimeLabel(end);
+      const minutes=start&&end?minutesBetween(start,end):0;
+      $('#sessionDurationValue').textContent=minutes?durationExactLabel(minutes):start||end?'Choose the other time':'Select both times';
+      const rate=Number($('#sessionRate')?.value||0);
+      $('#sessionValue').textContent=minutes&&Number.isFinite(rate)?formatMoney(Math.round(minutes/60*rate*100),activeBusiness().currency):'—';
+      $('#clockDuration').classList.toggle('ready',Boolean(minutes));
+      renderQuickTimes();
+    }
+
+    function renderFace(target) {
+      const face=faces[target], value=inputs[target].value||face.preview;
+      face.preview=value;
+      const total=timeToMinutes(value)??0, angle=(total%720)/720*360;
+      face.hand.style.transform=`translateX(-50%) rotate(${angle}deg)`;
+      face.readout.textContent=clockTimeLabel(value);
+      face.dial.setAttribute('aria-valuetext',clockTimeLabel(value));
+      $$(`[data-face-period^="${target}-"]`,picker).forEach(btn=>btn.classList.toggle('active',btn.dataset.facePeriod.endsWith(periodFor(value))));
+      updateSummary();
+    }
+
+    function pointerAngle(face,event) {
+      const coalesced=event.getCoalescedEvents?.()||[];
+      const sample=coalesced[coalesced.length-1]||event;
+      const rect=face.dial.getBoundingClientRect();
+      const x=sample.clientX-(rect.left+rect.width/2), y=sample.clientY-(rect.top+rect.height/2);
+      let angle=Math.atan2(x,-y)*180/Math.PI;
+      return angle<0?angle+360:angle;
+    }
+
+    function setFaceTime(target,totalMinutes) {
+      const face=faces[target];
+      face.preview=minutesToTime(Math.round(totalMinutes/5)*5);
+      inputs[target].value=face.preview;
+      renderFace(target);
+    }
+
+    function bindFace(target) {
+      const face=faces[target]; clockMarks(face);
+      const move=event=>{
+        if(!face.dragging||(face.pointerId!=null&&event.pointerId!==face.pointerId))return;
+        if(event.cancelable)event.preventDefault();
+        const angle=pointerAngle(face,event);
+        let delta=angle-face.lastAngle;
+        if(delta>180)delta-=360;
+        if(delta<-180)delta+=360;
+        face.dragMinutes=(face.dragMinutes+delta*2+1440)%1440;
+        face.lastAngle=angle;
+        setFaceTime(target,face.dragMinutes);
+      };
+      const finish=event=>{
+        if(!face.dragging||(event?.pointerId!=null&&face.pointerId!=null&&event.pointerId!==face.pointerId))return;
+        if(event?.type==='pointerup')move(event);
+        face.dragging=false;face.pointerId=null;face.dial.classList.remove('is-adjusting');
+        try{face.dial.releasePointerCapture?.(event?.pointerId)}catch(error){}
+        document.removeEventListener?.('pointermove',move);
+        document.removeEventListener?.('pointerup',finish);
+        document.removeEventListener?.('pointercancel',finish);
+        renderFace(target);
+      };
+      face.dial.addEventListener('pointerdown',event=>{
+        if(event.cancelable)event.preventDefault();
+        const angle=pointerAngle(face,event), current=timeToMinutes(face.preview)??0;
+        face.dragging=true;face.pointerId=event.pointerId;face.lastAngle=angle;
+        face.dragMinutes=(Math.round((angle/360*720)/5)*5%720)+(periodFor(face.preview)==='PM'?720:0);
+        face.dial.classList.add('is-adjusting');
+        setFaceTime(target,face.dragMinutes);
+        try{face.dial.setPointerCapture?.(event.pointerId)}catch(error){}
+        document.addEventListener('pointermove',move,{passive:false});
+        document.addEventListener('pointerup',finish);
+        document.addEventListener('pointercancel',finish);
+      });
+      face.dial.addEventListener('pointermove',move,{passive:false});
+      face.dial.addEventListener('pointerup',finish);
+      face.dial.addEventListener('pointercancel',finish);
+      face.dial.addEventListener('keydown',event=>{
+        if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key))return;
+        event.preventDefault();
+        if(event.key==='Enter'||event.key===' '){inputs[target].value=face.preview;renderFace(target);return;}
+        const delta=event.key==='ArrowLeft'?-5:event.key==='ArrowRight'?5:event.key==='ArrowUp'?60:-60;
+        face.preview=addMinutesToTime(face.preview,delta);inputs[target].value=face.preview;renderFace(target);
+      });
+    }
+
+    function applyTimes(startTime,endTime) {
+      inputs.start.value=startTime; inputs.end.value=endTime;
+      faces.start.preview=startTime; faces.end.preview=endTime;
+      renderFace('start'); renderFace('end');
+    }
+
+    function openQuickEditor(index) {
+      if(!activeClientId){showToast('Choose a client before saving a quick time.');return;}
+      editingSlot=index;
+      const slot=quickTimesForClient(activeClientId)[index];
+      $('#quickTimeEditorTitle').textContent=slot?`Edit quick time ${index+1}`:`Set quick time ${index+1}`;
+      $('#quickTimeStart').value=slot?.startTime||inputs.start.value||'';
+      $('#quickTimeEnd').value=slot?.endTime||inputs.end.value||'';
+      $('#quickTimeDelete').hidden=!slot;
+      $('#quickTimeEditor').hidden=false;
+      $('#quickTimeManage').hidden=false;
+    }
+
+    function closeQuickEditor(){editingSlot=null;$('#quickTimeEditor').hidden=true;$('#quickTimeManage').hidden=true;}
+
+    function renderQuickTimes(switching=false) {
+      const host=$('#sessionQuickTimes'); if(!host)return;
+      if(switching)host.classList.add('is-switching');
+      const slots=activeClientId?quickTimesForClient(activeClientId):[null,null,null];
+      host.innerHTML=slots.map((slot,index)=>slot?`<div class="quick-time-slot filled"><button type="button" data-quick-apply="${index}"><small>QUICK ${index+1}</small><strong>${clockTimeLabel(slot.startTime)}</strong><span>→ ${clockTimeLabel(slot.endTime)}</span></button><button type="button" class="quick-time-edit" data-quick-edit="${index}" aria-label="Edit quick time ${index+1}">✎</button></div>`:`<button type="button" class="quick-time-slot empty" data-quick-edit="${index}" ${activeClientId?'':'disabled'}><small>QUICK ${index+1}</small><strong>＋ Set time</strong></button>`).join('');
+      $$('[data-quick-apply]',host).forEach(btn=>btn.addEventListener('click',()=>{const slot=quickTimesForClient(activeClientId)[Number(btn.dataset.quickApply)];if(slot)applyTimes(slot.startTime,slot.endTime);}));
+      $$('[data-quick-edit]',host).forEach(btn=>btn.addEventListener('click',()=>openQuickEditor(Number(btn.dataset.quickEdit))));
+      if(switching)setTimeout(()=>host.classList.remove('is-switching'),260);
+    }
+
+    function switchClient(clientId){activeClientId=clientId;closeQuickEditor();renderQuickTimes(true);}
+
+    bindFace('start'); bindFace('end');
+    $$('[data-face-period]',picker).forEach(btn=>btn.addEventListener('click',()=>{
+      const [target,period]=btn.dataset.facePeriod.split('-'), face=faces[target], minutes=timeToMinutes(face.preview)??0;
+      face.preview=minutesToTime(minutes%720+(period==='PM'?720:0));inputs[target].value=face.preview;renderFace(target);
+    }));
+    $('#quickTimeCancel').addEventListener('click',closeQuickEditor);
+    $('#quickTimeManage').addEventListener('click',closeQuickEditor);
+    $('#quickTimeDelete').addEventListener('click',()=>{
+      if(editingSlot==null)return;
+      const slots=quickTimesForClient(activeClientId);slots[editingSlot]=null;saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time removed.');
+    });
+    $('#quickTimeSave').addEventListener('click',()=>{
+      const startTime=$('#quickTimeStart').value,endTime=$('#quickTimeEnd').value;
+      if(timeToMinutes(startTime)==null||timeToMinutes(endTime)==null||startTime===endTime){showToast('Choose two different times for this quick entry.');return;}
+      const slots=quickTimesForClient(activeClientId);slots[editingSlot]={startTime,endTime};saveQuickTimesForClient(activeClientId,slots);closeQuickEditor();renderQuickTimes();showToast('Quick time saved for this client.');
+    });
+    renderFace('start');renderFace('end');renderQuickTimes();
+    return {switchClient,updateSummary};
+  }
+
+  function openBusinessForm() {
+    $('#formSheet').classList.remove('session-form-sheet');
+    ui.formMode = 'business'; ui.formRecordId = null;
+    $('#formEyebrow').textContent = 'NEW WORKSPACE'; $('#formTitle').textContent = 'Add business or gig'; $('#formSubmitBtn').textContent = 'Create workspace';
+    $('#formFields').innerHTML = `
+      <label class="field"><span>Display name</span><input name="displayName" required maxlength="100" placeholder="Business or gig name" /></label>
+      <label class="field"><span>Type</span><select name="entityType"><option>Sole proprietor</option><option>Independent gig</option><option>Other business</option></select></label>
+      <label class="field"><span>Timezone</span><input name="timezone" value="America/Los_Angeles" required /></label>`;
+    openModal($('#formSheet'));
+  }
+
+  function openInvoiceSettingsForm() {
+    $('#formSheet').classList.remove('session-form-sheet');
+    ui.formMode = 'invoice-settings'; ui.formRecordId = activeBusiness().id;
+    const business = activeBusiness();
+    const settings = { ...invoiceDefaults(), ...(business.invoiceSettings || {}) };
+    $('#formEyebrow').textContent = 'INVOICE SETTINGS';
+    $('#formTitle').textContent = 'Identity & defaults';
+    $('#formSubmitBtn').textContent = 'Save settings';
+    $('#formFields').innerHTML = `
+      <label class="field"><span>Business / sender name</span><input name="legalName" required maxlength="120" value="${escapeHtml(business.legalName || business.displayName)}" /></label>
+      <div class="field-row"><label class="field"><span>Invoice prefix</span><input name="prefix" maxlength="12" value="${escapeHtml(settings.prefix || 'INV')}" /></label><label class="field"><span>Default due days</span><input name="defaultDueDays" type="number" min="0" max="365" step="1" value="${Number(settings.defaultDueDays ?? 7)}" /></label></div>
+      <details class="optional-fields" ${settings.senderEmail || settings.senderPhone || settings.senderAddress || settings.paymentInstructions ? 'open' : ''}><summary>Invoice contact & payment details <span>optional</span></summary><div class="optional-fields-body"><div class="field-row"><label class="field"><span>Email</span><input name="senderEmail" type="email" maxlength="160" value="${escapeHtml(settings.senderEmail || '')}" placeholder="business@example.com" /></label><label class="field"><span>Phone</span><input name="senderPhone" maxlength="50" value="${escapeHtml(settings.senderPhone || '')}" placeholder="Optional" /></label></div><label class="field"><span>Business address</span><textarea name="senderAddress" rows="2" maxlength="300" placeholder="Optional address shown on invoices">${escapeHtml(settings.senderAddress || '')}</textarea></label><label class="field"><span>Payment instructions</span><textarea name="paymentInstructions" rows="3" maxlength="500" placeholder="e.g. Payment method or brief instructions">${escapeHtml(settings.paymentInstructions || '')}</textarea></label></div></details>
+      <div class="form-info-note">Next invoice number: <strong>${escapeHtml(invoiceNumberPreview(business))}</strong>. Numbers are never reused after an invoice is created.</div>`;
+    openModal($('#formSheet'));
+  }
+
+  async function handleFormSubmit(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    if (ui.formMode === 'payment') {
+      if (!savePayment(form)) return;
+      const paymentId = ui.formRecordId;
+      ui.moneyTab = 'payments';
+      closeModal(); renderAll(); setView('money');
+      if (paymentId) setTimeout(() => openPaymentDetail(paymentId), 35);
+      return;
+    }
+    if (ui.formMode === 'expense') {
+      if (!(await saveExpense(form))) return;
+      const expenseId = ui.formRecordId;
+      ui.moneyTab = 'expenses'; ui.expensePage = 1;
+      closeModal(); renderAll(); setView('money'); syncMoneyTabs();
+      if (expenseId) setTimeout(() => openExpenseDetail(expenseId), 35);
+      return;
+    }
+    if (ui.formMode === 'client') {
+      const payload = { displayName: form.get('displayName').trim(), colorKey: CLIENT_COLOR_KEYS.includes(form.get('colorKey')) ? form.get('colorKey') : 'blue', defaultRateCents: Math.round(Number(form.get('rate')) * 100), status: form.get('status'), billingEmail: (form.get('billingEmail') || '').trim(), billingAddress: (form.get('billingAddress') || '').trim(), notes: form.get('notes').trim() };
+      if (ui.formRecordId) {
+        const client = data.clients.find(c => c.id === ui.formRecordId);
+        const before = deepClone(client); Object.assign(client, payload, { updatedAt: nowIso() });
+        persist('updated', 'Client', client.id, { before, after: deepClone(client) }); showToast('Client updated');
+      } else {
+        const client = { id: uid('client'), businessId: data.activeBusinessId, ...payload, createdAt: nowIso(), updatedAt: nowIso() };
+        data.clients.push(client); rememberEntryDefaults('client', { colorKey:client.colorKey, status:client.status }); persist('created', 'Client', client.id); showToast('Client added');
+      }
+    }
+    if (ui.formMode === 'session') {
+      const startTime = form.get('startTime'), endTime = form.get('endTime');
+      const durationMinutes = minutesBetween(startTime, endTime);
+      if (!startTime || !endTime) { showToast('Choose both a start and end time on the clock.'); return; }
+      if (!durationMinutes) { showToast('Start and end time cannot be identical.'); return; }
+      const selectedClient = clientById(form.get('clientId'));
+      const payload = { clientId: form.get('clientId'), clientNameSnapshot: selectedClient?.displayName || '', date: form.get('date'), startTime, endTime, durationMinutes, rateCents: Math.round(Number(form.get('rate')) * 100), notes: form.get('notes').trim() };
+      if (ui.formRecordId) {
+        const session = data.sessions.find(s => s.id === ui.formRecordId); const before = deepClone(session);
+        const linkedInvoice = session?.invoiceId ? invoiceById(session.invoiceId) : null;
+        if (linkedInvoice?.status === 'sent') { showToast('Move the linked invoice back to Draft before changing this session.'); return; }
+        Object.assign(session, payload, { updatedAt: nowIso() });
+        if (linkedInvoice?.status === 'draft') {
+          const lineIndex = linkedInvoice.lineItems.findIndex(item => item.type === 'session' && item.sessionId === session.id);
+          if (lineIndex >= 0) linkedInvoice.lineItems[lineIndex] = invoiceSessionLine(session, linkedInvoice.lineItems[lineIndex].id);
+          linkedInvoice.updatedAt = nowIso();
+          data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'source_session_updated', entityType: 'Invoice', entityId: linkedInvoice.id, details: { sessionId: session.id }, occurredAt: nowIso() });
+        }
+        persist('updated', 'WorkSession', session.id, { before, after: deepClone(session) }); showToast('Work session updated');
+      } else {
+        const session = { id: uid('session'), businessId: data.activeBusinessId, ...payload, invoiceStatus: 'uninvoiced', invoiceId: null, createdAt: nowIso(), updatedAt: nowIso() };
+        data.sessions.push(session); ui.sessionPage = 1; rememberEntryDefaults('session', { clientId:session.clientId, startTime:session.startTime, endTime:session.endTime }); persist('created', 'WorkSession', session.id); showToast('Work session logged');
+      }
+    }
+    if (ui.formMode === 'invoice-settings') {
+      const business = activeBusiness();
+      const before = deepClone(business);
+      business.legalName = form.get('legalName').trim();
+      business.invoiceSettings = { ...invoiceDefaults(), ...(business.invoiceSettings || {}), prefix: (form.get('prefix') || 'INV').trim().toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,12) || 'INV', defaultDueDays: Math.max(0, Math.min(365, Number(form.get('defaultDueDays') || 0))), senderEmail: (form.get('senderEmail') || '').trim(), senderPhone: (form.get('senderPhone') || '').trim(), senderAddress: (form.get('senderAddress') || '').trim(), paymentInstructions: (form.get('paymentInstructions') || '').trim() };
+      business.updatedAt = nowIso();
+      persist('updated', 'BusinessInvoiceSettings', business.id, { before, after: deepClone(business) });
+      showToast('Invoice settings saved');
+    }
+    if (ui.formMode === 'business') {
+      const business = { id: uid('biz'), displayName: form.get('displayName').trim(), legalName: form.get('displayName').trim(), entityType: form.get('entityType'), currency: 'USD', timezone: form.get('timezone').trim(), status: 'active', invoiceSettings: invoiceDefaults(), createdAt: nowIso(), updatedAt: nowIso() };
+      data.businesses.push(business); data.activeBusinessId = business.id; persist('created', 'Business', business.id); showToast('Workspace created');
+    }
+    const completedMode = ui.formMode;
+    closeModal(); renderAll(); setView(completedMode === 'business' ? 'home' : completedMode === 'invoice-settings' ? 'money' : 'work');
+  }
+
+  function applyClientDetailTheme(client) {
+    const panel = $('#detailPanel');
+    if (!panel) return;
+    panel.classList.add('client-tinted-detail');
+    panel.dataset.clientColor = clientColorKey(client);
+  }
+
+  function resetDetailPanelTheme() {
+    const panel = $('#detailPanel');
+    if (!panel) return;
+    panel.classList.remove('client-tinted-detail');
+    delete panel.dataset.clientColor;
+  }
+
+  function openClientDetail(id) {
+    const client = data.clients.find(c => c.id === id); if (!client) return;
+    const sessions = data.sessions.filter(s => s.clientId === id).sort((a,b) => b.date.localeCompare(a.date));
+    const minutes = sessions.reduce((sum,s) => sum + sessionMinutes(s), 0);
+    $('#detailEyebrow').textContent = 'CLIENT'; $('#detailTitle').textContent = client.displayName;
+    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-client="${client.id}">Edit</button><button class="primary-btn" data-new-session-client="${client.id}">＋ Log session</button><details class="record-more"><summary aria-label="More client actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-client="${client.id}">Delete client</button></div></details></div><div id="detailDeleteConfirm"></div>
+      <div class="detail-metrics"><div><small>Default rate</small><strong>${formatMoney(client.defaultRateCents || 0)}/hr</strong></div><div><small>Sessions</small><strong>${sessions.length}</strong></div><div><small>Hours logged</small><strong>${hoursLabel(minutes)}</strong></div></div>
+      <div class="detail-section"><p class="eyebrow">NOTES</p><p>${escapeHtml(client.notes || 'No client notes yet.')}</p></div>
+      <div class="detail-section"><div class="panel-title-row"><p class="eyebrow">RECENT SESSIONS</p></div>${sessions.length ? `<div class="recent-list">${sessions.slice(0,5).map(sessionRowCompact).join('')}</div>` : '<div class="inline-empty"><small>No sessions for this client yet.</small></div>'}</div>`;
+    openModal($('#detailPanel'));
+    applyClientDetailTheme(client);
+    $('[data-edit-client]')?.addEventListener('click', () => openClientForm(id));
+    $('[data-new-session-client]')?.addEventListener('click', () => { closeModal(); openSessionForm(); setTimeout(() => { $('#sessionClient').value = id; $('#sessionRate').value = (client.defaultRateCents/100).toFixed(2); }, 20); });
+    $('[data-delete-client]')?.addEventListener('click', () => showDeleteConfirmation('client', id));
+    $$('[data-session-detail]', $('#detailBody')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
+  }
+
+  function openSessionDetail(id) {
+    const s = data.sessions.find(session => session.id === id); if (!s) return;
+    const client = clientById(s.clientId);
+    const linkedInvoice = s.invoiceId ? invoiceById(s.invoiceId) : null;
+    const clientLabel = client?.displayName || s.clientNameSnapshot || 'Unassigned session';
+    const invoiceAction = linkedInvoice
+      ? `<button class="primary-btn" data-view-linked-invoice="${linkedInvoice.id}">View ${escapeHtml(linkedInvoice.number)}</button>`
+      : `<button class="primary-btn" data-create-invoice-session="${s.id}">Create invoice</button>`;
+    const editButton = linkedInvoice?.status === 'sent'
+      ? `<button class="secondary-btn disabled-action" title="Move the linked invoice back to Draft before editing">Edit session</button>`
+      : `<button class="secondary-btn" data-edit-session="${s.id}">Edit session</button>`;
+    $('#detailEyebrow').textContent = 'WORK SESSION'; $('#detailTitle').textContent = clientLabel;
+    $('#detailBody').innerHTML = `<div class="detail-actions">${editButton}${invoiceAction}<details class="record-more"><summary aria-label="More session actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-session="${s.id}">Delete session</button></div></details></div><div id="detailDeleteConfirm"></div>
+      <div class="detail-metrics"><div><small>Date</small><strong>${formatDate(s.date,{month:'short',day:'numeric',year:'numeric'})}</strong></div><div><small>Time</small><strong>${escapeHtml(sessionTimeRangeLabel(s))}</strong></div><div><small>Duration</small><strong>${hoursLabel(sessionMinutes(s))}</strong></div></div>
+      <div class="detail-section"><div class="trace-row"><span>Session value</span><strong>${formatMoney(sessionAmountCents(s), activeBusiness().currency)}</strong></div><div class="trace-row"><span>Rate snapshot</span><strong>${formatMoney(s.rateCents || 0)}/hr</strong></div><div class="trace-row"><span>Invoice state</span><strong>${escapeHtml(sessionInvoiceStatusLabel(s))}${linkedInvoice ? ` · ${escapeHtml(linkedInvoice.number)}` : ''}</strong></div></div>
+      <div class="detail-section"><p class="eyebrow">SESSION NOTE</p><p>${escapeHtml(s.notes || 'No session note.')}</p></div>
+      <div class="trace-banner"><span>↳</span><div><strong>${linkedInvoice ? 'Linked financial record' : 'Ready for invoicing'}</strong><small>${linkedInvoice ? `This session is linked to ${escapeHtml(linkedInvoice.number)}. Invoice snapshots protect the issued billing record from silent changes.` : 'Create an invoice from this session without re-entering the client, hours, or rate.'}</small></div></div>${evidenceTimelineHtml('WorkSession', s.id)}`;
+    openModal($('#detailPanel'));
+    $('[data-edit-session]')?.addEventListener('click', () => openSessionForm(id));
+    $('[data-create-invoice-session]')?.addEventListener('click', () => openInvoiceForm({ clientId: s.clientId, sessionId: s.id }));
+    $('[data-view-linked-invoice]')?.addEventListener('click', () => { closeModal(); setView('money'); setTimeout(() => openInvoiceDetail(linkedInvoice.id), 20); });
+    $('[data-delete-session]')?.addEventListener('click', () => showDeleteConfirmation('session', id));
+  }
+
+  function showDeleteConfirmation(type, id) {
+    const host = $('#detailDeleteConfirm');
+    if (!host) return;
+    $('.record-more[open]', $('#detailBody'))?.removeAttribute('open');
+    if (type === 'session') {
+      const session = data.sessions.find(item => item.id === id);
+      if (!session) return;
+      const client = clientById(session.clientId);
+      const linkedInvoice = session.invoiceId ? invoiceById(session.invoiceId) : null;
+      if (linkedInvoice?.status === 'sent') {
+        host.innerHTML = `<div class="delete-confirm-card blocked"><div><strong>Session is locked by ${escapeHtml(linkedInvoice.number)}</strong><p>This work session is part of a sent invoice. Move the invoice back to Draft or void it before deleting the source session.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Close</button><button type="button" class="primary-btn" data-open-blocking-invoice>View invoice</button></div></div>`;
+        $('[data-open-blocking-invoice]', host)?.addEventListener('click', () => { closeModal(); setView('money'); setTimeout(() => openInvoiceDetail(linkedInvoice.id), 20); });
+      } else {
+        const draftWarning = linkedInvoice?.status === 'draft' ? ` It will also be removed from draft invoice ${linkedInvoice.number}.` : '';
+        host.innerHTML = `<div class="delete-confirm-card"><div><strong>Delete this session?</strong><p>${escapeHtml(formatDate(session.date,{month:'short',day:'numeric',year:'numeric'}))} · ${escapeHtml(sessionTimeRangeLabel(session))}${client ? ` · ${escapeHtml(client.displayName)}` : ''} will be permanently removed.${escapeHtml(draftWarning)} This cannot be undone.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-delete>Delete session</button></div></div>`;
+      }
+    } else {
+      const client = data.clients.find(item => item.id === id);
+      if (!client) return;
+      const activeInvoices = businessInvoices().filter(invoice => invoice.clientId === id && invoice.status !== 'void');
+      if (activeInvoices.length) {
+        host.innerHTML = `<div class="delete-confirm-card blocked"><div><strong>Client has active invoice records</strong><p>${escapeHtml(client.displayName)} is referenced by ${activeInvoices.length} ${activeInvoices.length === 1 ? 'invoice' : 'invoices'}. Delete drafts or void issued invoices first, or keep the client as Inactive.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Close</button><button type="button" class="primary-btn" data-go-client-invoices>View invoices</button></div></div>`;
+        $('[data-go-client-invoices]', host)?.addEventListener('click', () => { closeModal(); setView('money'); });
+      } else {
+        const linkedSessions = data.sessions.filter(session => session.clientId === id);
+        const sessionWarning = linkedSessions.length ? ` This will also permanently delete ${linkedSessions.length} linked work ${linkedSessions.length === 1 ? 'session' : 'sessions'}.` : '';
+        host.innerHTML = `<div class="delete-confirm-card"><div><strong>Delete ${escapeHtml(client.displayName)}?</strong><p>The client will be permanently removed.${sessionWarning} Voided invoice snapshots, if any, remain preserved. This cannot be undone.</p></div><div class="delete-confirm-actions"><button type="button" class="secondary-btn" data-cancel-delete>Cancel</button><button type="button" class="danger-btn" data-confirm-delete>Delete client</button></div></div>`;
+      }
+    }
+    host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    $('[data-cancel-delete]', host)?.addEventListener('click', () => { host.innerHTML = ''; });
+    $('[data-confirm-delete]', host)?.addEventListener('click', () => deleteRecord(type, id));
+  }
+
+  function deleteRecord(type, id) {
+    if (type === 'session') {
+      const session = data.sessions.find(item => item.id === id);
+      if (!session) return;
+      const client = clientById(session.clientId);
+      const linkedInvoice = session.invoiceId ? invoiceById(session.invoiceId) : null;
+      if (linkedInvoice?.status === 'sent') { showToast('Sent invoice records must be unlocked before deleting this session.'); return; }
+      if (linkedInvoice?.status === 'draft') {
+        linkedInvoice.lineItems = linkedInvoice.lineItems.filter(item => !(item.type === 'session' && item.sessionId === id));
+        linkedInvoice.updatedAt = nowIso();
+        data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'source_session_deleted', entityType: 'Invoice', entityId: linkedInvoice.id, details: { sessionId: id }, occurredAt: nowIso() });
+      }
+      preserveEvidenceSnapshot('WorkSession', session, `${client?.displayName || session.clientNameSnapshot || 'Session'} · ${session.date}`);
+      data.sessions = data.sessions.filter(item => item.id !== id);
+      data.expenses.filter(expense => expense.sessionId === id).forEach(expense => { expense.sessionId = null; expense.updatedAt = nowIso(); });
+      data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'WorkSession', entityId: id, details: { removedFromDraftInvoice: linkedInvoice?.number || null }, occurredAt: nowIso() });
+      repository.save(data);
+      closeModal(); renderAll(); showToast(linkedInvoice ? `Session deleted and removed from ${linkedInvoice.number}` : 'Work session deleted');
+      return;
+    }
+
+    const client = data.clients.find(item => item.id === id);
+    if (!client) return;
+    if (businessInvoices().some(invoice => invoice.clientId === id && invoice.status !== 'void')) { showToast('Resolve this client’s active invoices before deleting the client.'); return; }
+    const linkedSessionIds = data.sessions.filter(session => session.clientId === id).map(session => session.id);
+    preserveEvidenceSnapshot('Client', client, client.displayName);
+    data.sessions.filter(session => session.clientId === id).forEach(session => preserveEvidenceSnapshot('WorkSession', session, `${client.displayName} · ${session.date}`));
+    data.clients = data.clients.filter(item => item.id !== id);
+    data.expenses.filter(expense => expense.clientId === id).forEach(expense => { expense.clientNameSnapshot ||= client.displayName; expense.clientId = null; if (linkedSessionIds.includes(expense.sessionId)) expense.sessionId = null; expense.updatedAt = nowIso(); });
+    data.sessions = data.sessions.filter(session => session.clientId !== id);
+    data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Client', entityId: id, details: { cascadedSessionCount: linkedSessionIds.length }, occurredAt: nowIso() });
+    repository.save(data);
+    closeModal(); renderAll();
+    showToast(linkedSessionIds.length ? `Client and ${linkedSessionIds.length} linked ${linkedSessionIds.length === 1 ? 'session' : 'sessions'} deleted` : 'Client deleted');
+  }
+
+  function exportBackup() {
+    const blob = new Blob([repository.export(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = `business-ledger-backup-${businessToday()}.json`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0); showToast('Local backup exported');
+  }
+
+  function renderAll() {
+    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); renderRecords(); syncMoneyTabs(); renderCommandPalette();
+  }
+
+
+  window.addEventListener('pointermove', event => queueAtriumMotion(event.clientX, event.clientY), { passive:true });
+  window.addEventListener('resize', () => {
+    /* iPad/iPhone Safari fires resize while its address/tab chrome collapses.
+       Height-only viewport changes should not cause the atrium to recompute or
+       repaint; only a real width change (rotation, split view, window resize)
+       needs a layout/profile refresh. */
+    const nextWidth = window.innerWidth;
+    if (Math.abs(nextWidth - atriumViewportWidth) < 4) return;
+    atriumViewportWidth = nextWidth;
+    applyAtriumRuntimeProfile();
+    queueAtriumMotion(window.innerWidth / 2, window.innerHeight / 2);
+  }, { passive:true });
+  prefersReducedMotion.addEventListener?.('change', () => {
+    if (prefersReducedMotion.matches) { atriumPointerX = 0; atriumPointerY = 0; }
+    applyAtriumRuntimeProfile();
+    commitAtriumMotion();
+  });
+
+  sidebarCollapseBtn?.addEventListener('click', () => {
+    applySidebarCollapsed(!appShell.classList.contains('sidebar-collapsed'));
+  });
+  navButtons.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+  $$('[data-home-tab]').forEach(btn => btn.addEventListener('click',()=>{ closeFilterMenu(); ui.homeTab=btn.dataset.homeTab; syncHomeTabs(); }));
+  ['#analyticsFromMonth','#analyticsFromYear'].forEach(selector=>$(selector).addEventListener('change',()=>updateAnalyticsPeriod('from')));
+  ['#analyticsToMonth','#analyticsToYear'].forEach(selector=>$(selector).addEventListener('change',()=>updateAnalyticsPeriod('to')));
+  $$('[data-go-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.goView)));
+  $('#quickAddBtn').addEventListener('click', () => openModal($('#quickAddSheet')));
+  $('#mobileAddBtn').addEventListener('click', () => openModal($('#quickAddSheet')));
+  $$('[data-open-add]').forEach(btn => btn.addEventListener('click', () => openModal($('#quickAddSheet'))));
+  $('#searchTrigger').addEventListener('click', () => { $('#commandInput').value = ''; renderCommandPalette(); openModal($('#commandPalette')); });
+  $('#businessSwitcher').addEventListener('click', () => { renderWorkspaceOptions(); openModal($('#businessSheet')); });
+  $('#mobileBusinessSwitcher').addEventListener('click', () => { renderWorkspaceOptions(); openModal($('#businessSheet')); });
+  $('#openSettings').addEventListener('click', () => openModal($('#settingsSheet')));
+  $('#syncChip').addEventListener('click', () => openModal($('#settingsSheet')));
+  $('#profileBtn').addEventListener('click', () => openModal($('#settingsSheet')));
+  $('#notificationBtn').addEventListener('click', () => showToast('No notifications yet. Attention items will surface here later.'));
+  $('#addClientBtn').addEventListener('click', () => openClientForm());
+  $('#addSessionBtn').addEventListener('click', () => openSessionForm());
+  $('#addBusinessBtn').addEventListener('click', () => openBusinessForm());
+  $('#dynamicForm').addEventListener('submit', handleFormSubmit);
+  $('#exportBackupBtn').addEventListener('click', exportBackup);
+  $('#exportBackupFromRecords').addEventListener('click', exportBackup);
+  overlay.addEventListener('click', () => closeModal());
+  $$('[data-close]').forEach(btn => btn.addEventListener('click', () => closeModal()));
+
+  $$('.quick-card').forEach(btn => btn.addEventListener('click', () => {
+    if (btn.dataset.action === 'add-client') { closeModal(); openClientForm(); return; }
+    if (btn.dataset.action === 'add-session') { closeModal(); openSessionForm(); return; }
+    if (btn.dataset.action === 'add-invoice') { closeModal(); openInvoiceForm(); return; }
+    if (btn.dataset.action === 'add-payment') { closeModal(); openPaymentForm(); return; }
+    if (btn.dataset.action === 'add-expense') { closeModal(); openExpenseForm(); return; }
+    showToast(`${$('strong', btn).textContent} activates in its roadmap phase.`);
+  }));
+
+  $$('[data-work-tab]').forEach(btn => btn.addEventListener('click', () => {
+    ui.workTab = btn.dataset.workTab;
+    $$('[data-work-tab]').forEach(b => b.classList.toggle('active', b === btn));
+    $$('[data-work-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.workPanel === ui.workTab));
+  }));
+  $('#sessionSearch').addEventListener('input', () => { ui.sessionPage = 1; renderSessions(); });
+  $('#clientSearch').addEventListener('input', renderClients);
+  $('#sessionFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'all', label:'All sessions' },
+    { value:'uninvoiced', label:'Uninvoiced' },
+    { value:'linked', label:'In invoice' }
+  ], ui.sessionFilter, value => { ui.sessionFilter = value; ui.sessionPage = 1; renderSessions(); }));
+  $('#sessionClientSubfilterBtn').addEventListener('click', event => openSubfilterMenu(event.currentTarget, {
+    kind:'clients',
+    title:'Filter by client',
+    items:businessClients().slice().sort((a,b) => a.displayName.localeCompare(b.displayName)).map(client => ({ value:client.id, label:client.displayName, colorKey:clientColorKey(client) })),
+    currentValues:ui.sessionClientFilters,
+    onChange:values => { ui.sessionClientFilters = values; ui.sessionPage = 1; renderSessions(); }
+  }));
+  $('#clientFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'active', label:'Active' },
+    { value:'inactive', label:'Inactive' },
+    { value:'all', label:'All clients' }
+  ], ui.clientFilter, value => { ui.clientFilter = value; renderClients(); }));
+  $$('[data-money-tab]').forEach(btn => btn.addEventListener('click', () => { closeFilterMenu(); ui.moneyTab = btn.dataset.moneyTab; syncMoneyTabs(); }));
+  $('#addInvoiceBtn').addEventListener('click', () => openInvoiceForm());
+  $('#addPaymentBtn').addEventListener('click', () => openPaymentForm());
+  $('#addExpenseShortcutBtn').addEventListener('click', () => openExpenseForm());
+  $('#invoiceSettingsFromSettings').addEventListener('click', () => { closeModal(); openInvoiceSettingsForm(); });
+  $('#invoiceFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'all', label:'All invoices' },
+    { value:'draft', label:'Draft' },
+    { value:'sent', label:'Sent' },
+    { value:'partially_paid', label:'Partially paid' },
+    { value:'paid', label:'Paid' },
+    { value:'overdue', label:'Overdue' },
+    { value:'void', label:'Void' }
+  ], ui.invoiceFilter, value => { ui.invoiceFilter = value; ui.invoicePage = 1; renderMoney(); }));
+  $('#paymentFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'all', label:'All payments' },
+    { value:'invoice', label:'Invoice payments' },
+    { value:'direct', label:'Other income' }
+  ], ui.paymentFilter, value => { ui.paymentFilter = value; ui.paymentPage = 1; renderMoney(); }));
+  $('#expenseFilterBtn').addEventListener('click', event => openFilterMenu(event.currentTarget, [
+    { value:'all', label:'All expenses' },
+    { value:'business', label:'Business' },
+    { value:'mixed', label:'Mixed' },
+    { value:'personal', label:'Personal' },
+    { value:'needs_review', label:'Needs review' }
+  ], ui.expenseFilter, value => { ui.expenseFilter = value; ui.expensePage = 1; renderMoney(); }));
+  $('#expenseCategorySubfilterBtn').addEventListener('click', event => openSubfilterMenu(event.currentTarget, {
+    kind:'categories',
+    title:'Filter by category',
+    items:expenseCategorySubfilterItems(),
+    currentValues:ui.expenseCategoryFilters,
+    onChange:values => { ui.expenseCategoryFilters = values; ui.expensePage = 1; renderMoney(); }
+  }));
+  $('#receiptSearch').addEventListener('input', () => { ui.receiptMonthLimit = 6; renderRecords(); });
+  $('#receiptSearch').addEventListener('change', event => rememberReceiptSearch(event.currentTarget.value));
+  $('#receiptSearch').addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+    rememberReceiptSearch(event.currentTarget.value);
+    event.currentTarget.blur();
+  });
+  $('#invoiceForm').addEventListener('submit', saveInvoice);
+  function applyInvoiceClientChange(clientId, announce = false) {
+    const clientSelect = $('#invoiceClient');
+    clientSelect.value = clientId;
+    clientSelect.dataset.currentClientId = clientId;
+    ui.invoicePendingClientId = null;
+    $('#invoiceClientChangeConfirm').hidden = true;
+    const sessions = eligibleInvoiceSessions(clientId);
+    ui.invoiceCalendarMonth = initialInvoiceCalendarMonth(sessions, new Set(), $('#invoiceIssueDate').value);
+    renderInvoiceSessionChoices(clientId, new Set());
+    updateInvoiceDraftTotal();
+    if (announce) showToast('Client changed; selected work was cleared.');
+  }
+
+  $('#invoiceClient').addEventListener('change', event => {
+    const nextClientId = event.target.value;
+    const currentClientId = event.target.dataset.currentClientId || '';
+    const hasSelectedWork = $$('input[name="invoiceSession"]:checked', $('#invoiceSessionChoices')).length > 0;
+    if (nextClientId !== currentClientId && currentClientId && hasSelectedWork) {
+      ui.invoicePendingClientId = nextClientId;
+      event.target.value = currentClientId;
+      $('#invoiceClientChangeConfirm').hidden = false;
+      return;
+    }
+    applyInvoiceClientChange(nextClientId);
+  });
+  $('#keepInvoiceClient').addEventListener('click', () => {
+    ui.invoicePendingClientId = null;
+    $('#invoiceClientChangeConfirm').hidden = true;
+    $('#invoiceClient').focus();
+  });
+  $('#confirmInvoiceClient').addEventListener('click', () => applyInvoiceClientChange(ui.invoicePendingClientId || '', true));
+  $('#invoiceCalendarPrev').addEventListener('click', () => {
+    ui.invoiceCalendarMonth = shiftInvoiceMonth(ui.invoiceCalendarMonth, -1);
+    renderInvoiceCalendar($('#invoiceClient').value);
+  });
+  $('#invoiceCalendarNext').addEventListener('click', () => {
+    ui.invoiceCalendarMonth = shiftInvoiceMonth(ui.invoiceCalendarMonth, 1);
+    renderInvoiceCalendar($('#invoiceClient').value);
+  });
+  $('#invoiceCalendarClear').addEventListener('click', () => {
+    $$('input[name="invoiceSession"]', $('#invoiceSessionChoices')).forEach(input => { input.checked = false; });
+    updateInvoiceDraftTotal();
+    updateInvoiceSelectionActions();
+    syncInvoiceCalendarSelection();
+  });
+  $('#invoiceIssueDate').addEventListener('change', event => {
+    if (!ui.invoiceFormId) {
+      $('#invoiceDueDate').value = addDays(event.target.value, activeBusiness().invoiceSettings?.defaultDueDays ?? 7);
+      $('#invoiceDueDate')._syncCompactDate?.();
+    }
+  });
+  $('#addManualInvoiceLine').addEventListener('click', () => addManualInvoiceRow());
+  $('#selectAllInvoiceSessions').addEventListener('click', () => {
+    $$('input[name="invoiceSession"]', $('#invoiceSessionChoices')).forEach(input => { input.checked = true; });
+    updateInvoiceDraftTotal();
+    updateInvoiceSelectionActions();
+    syncInvoiceCalendarSelection();
+  });
+  $('#clearInvoiceSessions').addEventListener('click', () => {
+    $$('input[name="invoiceSession"]', $('#invoiceSessionChoices')).forEach(input => { input.checked = false; });
+    updateInvoiceDraftTotal();
+    updateInvoiceSelectionActions();
+    syncInvoiceCalendarSelection();
+  });
+  $('#commandInput').addEventListener('input', renderCommandPalette);
+
+  document.addEventListener('keydown', event => {
+    if (event.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) { event.preventDefault(); $('#commandInput').value = ''; renderCommandPalette(); openModal($('#commandPalette')); }
+    if (event.key === 'Escape' && activeFilterMenu) { closeFilterMenu(); return; }
+    if (event.key === 'Escape' && ui.modal) closeModal();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && ui.activeView === 'home') startHomeRecentRotation();
+  });
+
+  applyAtriumRuntimeProfile();
+  applyHomeAtriumState('home');
+  commitAtriumMotion();
+  renderAll();
+  syncHomeTabs();
+})();

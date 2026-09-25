@@ -633,6 +633,14 @@ Validation: JavaScript syntax check and both Node test suites pass (existing ana
 - Added progressive month loading through an intersection sentinel, with an accessible manual fallback.
 - Added native search suggestions using recent searches, frequently occurring merchants, categories, and useful date phrases.
 
+## Revision 50 — Receipt glass separation
+
+- Retained the darker smoked-glass treatment only on each month disclosure row so it reads clearly as the archive separator and collapse control.
+- Removed the dark material from the surrounding disclosure container.
+- Gave the expanded receipt field and individual receipt records the lighter translucent Frosted Window Bay material used by the Clients view.
+- Added stable, pre-tinted iPad/Safari variants that preserve the same hierarchy without live backdrop compositing.
+- Kept search, month expansion, progressive loading, expense linkage, and all receipt interactions unchanged.
+
 ## Revision 44 — Core ledger boundary
 
 - Retired Taxes, Mileage, and Vehicles together from permanent navigation, Quick Add, command search, forms, details, dashboard attention items, derived counters, and runtime handlers.

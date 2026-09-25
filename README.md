@@ -1,4 +1,6 @@
-# Business Ledger — Phase 8, Revision 49
+# Business Ledger — Phase 8, Revision 50
+
+Revision 50 visually separates the dark month disclosure control from the receipt content it opens. Expanded receipt fields and receipt panes now use the lighter translucent Frosted Window Bay material established by the Clients view, while all Revision 49 search and archive behavior remains unchanged.
 
 Revision 49 turns Records into a search-first receipt archive. The single search field now combines merchant, category, date, amount, classification, purpose, filename, and review-state matching. Browsing is organized automatically by year and collapsible month, with progressive loading for long histories and no separate filter panel.
 
