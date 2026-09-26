@@ -1,6 +1,6 @@
 # Business Ledger — Architecture
 
-## Revision 44 product boundary
+## Simple Mode Complete V1 product boundary
 
 Business Ledger records:
 
@@ -33,11 +33,11 @@ Structured work and money records ──> Dashboard Analytics
 
 ## Persistence
 
-The prototype uses a versioned `LocalRepository` backed by browser localStorage. Receipt bytes use IndexedDB while receipt metadata remains in the structured workspace.
+The app uses a versioned `LocalRepository` backed by browser localStorage. Receipt bytes use IndexedDB while receipt metadata remains in the structured workspace.
 
 Schema-version 9 data remains loadable. The legacy `vehicles` and `mileageTrips` arrays are accepted and preserved only to avoid destructive loading of an older workspace. They are retired compatibility fields: active application code does not read, render, search, edit, count, or derive values from them.
 
-A production repository should add authenticated workspace authorization, encrypted synchronization, conflict handling, recovery, and secure object storage behind the same application-facing boundary.
+The repository boundary keeps persistence concerns separate from calculations, rendering, and interaction handling.
 
 ## Active entities
 
@@ -59,7 +59,7 @@ Sequential number, sender/recipient snapshots, issue/due dates, state, session-b
 
 ### Payment
 
-Invoice-linked or direct income, source/client snapshots, amount, received date, method, reference, note, and timestamps.
+Invoice-linked or direct income, source/client snapshots, amount, received date, method, reference, note, explicit review state, and timestamps.
 
 ### Expense
 

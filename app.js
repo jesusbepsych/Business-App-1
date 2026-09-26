@@ -1572,7 +1572,7 @@
         const invoice = payment.invoiceId ? invoiceById(payment.invoiceId) : null;
         const sourcePrimary = payment.kind === 'invoice' ? (payment.invoiceNumberSnapshot || invoice?.number || 'Invoice') : (payment.sourceName || payment.clientNameSnapshot || 'Other income');
         const sourceSecondary = payment.kind === 'invoice' ? (payment.clientNameSnapshot || invoice?.recipientSnapshot?.displayName || 'Client') : (payment.description || 'Direct income');
-        return `<button class="table-row payment-grid" data-payment-detail="${payment.id}"><span><strong>${escapeHtml(sourcePrimary)}</strong><small>${escapeHtml(sourceSecondary)}</small></span><span><strong>${formatDate(payment.receivedDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(payment.receivedDate,{year:'numeric'})}</small></span><span><span class="status-pill ${payment.kind === 'invoice' ? 'accent' : 'success'}">${escapeHtml(paymentKindLabel(payment))}</span></span><span><strong>${escapeHtml(paymentMethodLabel(payment.method))}</strong><small>${escapeHtml(payment.reference || 'No reference')}</small></span><span><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong><small>Received</small></span></button>`;
+        return `<button class="table-row payment-grid" data-payment-detail="${payment.id}"><span><strong>${escapeHtml(sourcePrimary)}</strong><small>${escapeHtml(sourceSecondary)}</small></span><span><strong>${formatDate(payment.receivedDate,{month:'short',day:'numeric'})}</strong><small>${formatDate(payment.receivedDate,{year:'numeric'})}</small></span><span><span class="payment-status-stack"><span class="status-pill ${payment.kind === 'invoice' ? 'accent' : 'success'}">${escapeHtml(paymentKindLabel(payment))}</span>${payment.reviewStatus === 'needs_review' ? '<span class="status-pill review">Needs review</span>' : ''}</span></span><span><strong>${escapeHtml(paymentMethodLabel(payment.method))}</strong><small>${escapeHtml(payment.reference || 'No reference')}</small></span><span><strong>${formatMoney(payment.amountCents || 0, activeBusiness().currency)}</strong><small>Received</small></span></button>`;
       }).join('')}${paymentPagination}`
       : emptyState(payments.length ? 'No payments match this filter' : 'No payments recorded yet', payments.length ? 'Choose another payment type to see the rest.' : 'Record actual money received. Link it to an invoice or capture income that did not require one.', payments.length ? 'Show all payments' : 'Record first payment', payments.length ? 'all-payments' : 'add-payment');
 
@@ -2162,10 +2162,11 @@
         <label class="field"><span>Method</span><select name="method" id="paymentMethod"><option value="zelle" ${defaultMethod === 'zelle' ? 'selected' : ''}>Zelle</option><option value="venmo" ${defaultMethod === 'venmo' ? 'selected' : ''}>Venmo</option><option value="ach" ${defaultMethod === 'ach' ? 'selected' : ''}>ACH</option><option value="direct_deposit" ${defaultMethod === 'direct_deposit' ? 'selected' : ''}>Direct deposit</option><option value="cash" ${defaultMethod === 'cash' ? 'selected' : ''}>Cash</option><option value="check" ${defaultMethod === 'check' ? 'selected' : ''}>Check</option><option value="card" ${defaultMethod === 'card' ? 'selected' : ''}>Card</option><option value="other" ${defaultMethod === 'other' ? 'selected' : ''}>Other</option></select></label>
         <label class="field"><span>Date</span><input name="receivedDate" id="paymentReceivedDate" type="date" required value="${escapeHtml(existing?.receivedDate || today)}" /></label>
       </div>
-      <details class="compose-details payment-compose-details" ${existing?.clientId || existing?.description || existing?.reference || existing?.notes ? 'open' : ''}><summary>Link invoice or add details <span aria-hidden="true">⌄</span></summary><div class="compose-details-body">
+      <details class="compose-details payment-compose-details" ${existing?.clientId || existing?.description || existing?.reference || existing?.notes || existing?.reviewStatus === 'needs_review' ? 'open' : ''}><summary>Link invoice or add details <span aria-hidden="true">⌄</span></summary><div class="compose-details-body">
         <p class="payment-invoice-hint" id="paymentInvoiceHint">${selectedInvoice ? `${formatMoney(paymentRemainingBeforeCurrent(selectedInvoice, existing), activeBusiness().currency)} can be applied to this invoice.` : 'Invoice payments require an explicit invoice selection.'}</p>
         <div id="paymentDirectDetails" ${defaultKind === 'direct' ? '' : 'hidden'}><div class="field-row"><label class="field"><span>Client <em>optional</em></span><select name="directClientId" id="paymentDirectClient"><option value="">No linked client</option>${clients.map(client => `<option value="${client.id}" ${client.id === existing?.clientId ? 'selected' : ''}>${escapeHtml(client.displayName)}</option>`).join('')}</select></label><label class="field"><span>Description <em>optional</em></span><input name="description" maxlength="180" placeholder="What was this income for?" value="${escapeHtml(existing?.description || '')}" /></label></div></div>
         <div class="field-row"><label class="field"><span>Reference <em>optional</em></span><input name="reference" maxlength="100" placeholder="Confirmation, check #, memo…" value="${escapeHtml(existing?.reference || '')}" /></label><label class="field"><span>Note <em>optional</em></span><input name="notes" maxlength="500" placeholder="Anything useful about this payment…" value="${escapeHtml(existing?.notes || '')}" /></label></div>
+        <label class="review-toggle"><input type="checkbox" name="needsReview" value="yes" ${existing?.reviewStatus === 'needs_review' ? 'checked' : ''}/><span><strong>Needs review</strong><small>Keep this payment in the review counter until you verify it.</small></span></label>
         <div class="form-info-note payment-trace-note"><strong>Received-money rule:</strong> this payment becomes money received. A linked invoice remains the billing record and is not counted again as a second cash entry.</div>
       </div></details>`;
     openModal($('#formSheet'));
@@ -2297,6 +2298,8 @@
       };
     }
 
+    payload.reviewStatus = form.get('needsReview') === 'yes' ? 'needs_review' : 'verified';
+
     if (existing) {
       const before = deepClone(existing);
       Object.assign(existing, payload, { updatedAt: nowIso() });
@@ -2321,17 +2324,29 @@
     const sourceTitle = payment.kind === 'invoice' ? (payment.invoiceNumberSnapshot || invoice?.number || 'Invoice') : (payment.sourceName || 'Other income');
     const sourceSub = payment.kind === 'invoice' ? (payment.clientNameSnapshot || invoice?.recipientSnapshot?.displayName || 'Client') : (payment.clientNameSnapshot || payment.description || 'Direct income');
     const invoiceBalance = invoice ? invoiceBalanceCents(invoice) : null;
-    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-payment="${payment.id}">Edit</button>${invoice ? `<button class="primary-btn" data-payment-invoice="${invoice.id}">View ${escapeHtml(invoice.number)}</button>` : ''}<details class="record-more"><summary aria-label="More payment actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-payment="${payment.id}">Delete payment</button></div></details></div><div id="detailDeleteConfirm"></div>
+    $('#detailBody').innerHTML = `<div class="detail-actions"><button class="secondary-btn" data-edit-payment="${payment.id}">Edit</button>${payment.reviewStatus === 'needs_review' ? `<button class="primary-btn" data-review-payment="${payment.id}">Mark verified</button>` : ''}${invoice ? `<button class="primary-btn" data-payment-invoice="${invoice.id}">View ${escapeHtml(invoice.number)}</button>` : ''}<details class="record-more"><summary aria-label="More payment actions" title="More actions">•••</summary><div class="record-more-popover"><button type="button" class="danger-menu-item" data-delete-payment="${payment.id}">Delete payment</button></div></details></div><div id="detailDeleteConfirm"></div>
       <div class="detail-metrics payment-detail-metrics"><div><small>Received</small><strong>${formatDate(payment.receivedDate)}</strong></div><div><small>Method</small><strong>${escapeHtml(paymentMethodLabel(payment.method))}</strong></div><div><small>Type</small><strong>${escapeHtml(paymentKindLabel(payment))}</strong></div></div>
-      <div class="payment-hero-card"><small>SOURCE</small><strong>${escapeHtml(sourceTitle)}</strong><span>${escapeHtml(sourceSub)}</span>${invoice ? `<div class="payment-balance-line"><span>Invoice balance now</span><strong>${formatMoney(invoiceBalance, activeBusiness().currency)}</strong></div>` : ''}</div>
+      <div class="payment-hero-card"><div class="payment-hero-status"><small>SOURCE</small>${payment.reviewStatus === 'needs_review' ? '<span class="status-pill review">Needs review</span>' : '<span class="status-pill success">Verified</span>'}</div><strong>${escapeHtml(sourceTitle)}</strong><span>${escapeHtml(sourceSub)}</span>${invoice ? `<div class="payment-balance-line"><span>Invoice balance now</span><strong>${formatMoney(invoiceBalance, activeBusiness().currency)}</strong></div>` : ''}</div>
       ${payment.reference ? `<div class="detail-section"><p class="eyebrow">REFERENCE</p><p>${escapeHtml(payment.reference)}</p></div>` : ''}
       ${payment.description && payment.kind === 'direct' ? `<div class="detail-section"><p class="eyebrow">DESCRIPTION</p><p>${escapeHtml(payment.description)}</p></div>` : ''}
       ${payment.notes ? `<div class="detail-section"><p class="eyebrow">NOTE</p><p>${escapeHtml(payment.notes)}</p></div>` : ''}
       <div class="trace-banner"><span>↳</span><div><strong>${payment.kind === 'invoice' ? 'Linked cash record' : 'Direct income record'}</strong><small>${payment.kind === 'invoice' ? `This payment is the cash-received record for ${escapeHtml(payment.invoiceNumberSnapshot || invoice?.number || 'the invoice')}. The invoice itself remains separate and is not counted again as received income.` : 'This income did not require an invoice, so this payment record itself is the source of the received-income entry.'}</small></div></div>${evidenceTimelineHtml('Payment', payment.id)}`;
     openModal($('#detailPanel'));
     $('[data-edit-payment]')?.addEventListener('click', () => openPaymentForm({ existingId: id }));
+    $('[data-review-payment]')?.addEventListener('click', () => markPaymentVerified(id));
     $('[data-payment-invoice]')?.addEventListener('click', () => { closeModal(); setView('money'); setTimeout(() => openInvoiceDetail(invoice.id), 20); });
     $('[data-delete-payment]')?.addEventListener('click', () => showPaymentDeleteConfirmation(id));
+  }
+
+  function markPaymentVerified(id) {
+    const payment = paymentById(id); if (!payment) return;
+    const before = payment.reviewStatus || '';
+    payment.reviewStatus = 'verified';
+    payment.updatedAt = nowIso();
+    persist('verified', 'Payment', id, { before, after:'verified' });
+    renderAll();
+    openPaymentDetail(id);
+    showToast('Payment marked verified');
   }
 
   function showPaymentDeleteConfirmation(id) {
@@ -2754,7 +2769,7 @@
     const selectedColorKey = clientColorKey(existing || { colorKey: CLIENT_COLOR_KEYS.includes(priorColorKey) ? priorColorKey : defaultClientColorForIndex(businessClients().length) });
     const selectedStatus = existing?.status || (priorStatus === 'inactive' ? 'inactive' : 'active');
     $('#formFields').innerHTML = `
-      <label class="field"><span>Client / payer name</span><input name="displayName" required maxlength="100" placeholder="e.g. Client A" value="${escapeHtml(existing?.displayName || '')}" /><small>You can use an alias if you do not want identifying client information in the prototype.</small></label>
+      <label class="field"><span>Client / payer name</span><input name="displayName" required maxlength="100" placeholder="e.g. Client A" value="${escapeHtml(existing?.displayName || '')}" /><small>You can use an alias if you do not want identifying client information in this workspace.</small></label>
       <fieldset class="client-color-field"><legend>Client color</legend><div class="client-color-picker" role="radiogroup" aria-label="Client color">${CLIENT_COLOR_KEYS.map((key, index) => `<label class="client-color-option" title="${key[0].toUpperCase()+key.slice(1)}"><input type="radio" name="colorKey" value="${key}" ${selectedColorKey === key ? 'checked' : ''}/><span class="client-color-swatch client-bg-${key}" aria-hidden="true"></span><span class="sr-only">${key}</span></label>`).join('')}</div><small>Used as a quick visual identifier in work views.</small></fieldset>
       <div class="field-row"><label class="field"><span>Default hourly rate</span><div class="money-input"><span>$</span><input name="rate" required inputmode="decimal" min="0" step="0.01" type="number" placeholder="0.00" value="${existing ? (existing.defaultRateCents/100).toFixed(2) : ''}" /></div></label><label class="field"><span>Status</span><select name="status"><option value="active" ${selectedStatus === 'active' ? 'selected' : ''}>Active</option><option value="inactive" ${selectedStatus === 'inactive' ? 'selected' : ''}>Inactive</option></select></label></div>
       <details class="optional-fields" ${existing?.billingEmail || existing?.billingAddress ? 'open' : ''}><summary>Billing details <span>optional</span></summary><div class="optional-fields-body"><label class="field"><span>Billing email</span><input name="billingEmail" type="email" maxlength="160" placeholder="payer@example.com" value="${escapeHtml(existing?.billingEmail || '')}" /></label><label class="field"><span>Billing address</span><textarea name="billingAddress" rows="2" maxlength="300" placeholder="Optional address shown on invoices">${escapeHtml(existing?.billingAddress || '')}</textarea></label></div></details>
@@ -3338,7 +3353,6 @@
   $('#mobileBusinessSwitcher').addEventListener('click', () => { renderWorkspaceOptions(); openModal($('#businessSheet')); });
   $('#openSettings').addEventListener('click', () => openModal($('#settingsSheet')));
   $('#profileBtn').addEventListener('click', () => openModal($('#settingsSheet')));
-  $('#notificationBtn').addEventListener('click', () => showToast('No notifications yet. Attention items will surface here later.'));
   $('#addClientBtn').addEventListener('click', () => openClientForm());
   $('#addSessionBtn').addEventListener('click', () => openSessionForm());
   $('#addBusinessBtn').addEventListener('click', () => openBusinessForm());

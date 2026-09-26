@@ -100,15 +100,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(40,84,220,.2
 }
 .app-shell.sidebar-collapsed .sidebar-collapse-btn, .sidebar-collapsed-preload .sidebar-collapse-btn { right:-46px; }
 .app-shell.sidebar-collapsed .sidebar-collapse-btn span, .sidebar-collapsed-preload .sidebar-collapse-btn span { transform:translateX(1px) rotate(180deg); }
-.brand-row { display:flex; gap:11px; align-items:center; padding: 2px 7px 20px; }
-.brand-mark, .business-icon {
+.business-icon {
   width: 36px; height: 36px; border-radius: 11px; display:grid; place-items:center; flex:0 0 auto;
   background: var(--text); color:white; font-weight:800; font-size:14px; letter-spacing:-.02em;
 }
-.brand-mark { background: linear-gradient(145deg,#1a1d25,#3a4052); box-shadow: 0 8px 18px rgba(22,24,29,.14); }
-.brand-copy { display:flex; flex-direction:column; min-width:0; }
-.brand-copy strong { font-size:15px; letter-spacing:-.01em; }
-.brand-copy span { color:var(--muted); font-size:12px; margin-top:2px; }
 
 .business-switcher, .mobile-business {
   border:1px solid var(--line); background:var(--surface); border-radius:16px; cursor:pointer;
@@ -137,12 +132,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(40,84,220,.2
 .nav-item span:last-child { font-size:14px; font-weight:620; }
 .sidebar-spacer { flex:1; }
 .sidebar-footer { display:flex; flex-direction:column; gap:8px; }
-.profile-chip { display:flex; align-items:center; gap:10px; padding:10px 9px 4px; }
-.avatar, .avatar-btn { background:#e8eaf0; color:#4a4e58; display:grid; place-items:center; font-size:12px; font-weight:800; }
-.avatar { width:32px; height:32px; border-radius:50%; }
-.profile-chip div:last-child { display:flex; flex-direction:column; }
-.profile-chip strong { font-size:13px; }
-.profile-chip span { color:var(--muted); font-size:11px; margin-top:2px; }
+.avatar-btn { background:#e8eaf0; color:#4a4e58; display:grid; place-items:center; font-size:12px; font-weight:800; }
 
 .main-panel { min-width:0; min-height:100vh; }
 .topbar {
@@ -340,20 +330,12 @@ h2 { font-size:21.5px; margin:0; letter-spacing:-.035em; }
   .status-strip { color:#b9ead2; background:rgba(35,133,93,.13); border-color:rgba(111,198,159,.18); }.muted-chip,.quiet-badge { background:#22262e; }
   .empty-illustration .line { background:#262b33; }.quick-card,.workspace-option { background:#1a1d23; }.quick-card:hover { background:#1d2129; }
   .sheet,.command-palette { background:rgba(24,27,33,.98); border-color:rgba(255,255,255,.08); }.mobile-nav { background:rgba(16,18,22,.93); }
-  .command-result > span { background:#1f232a; }.brand-mark { background:linear-gradient(145deg,#2c313b,#17191e); }
+  .command-result > span { background:#1f232a; }
   .clock-center { background:rgba(24,27,33,.82); }
   .clock-dial { box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 12px 32px rgba(0,0,0,.18); }
 }
 
 /* ===== Phase 0.2 / Phase 1 alpha additions ===== */
-.sync-chip {
-  display:flex; align-items:center; gap:9px; width:100%; padding:9px 10px; margin-bottom:5px;
-  border:1px solid var(--line); border-radius:12px; background:transparent; text-align:left; cursor:pointer; color:var(--text);
-}
-.sync-chip:hover { background:var(--surface); }
-.sync-chip > span:last-child { display:flex; flex-direction:column; min-width:0; }
-.sync-chip strong { font-size:12px; line-height:1.25; }
-.sync-chip small { color:var(--muted); font-size:10px; margin-top:2px; }
 .sync-dot { width:8px; height:8px; border-radius:50%; flex:0 0 auto; background:var(--success); box-shadow:0 0 0 4px var(--success-soft); }
 .sync-dot.local { background:#a77721; box-shadow:0 0 0 4px rgba(167,119,33,.12); }
 
@@ -696,6 +678,8 @@ h2 { font-size:21.5px; margin:0; letter-spacing:-.035em; }
 .money-tab.active { display:block; animation:viewIn .18s var(--ease) forwards; }
 .money-actions { align-items:center; }
 .payment-grid { display:grid; grid-template-columns:minmax(190px,1.45fr) 110px 125px 145px 110px; column-gap:14px; align-items:center; }
+.payment-status-stack { display:flex; align-items:flex-start; flex-direction:column; gap:5px; }
+.payment-hero-status { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .payment-type-switch { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:15px; padding:5px; border:1px solid var(--line); border-radius:15px; background:var(--surface-2); }
 .payment-type-option { min-height:58px; border:1px solid transparent; border-radius:11px; background:transparent; color:var(--muted); text-align:left; padding:9px 11px; cursor:pointer; display:flex; flex-direction:column; justify-content:center; gap:2px; }
 .payment-type-option span { font-size:12px; font-weight:800; }
@@ -1369,14 +1353,9 @@ body.home-atrium-active .sidebar {
   -webkit-backdrop-filter:blur(18px) saturate(1.06);
   box-shadow:inset -1px 0 rgba(255,255,255,.04),10px 0 40px rgba(0,0,0,.10);
 }
-body.home-atrium-active .sidebar .brand-copy strong,
-body.home-atrium-active .sidebar .business-text strong,
-body.home-atrium-active .sidebar .profile-chip strong { color:#f4f8fa; }
-body.home-atrium-active .sidebar .brand-copy span,
-body.home-atrium-active .sidebar .business-text small,
-body.home-atrium-active .sidebar .profile-chip span { color:rgba(228,237,242,.58); }
-body.home-atrium-active .sidebar .business-switcher,
-body.home-atrium-active .sidebar .sync-chip { background:rgba(255,255,255,.055); border-color:rgba(255,255,255,.10); }
+body.home-atrium-active .sidebar .business-text strong { color:#f4f8fa; }
+body.home-atrium-active .sidebar .business-text small { color:rgba(228,237,242,.58); }
+body.home-atrium-active .sidebar .business-switcher { background:rgba(255,255,255,.055); border-color:rgba(255,255,255,.10); }
 body.home-atrium-active .sidebar .nav-item { color:rgba(234,242,247,.72); }
 body.home-atrium-active .sidebar .nav-item:hover { background:rgba(255,255,255,.075); color:#fff; }
 body.home-atrium-active .sidebar .nav-item.active { color:#fff; background:linear-gradient(90deg,rgba(136,198,230,.28),rgba(255,255,255,.12)); box-shadow:inset 2px 0 rgba(145,220,255,.72),0 10px 28px rgba(0,0,0,.12); }
@@ -3883,9 +3862,6 @@ html.atrium-lite body.records-atrium-active .records-atrium-view .receipt-month-
 }
 .sidebar-footer > .nav-item {
   min-height:46px;
-}
-.sidebar-footer .profile-chip {
-  padding-top:12px;
 }
 @media (max-width:920px) and (orientation:portrait) {
   .mobile-nav .mobile-add {

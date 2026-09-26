@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, and records." />
-  <title>Business Ledger — Phase 8 Dashboard & Analytics</title>
+  <title>Business Ledger — Simple Mode Complete V1</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles-r52-action-counts-expanded-flow.css" />
-  <link rel="stylesheet" href="aurora-frost.css?v=phase8-r26-aurora-dim" />
-  <link rel="stylesheet" href="clock-companion.css?v=r24" />
-  <link rel="stylesheet" href="compact-calendar.css?v=r26" />
+  <link rel="stylesheet" href="styles.css?v=simple-mode-v1" />
+  <link rel="stylesheet" href="aurora-frost.css?v=simple-mode-v1" />
+  <link rel="stylesheet" href="clock-companion.css?v=simple-mode-v1" />
+  <link rel="stylesheet" href="compact-calendar.css?v=simple-mode-v1" />
 </head>
 <body class="home-atrium-active" data-analytics-sample="true">
 
@@ -43,7 +43,6 @@
       <div class="sidebar-spacer"></div>
       <div class="sidebar-footer">
         <button class="nav-item" id="openSettings"><span class="nav-icon">⚙</span><span>Settings</span></button>
-        <div class="profile-chip"><div class="avatar">JG</div><div><strong>Local owner</strong><span>Sign-in layer reserved</span></div></div>
       </div>
     </aside>
 
@@ -54,8 +53,7 @@
         </button>
         <div class="topbar-actions">
           <button class="search-trigger" id="searchTrigger" aria-label="Open command search"><span>⌕</span><span class="search-label">Search anything</span><kbd>/</kbd></button>
-          <button class="icon-btn" id="notificationBtn" aria-label="Notifications">◌</button>
-          <button class="avatar-btn" id="profileBtn" aria-label="Profile and sync">JG</button>
+          <button class="avatar-btn" id="profileBtn" aria-label="Open settings">JG</button>
         </div>
       </header>
 
@@ -216,7 +214,7 @@
             </div>
             <div class="data-card" id="expensesContainer"></div>
           </div>
-          <div class="phase-next-note"><span>↳</span><div><strong>One financial event, one source record.</strong><small>Invoices, received payments, and expenses stay separate so reporting and future reconciliation can use the same records without double counting.</small></div></div>
+          <div class="phase-next-note"><span>↳</span><div><strong>One financial event, one source record.</strong><small>Invoices, received payments, and expenses stay separate so reporting and record review use the same records without double counting.</small></div></div>
         </div>
       </section>
 
@@ -225,7 +223,7 @@
           <div class="page-heading records-heading"><div><p class="eyebrow">RECORDS</p><h1>Receipt evidence, without the filing cabinet.</h1><p class="subtitle">Receipts stay linked to the expense that created them. Search the evidence here; open the expense for full context.</p></div><button class="secondary-btn" id="exportBackupFromRecords">Export local backup</button></div>
           <div class="records-toolbar"><div class="mini-search receipt-smart-search"><span>⌕</span><input id="receiptSearch" type="search" list="receiptSearchSuggestions" autocomplete="off" placeholder="Search merchant, month, category, amount…" aria-label="Search receipt archive" /><datalist id="receiptSearchSuggestions"></datalist></div><span class="quiet-badge" id="receiptCount">0 receipts</span></div>
           <div class="receipt-vault-grid" id="receiptVault"></div>
-          <div class="records-local-note"><span>i</span><p>Receipt files are stored locally in this browser for the prototype. The JSON backup exports structured financial records, but does not yet package the receipt file bytes.</p></div>
+          <div class="records-local-note"><span>i</span><p>Receipt files are stored on this device in this browser. The JSON backup includes structured financial records, but it does not include the receipt files themselves.</p></div>
         </div>
       </section>
 
@@ -321,12 +319,11 @@
   </section>
 
   <section class="sheet settings-sheet" id="settingsSheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
-    <div class="sheet-handle"></div><div class="sheet-head"><div><p class="eyebrow">SETTINGS</p><h2 id="settingsTitle">Account, sync, and data</h2></div><button class="close-btn" data-close aria-label="Close">×</button></div>
+    <div class="sheet-handle"></div><div class="sheet-head"><div><p class="eyebrow">SETTINGS</p><h2 id="settingsTitle">Workspace & data</h2></div><button class="close-btn" data-close aria-label="Close">×</button></div>
     <div class="settings-stack">
-      <article class="setting-card"><div class="setting-icon">☁</div><div><strong>Cloud synchronization</strong><p>This prototype is intentionally local-only. The data layer is separated so secure authentication, database sync, and encrypted file storage can be connected without rewriting the app.</p><span class="status-label"><span class="sync-dot local"></span> Local-only preview</span></div></article>
-      <article class="setting-card"><div class="setting-icon">⇩</div><div class="setting-card-flex"><div><strong>Portable backup</strong><p>Export the complete local workspace as structured JSON. Later, server backups and account recovery will supplement this.</p></div><button class="secondary-btn" id="exportBackupBtn">Export</button></div></article>
+      <article class="setting-card"><div class="setting-icon">▣</div><div><strong>On-device data</strong><p>Your workspace records are stored in this browser on this device.</p><span class="status-label"><span class="sync-dot local"></span> Stored on this device</span></div></article>
+      <article class="setting-card"><div class="setting-icon">⇩</div><div class="setting-card-flex"><div><strong>Portable backup</strong><p>Export the current workspace as structured JSON and keep the file somewhere safe.</p></div><button class="secondary-btn" id="exportBackupBtn">Export</button></div></article>
       <article class="setting-card"><div class="setting-icon">▧</div><div class="setting-card-flex"><div><strong>Invoice identity & defaults</strong><p>Set the sender name, contact details, invoice prefix, default due period, and payment instructions used when new invoices are created.</p></div><button class="secondary-btn" id="invoiceSettingsFromSettings">Edit</button></div></article>
-      <article class="setting-card"><div class="setting-icon">⌘</div><div><strong>Device strategy</strong><p>Responsive web/PWA first, with interaction patterns and data services designed to carry forward into an iPhone/iPad shell later.</p></div></article>
     </div>
   </section>
 
@@ -336,6 +333,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app-r52-action-counts-expanded-flow.js"></script>
+  <script src="app.js?v=simple-mode-v1"></script>
 </body>
 </html>

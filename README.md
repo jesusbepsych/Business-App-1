@@ -1,62 +1,30 @@
-# Business Ledger — Phase 8, Revision 52
+# Business Ledger — Simple Mode Complete V1
 
-Revision 52 turns the Work and Money tab badges into contextual action counts. Sessions now reflects the full filtered/search result set; invoice, payment, and expense badges count only drafts or records needing verification/review. The monthly Business Flow card also gains a compact expand control whose near-full-screen view splits each month into days 1–15 and 16–month-end while preserving the selected range, Business/All basis, scrub interaction, and haptics.
+This release marks the completed local-first Simple Mode baseline for Business Ledger.
 
-Revision 51 removes the prototype-only brand/version block and local-preview status card from the desktop sidebar, then tightens the remaining workspace, navigation, settings, and profile spacing. On portrait layouts, the center Quick Add action now uses the same warm gold treatment as the Home add action; landscape and desktop styling remain unchanged.
+## Product boundary
 
-Revision 50 visually separates the dark month disclosure control from the receipt content it opens. Expanded receipt fields and receipt panes now use the lighter translucent Frosted Window Bay material established by the Clients view, while all Revision 49 search and archive behavior remains unchanged.
+The app records work performed, money received, money spent, and supporting receipt evidence. It connects Clients → Sessions → Invoices → Payments while preserving Business, Mixed, and Personal expense classification. It does not interpret records for taxes or calculate travel mileage.
 
-Revision 49 turns Records into a search-first receipt archive. The single search field now combines merchant, category, date, amount, classification, purpose, filename, and review-state matching. Browsing is organized automatically by year and collapsible month, with progressive loading for long histories and no separate filter panel.
+## V1 completion changes
 
-Revision 48 adds inclusive multi-select filters for session clients and expense categories. Multiple choices within a sub-filter are shown together, while the existing search and primary status/classification filters continue to narrow those results.
-
-Revision 44 retires Taxes, Mileage, and Vehicles as one coordinated product change. The permanent workspace is now:
-
-**Home · Work · Money · Records**
-
-Business Ledger records work performed, money received, money spent, and supporting evidence. It distinguishes Business, Mixed, and Personal spending without interpreting those records for taxes or calculating travel mileage.
-
-## Active workflows
-
-- Clients and work sessions, including the single-clock session editor and client-scoped quick-time presets
-- Invoices and invoice-linked payments
-- Direct income
-- Expenses with Business, Mixed, or Personal classification
-- Business-use amounts and bookkeeping categories
-- Optional receipts and record evidence
-- Dashboard analytics sourced from the retained work and money records
-- JSON export and local browser persistence
-
-## Preserved financial classification
-
-The retirement does not change expense classification or category behavior.
-
-- Original expense totals remain intact.
-- Business expenses retain their business-use amount.
-- Mixed expenses retain both the original total and business portion.
-- Personal expenses retain a zero business portion.
-- Food, Gas, Parking, Car, Subscriptions, Misc, Fees, and Work Equipment remain available.
-- Older saved expense-category labels remain readable.
-
-These fields are bookkeeping context. The app does not claim that a category or business-use amount is deductible.
-
-## Compatibility boundary
-
-Existing schema-version 9 workspaces still load. Legacy `vehicles` and `mileageTrips` collections are accepted as inert compatibility data so opening an older local workspace is non-destructive. No current view, metric, search result, command, form, or mutation consumes those collections.
-
-## Analytics review fixture
-
-The body attribute `data-analytics-sample="true"` enables deterministic, presentation-only sample data for device review. The fixture is never saved to localStorage and never enters exports or evidence history. Remove the attribute when live-only analytics review is desired.
+- Removed remaining developer-facing sidebar, settings, and notification language from the user interface.
+- Replaced internal roadmap wording with direct explanations of on-device storage and backup behavior.
+- Added an explicit **Needs review** option to payment entry and editing.
+- Payments marked for review now drive the existing Payments action counter, display their state in the ledger and detail view, and can be marked verified.
+- Consolidated the browser build around one canonical `app.js` and one canonical `styles.css`.
+- Removed unused prototype-brand, sync-card, and profile selectors.
+- Preserved the current interface, local schema compatibility, responsive behavior, and financial calculation rules.
 
 ## Run
 
-Serve this directory with any static web server and open `index.html`.
+Open `index.html` in a browser or serve this folder with any static-file server.
 
-## Validate
+## Verify
 
 ```bash
 node --check app.js
 node --test tests/*.test.js
 ```
 
-This is a local browser prototype, not a production storage or security model.
+The analytics review fixture remains enabled until its separately requested removal; it is isolated from saved ledger records and exports.
