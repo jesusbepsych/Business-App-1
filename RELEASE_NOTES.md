@@ -1,4 +1,12 @@
-# Simple Mode Complete V3 release notes
+# Simple Mode Complete V4 Planner release notes
+
+## V4 — Planner folio
+
+- Added a temporary fifth Planner navigation destination on desktop and mobile.
+- Implemented the selected connected-folio layout with a calm plans column and a substantial agenda column.
+- Added optional deadline recognition and confirmation for natural phrases such as “tomorrow” and weekday names.
+- Added quiet client-name recognition, upcoming work-session aggregation, Home attention routing, global search results, one-click completion, restoration, and a 30-day completed archive.
+- Advanced the local schema to version 10 while retaining schema-version 9 compatibility.
 
 ## V3 — WebKit regression hardening
 

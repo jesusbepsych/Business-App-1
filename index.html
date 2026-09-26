@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, and records." />
-  <title>Business Ledger — Simple Mode Complete V3</title>
+  <title>Business Ledger — Simple Mode Complete V4 Planner</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=simple-mode-v3" />
-  <link rel="stylesheet" href="aurora-frost.css?v=simple-mode-v3" />
-  <link rel="stylesheet" href="clock-companion.css?v=simple-mode-v3" />
-  <link rel="stylesheet" href="compact-calendar.css?v=simple-mode-v3" />
+  <link rel="stylesheet" href="styles.css?v=simple-mode-v4-planner" />
+  <link rel="stylesheet" href="aurora-frost.css?v=simple-mode-v4-planner" />
+  <link rel="stylesheet" href="clock-companion.css?v=simple-mode-v4-planner" />
+  <link rel="stylesheet" href="compact-calendar.css?v=simple-mode-v4-planner" />
 </head>
 <body class="home-atrium-active" data-analytics-sample="true">
 
@@ -38,6 +38,7 @@
         <button class="nav-item" data-view="work"><span class="nav-icon">◫</span><span>Work</span></button>
         <button class="nav-item" data-view="money"><span class="nav-icon">$</span><span>Money</span></button>
         <button class="nav-item" data-view="records"><span class="nav-icon">▤</span><span>Records</span></button>
+        <button class="nav-item" data-view="planner"><span class="nav-icon">◇</span><span>Planner</span></button>
       </nav>
 
       <div class="sidebar-spacer"></div>
@@ -227,12 +228,55 @@
         </div>
       </section>
 
+      <section class="view planner-atrium-view" data-page="planner">
+        <div class="content-wrap planner-atrium-content">
+          <div class="planner-folio" aria-label="Planner workspace">
+            <section class="planner-plans" aria-labelledby="plannerPlansTitle">
+              <header class="planner-column-head">
+                <p class="eyebrow">PLANNER</p>
+                <h1 id="plannerPlansTitle">Plans</h1>
+                <p>Keep the next thing close without turning it into another dashboard.</p>
+              </header>
+
+              <form class="planner-compose" id="plannerComposeForm">
+                <label for="plannerComposeInput" class="sr-only">Write a note or plan</label>
+                <span aria-hidden="true">＋</span>
+                <input id="plannerComposeInput" name="plan" type="text" maxlength="500" autocomplete="off" placeholder="Write a note or plan…" />
+                <button type="submit" aria-label="Add plan">Add</button>
+              </form>
+              <div class="planner-suggestion" id="plannerSuggestion" role="status" hidden>
+                <span class="planner-suggestion-spark" aria-hidden="true">✦</span>
+                <span><small>Suggested deadline</small><strong id="plannerSuggestionLabel">Use Thursday?</strong></span>
+                <button type="button" id="plannerSuggestionAccept">Use date</button>
+                <button type="button" id="plannerSuggestionDismiss">Not now</button>
+              </div>
+
+              <div class="planner-list" id="plannerList" aria-live="polite"></div>
+
+              <details class="planner-completed" id="plannerCompleted">
+                <summary><span><i aria-hidden="true">✓</i><strong>Recently completed</strong><small id="plannerCompletedCount">0</small></span><span aria-hidden="true">⌄</span></summary>
+                <div class="planner-completed-list" id="plannerCompletedList"></div>
+              </details>
+            </section>
+
+            <aside class="planner-agenda" aria-labelledby="plannerAgendaTitle">
+              <header class="planner-agenda-head">
+                <div><p class="eyebrow">UPCOMING</p><h2 id="plannerAgendaTitle">Agenda</h2></div>
+                <span class="planner-calendar-mark" aria-hidden="true">▦</span>
+              </header>
+              <div class="planner-agenda-list" id="plannerAgendaList"></div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
       <nav class="mobile-nav" aria-label="Mobile navigation">
         <button class="mobile-nav-item active" data-view="home"><span>⌂</span><small>Home</small></button>
         <button class="mobile-nav-item" data-view="work"><span>◫</span><small>Work</small></button>
         <button class="mobile-add" id="mobileAddBtn" aria-label="Add new record">＋</button>
         <button class="mobile-nav-item" data-view="money"><span>$</span><small>Money</small></button>
         <button class="mobile-nav-item" data-view="records"><span>▤</span><small>Records</small></button>
+        <button class="mobile-nav-item" data-view="planner"><span>◇</span><small>Planner</small></button>
       </nav>
     </main>
   </div>
@@ -333,6 +377,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=simple-mode-v3"></script>
+  <script src="app.js?v=simple-mode-v4-planner"></script>
 </body>
 </html>

@@ -19,7 +19,7 @@
   const defaultClientColorForIndex = (index = 0) => CLIENT_COLOR_KEYS[Math.abs(Number(index) || 0) % CLIENT_COLOR_KEYS.length];
 
   const initialData = {
-    schemaVersion: 9,
+    schemaVersion: 10,
     activeBusinessId: 'biz_play_it_forward',
     businesses: [{
       id: 'biz_play_it_forward',
@@ -39,6 +39,7 @@
     payments: [],
     expenses: [],
     receipts: [],
+    plans: [],
     vehicles: [],
     mileageTrips: [],
     auditEvents: [],
@@ -119,8 +120,10 @@
       parsed.schemaVersion = 9;
       parsed.evidenceSnapshots ||= [];
     }
-    if (parsed.schemaVersion === 9) {
+    if (parsed.schemaVersion === 9 || parsed.schemaVersion === 10) {
+      parsed.schemaVersion = 10;
       parsed.invoices ||= []; parsed.payments ||= []; parsed.expenses ||= []; parsed.receipts ||= [];
+      parsed.plans ||= [];
       parsed.vehicles ||= []; parsed.mileageTrips ||= []; parsed.auditEvents ||= [];
       parsed.evidenceSnapshots ||= [];
       parsed.businesses = (parsed.businesses || []).map(b => ({ ...b, invoiceSettings: { ...invoiceDefaults(), ...(b.invoiceSettings || {}) } }));
@@ -201,6 +204,8 @@
   const repository = new LocalRepository();
   const receiptBlobStore = new ReceiptBlobStore();
   const data = repository.load();
+  data.plans ||= [];
+  data.schemaVersion = 10;
   const entryDefaults = (() => {
     try {
       const parsed = JSON.parse(localStorage.getItem(ENTRY_DEFAULTS_KEY) || '{}');
@@ -245,7 +250,7 @@
   function mostRecentRecord(records, dateField = 'createdAt') {
     return (records || []).slice().sort((a,b) => `${b?.[dateField] || ''}${b?.createdAt || ''}`.localeCompare(`${a?.[dateField] || ''}${a?.createdAt || ''}`))[0] || null;
   }
-  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsStartMonth: '', analyticsEndMonth: '', analyticsNetExpenseBasis: 'business', analyticsClientPage: 1, analyticsExpensePage: 1, analyticsPageSize: 4, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionClientFilters: [], clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expenseCategoryFilters: [], expensePage: 1, expensePageSize: 7, expenseReceiptsOpen: false, receiptMonthLimit: 6, receiptOpenMonths: [], receiptArchiveBusinessId: '', invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null };
+  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsStartMonth: '', analyticsEndMonth: '', analyticsNetExpenseBasis: 'business', analyticsClientPage: 1, analyticsExpensePage: 1, analyticsPageSize: 4, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionClientFilters: [], clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expenseCategoryFilters: [], expensePage: 1, expensePageSize: 7, expenseReceiptsOpen: false, receiptMonthLimit: 6, receiptOpenMonths: [], receiptArchiveBusinessId: '', invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null, plannerSuggestedDueDate: '', plannerSuggestionDismissedFor: '' };
   let homeRecentRotationTimer = null;
   let homeRecentSignature = '';
   let homeRecentSwapTimer = null;
@@ -535,11 +540,16 @@
     return data.receipts.filter(receipt => receipt.businessId === businessId);
   }
 
+  function businessPlans(businessId = data.activeBusinessId) {
+    return data.plans.filter(plan => plan.businessId === businessId);
+  }
+
   function clientById(id) { return data.clients.find(c => c.id === id); }
   function invoiceById(id) { return data.invoices.find(invoice => invoice.id === id); }
   function paymentById(id) { return data.payments.find(payment => payment.id === id); }
   function expenseById(id) { return data.expenses.find(expense => expense.id === id); }
   function receiptById(id) { return data.receipts.find(receipt => receipt.id === id); }
+  function planById(id) { return data.plans.find(plan => plan.id === id); }
   function clientColorKey(client) { return CLIENT_COLOR_KEYS.includes(client?.colorKey) ? client.colorKey : 'blue'; }
   function clientColorClass(client) { return `client-color-${clientColorKey(client)}`; }
 
@@ -693,11 +703,12 @@
   }
 
   function applyHomeAtriumState(viewName = ui.activeView) {
-    const usesAtrium = ['home','work','money','records'].includes(viewName);
+    const usesAtrium = ['home','work','money','records','planner'].includes(viewName);
     document.body.classList.toggle('home-atrium-active', usesAtrium);
     document.body.classList.toggle('work-atrium-active', viewName === 'work');
     document.body.classList.toggle('money-atrium-active', viewName === 'money');
     document.body.classList.toggle('records-atrium-active', viewName === 'records');
+    document.body.classList.toggle('planner-atrium-active', viewName === 'planner');
     homeAtriumScene?.setAttribute('aria-hidden', 'true');
     if (usesAtrium) applyAtriumRuntimeProfile();
     if (!usesAtrium) {
@@ -711,7 +722,7 @@
 
   function commitAtriumMotion() {
     atriumFrame = null;
-    if (!['home','work','money','records'].includes(ui.activeView) || prefersReducedMotion.matches) return;
+    if (!['home','work','money','records','planner'].includes(ui.activeView) || prefersReducedMotion.matches) return;
     const px = atriumMotionProfile === 'desktop' ? atriumPointerX : 0;
     const py = atriumMotionProfile === 'desktop' ? atriumPointerY : 0;
     document.documentElement.style.setProperty('--atrium-px', px.toFixed(4));
@@ -722,7 +733,7 @@
   }
 
   function queueAtriumMotion(clientX, clientY) {
-    if (!['home','work','money','records'].includes(ui.activeView) || prefersReducedMotion.matches) return;
+    if (!['home','work','money','records','planner'].includes(ui.activeView) || prefersReducedMotion.matches) return;
     if (atriumMotionProfile !== 'desktop') {
       atriumPointerX = 0;
       atriumPointerY = 0;
@@ -754,6 +765,7 @@
 
   function setView(viewName) {
     ui.activeView = viewName;
+    if (viewName === 'planner') renderPlanner();
     applyHomeAtriumState(viewName);
     views.forEach(view => view.classList.toggle('active', view.dataset.page === viewName));
     navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
@@ -843,16 +855,18 @@
     const incomplete = sessions.filter(s => !s.clientId || !s.date || !s.startTime || !s.endTime);
     const overdue = businessInvoices().filter(invoice => invoiceDisplayStatus(invoice) === 'Overdue');
     const expenseReview = businessExpenses().filter(expense => expense.reviewStatus === 'needs_review');
+    const planAttention = businessPlans().filter(plan => plan.status !== 'completed' && plan.dueDate && plan.dueDate <= addDays(businessToday(),2));
     const attentionItems = [
       ...overdue.map(invoice => ({ type: 'invoice', id: invoice.id, title: `${invoice.number} is overdue`, sub: `${invoice.recipientSnapshot?.displayName || 'Client'} · ${formatMoney(invoiceBalanceCents(invoice), activeBusiness().currency)} still due` })),
       ...expenseReview.map(expense => ({ type: 'expense', id: expense.id, title: `${expense.merchant || 'Expense'} needs review`, sub: `${formatMoney(expense.totalCents || 0, activeBusiness().currency)} · ${expenseCategoryLabel(expense.category)} · ${formatDate(expense.date,{month:'short',day:'numeric'})}` })),
+      ...planAttention.map(plan => ({ type:'plan', id:plan.id, title:plan.title || plan.text || 'Plan due soon', sub:plannerDueLabel(plan.dueDate) })),
       ...incomplete.map(session => ({ type: 'session', id: session.id, title: 'Incomplete work session', sub: `${clientById(session.clientId)?.displayName || session.clientNameSnapshot || 'No client'} · ${formatDate(session.date)}` }))
     ];
     $('#attentionCount').textContent = `${attentionItems.length} ${attentionItems.length === 1 ? 'item' : 'items'}`;
     $('#attentionTitle').textContent = attentionItems.length ? 'A few records need review.' : 'Nothing needs your attention.';
     $('#attentionBody').innerHTML = attentionItems.length
-      ? `<div class="attention-list">${attentionItems.slice(0,3).map(item => `<button ${item.type === 'invoice' ? `data-invoice-detail="${item.id}"` : item.type === 'expense' ? `data-expense-detail="${item.id}"` : `data-session-detail="${item.id}"`}><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sub)}</small></button>`).join('')}</div>`
-      : `<p class="panel-copy">Overdue invoices, incomplete work sessions, and expenses you mark for review will collect here.</p>`;
+      ? `<div class="attention-list">${attentionItems.slice(0,3).map(item => `<button ${item.type === 'invoice' ? `data-invoice-detail="${item.id}"` : item.type === 'expense' ? `data-expense-detail="${item.id}"` : item.type === 'plan' ? `data-plan-attention="${item.id}"` : `data-session-detail="${item.id}"`}><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sub)}</small></button>`).join('')}</div>`
+      : `<p class="panel-copy">Overdue invoices, due plans, incomplete work sessions, and expenses you mark for review will collect here.</p>`;
 
     renderRandomHomeSessions(sessions, false);
     startHomeRecentRotation();
@@ -860,6 +874,7 @@
     $$('[data-session-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
     $$('[data-invoice-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
     $$('[data-expense-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => { setView('money'); ui.moneyTab='expenses'; syncMoneyTabs(); openExpenseDetail(btn.dataset.expenseDetail); }));
+    $$('[data-plan-attention]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => { setView('planner'); requestAnimationFrame(() => document.querySelector(`[data-plan-row="${CSS.escape(btn.dataset.planAttention)}"]`)?.scrollIntoView({block:'center',behavior:prefersReducedMotion.matches?'auto':'smooth'})); }));
     renderAnalytics();
   }
 
@@ -2751,10 +2766,172 @@
     bindReceiptArchiveObserver(!term && monthGroups.length>visibleGroups.length);
   }
 
+  const PLANNER_EVENT_COLORS = {
+    blue:'#89c8ef', teal:'#83d9c8', green:'#84d8a5', amber:'#ebc879', coral:'#ee9a8d', purple:'#b7a0ea', pink:'#e9a1bd', sky:'#91d8ed'
+  };
+
+  function inferPlanClientId(text) {
+    const normalized = String(text || '').toLowerCase();
+    return businessClients()
+      .filter(client => normalized.includes(String(client.displayName || '').toLowerCase()))
+      .sort((a,b) => b.displayName.length - a.displayName.length)[0]?.id || null;
+  }
+
+  function inferPlanDueDate(text) {
+    const normalized = String(text || '').toLowerCase();
+    const today = businessToday();
+    if (/\btoday\b/.test(normalized)) return today;
+    if (/\btomorrow\b/.test(normalized)) return addDays(today, 1);
+    const weekdays = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const weekdayIndex = weekdays.findIndex(day => new RegExp(`\\b${day}\\b`).test(normalized));
+    if (weekdayIndex >= 0) {
+      const currentDay = parseDateOnlyUtc(today).getUTCDay();
+      let offset = (weekdayIndex - currentDay + 7) % 7;
+      if (!offset) offset = 7;
+      return addDays(today, offset);
+    }
+    const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+    const monthPattern = new RegExp(`\\b(${monthNames.join('|')})\\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?\\b`, 'i');
+    const match = String(text || '').match(monthPattern);
+    if (match) {
+      const month = monthNames.indexOf(match[1].toLowerCase()) + 1;
+      const day = Math.max(1, Math.min(31, Number(match[2])));
+      let year = Number(match[3]) || Number(today.slice(0,4));
+      let candidate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      if (!match[3] && candidate < today) candidate = `${year + 1}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      return candidate;
+    }
+    const numeric = String(text || '').match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+    if (numeric) {
+      let year = Number(numeric[3]) || Number(today.slice(0,4));
+      if (year < 100) year += 2000;
+      const candidate = `${year}-${String(Math.min(12,Number(numeric[1]))).padStart(2,'0')}-${String(Math.min(31,Number(numeric[2]))).padStart(2,'0')}`;
+      return candidate;
+    }
+    return '';
+  }
+
+  function planDisplayParts(text) {
+    const clean = String(text || '').replace(/\s+/g,' ').trim();
+    if (clean.length <= 88) return { title:clean, description:'' };
+    const sentenceEnd = clean.slice(0,110).search(/[.!?](?:\s|$)/);
+    const boundary = sentenceEnd >= 28 ? sentenceEnd + 1 : Math.max(40, clean.slice(0,82).lastIndexOf(' '));
+    return { title:clean.slice(0,boundary).trim(), description:clean.slice(boundary).replace(/^[.!?\s—-]+/,'').trim() };
+  }
+
+  function plannerDueLabel(date) {
+    const today = businessToday();
+    if (!date) return '';
+    if (date < today) return `Overdue · ${formatDate(date,{month:'short',day:'numeric'})}`;
+    if (date === today) return 'Due today';
+    if (date === addDays(today,1)) return 'Due tomorrow';
+    if (date <= addDays(today,7)) return `Due ${formatDate(date,{weekday:'long'})}`;
+    return `Due ${formatDate(date,{month:'short',day:'numeric'})}`;
+  }
+
+  function plannerDayHeading(date) {
+    const today = businessToday();
+    if (date === today) return 'Today';
+    if (date === addDays(today,1)) return 'Tomorrow';
+    return formatDate(date,{weekday:'long'});
+  }
+
+  function purgeExpiredPlans() {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const before = data.plans.length;
+    data.plans = data.plans.filter(plan => plan.status !== 'completed' || !plan.completedAt || new Date(plan.completedAt) >= cutoff);
+    if (data.plans.length !== before) repository.save(data);
+  }
+
+  function updatePlannerSuggestion() {
+    const input = $('#plannerComposeInput');
+    const suggestion = $('#plannerSuggestion');
+    if (!input || !suggestion) return;
+    const text = input.value.trim();
+    const inferred = inferPlanDueDate(text);
+    if (!text || !inferred || ui.plannerSuggestionDismissedFor === text || input.dataset.acceptedDueDate === inferred) {
+      suggestion.hidden = true;
+      return;
+    }
+    ui.plannerSuggestedDueDate = inferred;
+    $('#plannerSuggestionLabel').textContent = `Use ${plannerDueLabel(inferred).replace(/^Due /,'')}?`;
+    suggestion.hidden = false;
+  }
+
+  function plannerAgendaEvents() {
+    const today = businessToday();
+    const horizon = addDays(today, 21);
+    const sessionEvents = businessSessions()
+      .filter(session => session.date >= today && session.date <= horizon)
+      .map(session => {
+        const client = clientById(session.clientId);
+        return { date:session.date, order:timeToMinutes(session.startTime) ?? 1440, time:sessionTimeRangeLabel(session), title:client?.displayName || session.clientNameSnapshot || 'Work session', detail:`Work session · ${hoursLabel(sessionMinutes(session))}`, color:PLANNER_EVENT_COLORS[clientColorKey(client)] || PLANNER_EVENT_COLORS.sky };
+      });
+    const planEvents = businessPlans()
+      .filter(plan => plan.status !== 'completed' && plan.dueDate && plan.dueDate >= today && plan.dueDate <= horizon)
+      .map(plan => {
+        const client = clientById(plan.clientId);
+        return { date:plan.dueDate, order:1500, time:'Anytime', title:plan.title || plan.text || 'Plan', detail:client ? `Plan · ${client.displayName}` : 'Plan', color:PLANNER_EVENT_COLORS[clientColorKey(client)] || '#e8c67e' };
+      });
+    return [...sessionEvents,...planEvents].sort((a,b) => a.date.localeCompare(b.date) || a.order - b.order).slice(0,14);
+  }
+
+  function renderPlannerAgenda() {
+    const host = $('#plannerAgendaList');
+    if (!host) return;
+    const events = plannerAgendaEvents();
+    if (!events.length) {
+      host.innerHTML = `<div class="planner-agenda-empty"><strong>Your near-term agenda is clear.</strong><small>Dated plans and upcoming work sessions will arrange themselves here.</small></div>`;
+      return;
+    }
+    const groups = new Map();
+    events.forEach(event => { if (!groups.has(event.date)) groups.set(event.date,[]); groups.get(event.date).push(event); });
+    host.innerHTML = [...groups.entries()].map(([date,items]) => `<section class="planner-agenda-group"><header class="planner-agenda-group-head"><strong>${plannerDayHeading(date)}</strong><small>${formatDate(date,{weekday:'short',month:'short',day:'numeric'})}</small></header>${items.map(event => `<article class="planner-event"><span class="planner-event-time">${escapeHtml(event.time)}</span><span class="planner-event-rail" style="--event-color:${event.color}" aria-hidden="true"></span><span class="planner-event-copy"><strong>${escapeHtml(event.title)}</strong><small>${escapeHtml(event.detail)}</small></span></article>`).join('')}</section>`).join('');
+  }
+
+  function renderPlanner() {
+    const list = $('#plannerList');
+    if (!list) return;
+    purgeExpiredPlans();
+    const plans = businessPlans();
+    const openPlans = plans.filter(plan => plan.status !== 'completed').sort((a,b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const completed = plans.filter(plan => plan.status === 'completed').sort((a,b) => String(b.completedAt || '').localeCompare(String(a.completedAt || '')));
+    list.innerHTML = openPlans.length ? openPlans.map((plan,index) => {
+      const client = clientById(plan.clientId);
+      const due = plannerDueLabel(plan.dueDate);
+      return `<article class="planner-row" data-plan-row="${plan.id}" style="--planner-row-delay:${Math.min(index,6)*35}ms"><button class="planner-complete-btn" type="button" data-complete-plan="${plan.id}" aria-label="Complete ${escapeHtml(plan.title || plan.text || 'plan')}">✓</button><span class="planner-row-copy"><strong>${escapeHtml(plan.title || plan.text || 'Untitled plan')}</strong>${plan.description ? `<small>${escapeHtml(plan.description)}</small>` : '<small>Open plan</small>'}</span>${client ? `<span class="planner-client-mark client-bg-${clientColorKey(client)}" title="${escapeHtml(client.displayName)}">${escapeHtml(initials(client.displayName))}</span>` : '<span></span>'}${due ? `<span class="planner-due ${plan.dueDate < businessToday() ? 'overdue' : ''}">${escapeHtml(due)}</span>` : ''}</article>`;
+    }).join('') : `<div class="planner-empty"><strong>A quiet page, ready when you are.</strong><small>Add any note or plan above. Dates and client names can be recognized without making them required.</small></div>`;
+    $('#plannerCompletedCount').textContent = completed.length;
+    $('#plannerCompleted').hidden = !completed.length;
+    $('#plannerCompletedList').innerHTML = completed.map(plan => `<article class="planner-completed-item"><span><strong>${escapeHtml(plan.title || plan.text || 'Completed plan')}</strong><small>Completed ${formatDate(plan.completedAt,{month:'short',day:'numeric'})} · removed after 30 days</small></span><button type="button" data-restore-plan="${plan.id}">Restore</button></article>`).join('');
+    $$('[data-complete-plan]', list).forEach(button => button.addEventListener('click', () => {
+      const plan = planById(button.dataset.completePlan); if (!plan) return;
+      plan.status='completed'; plan.completedAt=nowIso(); plan.updatedAt=nowIso(); repository.save(data); renderPlanner(); renderHome(); showToast('Plan completed');
+    }));
+    $$('[data-restore-plan]', $('#plannerCompletedList')).forEach(button => button.addEventListener('click', () => {
+      const plan = planById(button.dataset.restorePlan); if (!plan) return;
+      plan.status='open'; plan.completedAt=null; plan.updatedAt=nowIso(); repository.save(data); renderPlanner(); renderHome(); showToast('Plan restored');
+    }));
+    renderPlannerAgenda();
+  }
+
+  function submitPlannerEntry() {
+    const input = $('#plannerComposeInput');
+    const text = input?.value.trim();
+    if (!text) return;
+    const parts = planDisplayParts(text);
+    const acceptedDueDate = input.dataset.acceptedDueDate || '';
+    data.plans.push({ id:uid('plan'), businessId:data.activeBusinessId, text, title:parts.title, description:parts.description, dueDate:acceptedDueDate, clientId:inferPlanClientId(text), status:'open', createdAt:nowIso(), updatedAt:nowIso(), completedAt:null });
+    repository.save(data);
+    input.value=''; delete input.dataset.acceptedDueDate; ui.plannerSuggestedDueDate=''; ui.plannerSuggestionDismissedFor=''; $('#plannerSuggestion').hidden=true;
+    renderPlanner(); renderHome(); showToast('Plan added');
+  }
+
   function renderCommandPalette() {
     const term = ($('#commandInput').value || '').toLowerCase().trim();
     const navigation = [
-      ['home','⌂','Home','Dashboard and attention queue'], ['work','◫','Work','Clients and sessions'], ['money','$','Money','Invoices, payments, and expenses'], ['records','▤','Records','Documents and evidence']
+      ['home','⌂','Home','Dashboard and attention queue'], ['work','◫','Work','Clients and sessions'], ['money','$','Money','Invoices, payments, and expenses'], ['records','▤','Records','Documents and evidence'], ['planner','◇','Planner','Plans and upcoming agenda']
     ].filter(item => !term || item.slice(2).join(' ').toLowerCase().includes(term));
     const clients = businessClients().filter(c => term && c.displayName.toLowerCase().includes(term)).slice(0,5);
     const sessions = businessSessions().filter(s => {
@@ -2763,6 +2940,7 @@
     const invoices = businessInvoices().filter(invoice => term && `${invoice.number} ${invoice.recipientSnapshot?.displayName || ''} ${invoiceDisplayStatus(invoice)}`.toLowerCase().includes(term)).slice(0,5);
     const payments = businessPayments().filter(payment => term && `${paymentSourceLabel(payment)} ${payment.clientNameSnapshot || ''} ${payment.description || ''} ${payment.reference || ''} ${paymentMethodLabel(payment.method)} ${payment.amountCents || 0}`.toLowerCase().includes(term)).slice(0,5);
     const expenses = businessExpenses().filter(expense => term && `${expense.merchant || ''} ${expense.description || ''} ${expense.businessPurpose || ''} ${expenseCategoryLabel(expense.category)} ${expenseClassLabel(expense.classification)} ${expense.totalCents || 0}`.toLowerCase().includes(term)).slice(0,5);
+    const plans = businessPlans().filter(plan => term && plan.status !== 'completed' && `${plan.title || ''} ${plan.description || ''} ${plan.text || ''} ${clientById(plan.clientId)?.displayName || ''} ${plan.dueDate || ''}`.toLowerCase().includes(term)).slice(0,5);
 
     $('#commandBody').innerHTML = `${navigation.length ? `<p class="command-label">Navigation</p>${navigation.map(n => `<button class="command-result" data-command-view="${n[0]}"><span>${n[1]}</span><div><strong>${n[2]}</strong><small>${n[3]}</small></div></button>`).join('')}` : ''}
       ${clients.length ? `<p class="command-label">Clients</p>${clients.map(c => `<button class="command-result" data-command-client="${c.id}"><span>${escapeHtml(initials(c.displayName))}</span><div><strong>${escapeHtml(c.displayName)}</strong><small>Client · ${formatMoney(c.defaultRateCents || 0)}/hr</small></div></button>`).join('')}` : ''}
@@ -2770,13 +2948,15 @@
       ${invoices.length ? `<p class="command-label">Invoices</p>${invoices.map(invoice => `<button class="command-result" data-command-invoice="${invoice.id}"><span>▧</span><div><strong>${escapeHtml(invoice.number)}</strong><small>${escapeHtml(invoice.recipientSnapshot?.displayName || 'Client')} · ${formatMoney(invoice.status === 'void' ? 0 : invoiceBalanceCents(invoice), activeBusiness().currency)} due · ${escapeHtml(invoiceDisplayStatus(invoice))}</small></div></button>`).join('')}` : ''}
       ${payments.length ? `<p class="command-label">Payments</p>${payments.map(payment => `<button class="command-result" data-command-payment="${payment.id}"><span>$</span><div><strong>${escapeHtml(paymentSourceLabel(payment))}</strong><small>${formatMoney(payment.amountCents || 0, activeBusiness().currency)} · ${escapeHtml(paymentMethodLabel(payment.method))} · ${formatDate(payment.receivedDate)}</small></div></button>`).join('')}` : ''}
       ${expenses.length ? `<p class="command-label">Expenses</p>${expenses.map(expense => `<button class="command-result" data-command-expense="${expense.id}"><span>−</span><div><strong>${escapeHtml(expense.merchant || 'Expense')}</strong><small>${formatMoney(expense.totalCents || 0, activeBusiness().currency)} · ${escapeHtml(expenseCategoryLabel(expense.category))} · ${formatDate(expense.date)}</small></div></button>`).join('')}` : ''}
-      ${term && !navigation.length && !clients.length && !sessions.length && !invoices.length && !payments.length && !expenses.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
+      ${plans.length ? `<p class="command-label">Plans</p>${plans.map(plan => `<button class="command-result" data-command-plan="${plan.id}"><span>◇</span><div><strong>${escapeHtml(plan.title || plan.text || 'Plan')}</strong><small>${escapeHtml(plan.dueDate ? plannerDueLabel(plan.dueDate) : 'No deadline')}</small></div></button>`).join('')}` : ''}
+      ${term && !navigation.length && !clients.length && !sessions.length && !invoices.length && !payments.length && !expenses.length && !plans.length ? `<div class="command-empty">No local records match “${escapeHtml(term)}”.</div>` : ''}`;
     $$('[data-command-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.commandView)));
     $$('[data-command-client]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openClientDetail(btn.dataset.commandClient); }));
     $$('[data-command-session]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('work'); openSessionDetail(btn.dataset.commandSession); }));
     $$('[data-command-invoice]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); openInvoiceDetail(btn.dataset.commandInvoice); }));
     $$('[data-command-payment]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); ui.moneyTab = 'payments'; syncMoneyTabs(); openPaymentDetail(btn.dataset.commandPayment); }));
     $$('[data-command-expense]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('money'); ui.moneyTab = 'expenses'; syncMoneyTabs(); openExpenseDetail(btn.dataset.commandExpense); }));
+    $$('[data-command-plan]').forEach(btn => btn.addEventListener('click', () => { closeModal(); setView('planner'); requestAnimationFrame(() => document.querySelector(`[data-plan-row="${CSS.escape(btn.dataset.commandPlan)}"]`)?.scrollIntoView({block:'center',behavior:prefersReducedMotion.matches?'auto':'smooth'})); }));
   }
 
   function openClientForm(existingId = null) {
@@ -3324,6 +3504,7 @@
     data.sessions.filter(session => session.clientId === id).forEach(session => preserveEvidenceSnapshot('WorkSession', session, `${client.displayName} · ${session.date}`));
     data.clients = data.clients.filter(item => item.id !== id);
     data.expenses.filter(expense => expense.clientId === id).forEach(expense => { expense.clientNameSnapshot ||= client.displayName; expense.clientId = null; if (linkedSessionIds.includes(expense.sessionId)) expense.sessionId = null; expense.updatedAt = nowIso(); });
+    data.plans.filter(plan => plan.clientId === id).forEach(plan => { plan.clientNameSnapshot ||= client.displayName; plan.clientId = null; plan.updatedAt = nowIso(); });
     data.sessions = data.sessions.filter(session => session.clientId !== id);
     data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType: 'deleted', entityType: 'Client', entityId: id, details: { cascadedSessionCount: linkedSessionIds.length }, occurredAt: nowIso() });
     repository.save(data);
@@ -3339,7 +3520,7 @@
   }
 
   function renderAll() {
-    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); renderRecords(); syncMoneyTabs(); renderCommandPalette();
+    renderWorkspaceChrome(); renderWorkspaceOptions(); renderHome(); renderWork(); renderMoney(); renderRecords(); renderPlanner(); syncMoneyTabs(); renderCommandPalette();
   }
 
 
@@ -3365,6 +3546,26 @@
     applySidebarCollapsed(!appShell.classList.contains('sidebar-collapsed'));
   });
   navButtons.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+  $('#plannerComposeForm')?.addEventListener('submit', event => { event.preventDefault(); submitPlannerEntry(); });
+  $('#plannerComposeInput')?.addEventListener('input', event => {
+    const accepted = event.currentTarget.dataset.acceptedDueDate;
+    if (accepted && inferPlanDueDate(event.currentTarget.value) !== accepted) delete event.currentTarget.dataset.acceptedDueDate;
+    if (ui.plannerSuggestionDismissedFor !== event.currentTarget.value.trim()) ui.plannerSuggestionDismissedFor='';
+    updatePlannerSuggestion();
+  });
+  $('#plannerSuggestionAccept')?.addEventListener('click', () => {
+    const input=$('#plannerComposeInput');
+    if (!input || !ui.plannerSuggestedDueDate) return;
+    input.dataset.acceptedDueDate=ui.plannerSuggestedDueDate;
+    $('#plannerSuggestion').hidden=true;
+    showToast(`Deadline set for ${formatDate(ui.plannerSuggestedDueDate,{month:'short',day:'numeric'})}`);
+    input.focus();
+  });
+  $('#plannerSuggestionDismiss')?.addEventListener('click', () => {
+    ui.plannerSuggestionDismissedFor=$('#plannerComposeInput')?.value.trim() || '';
+    $('#plannerSuggestion').hidden=true;
+    $('#plannerComposeInput')?.focus();
+  });
   $$('[data-home-tab]').forEach(btn => btn.addEventListener('click',()=>{ closeFilterMenu(); ui.homeTab=btn.dataset.homeTab; syncHomeTabs(); }));
   ['#analyticsFromMonth','#analyticsFromYear'].forEach(selector=>$(selector).addEventListener('change',()=>updateAnalyticsPeriod('from')));
   ['#analyticsToMonth','#analyticsToYear'].forEach(selector=>$(selector).addEventListener('change',()=>updateAnalyticsPeriod('to')));

@@ -1,10 +1,18 @@
-# Business Ledger — Simple Mode Complete V3
+# Business Ledger — Simple Mode Complete V4 Planner
 
 This release marks the completed local-first Simple Mode baseline for Business Ledger.
 
 ## Product boundary
 
 The app records work performed, money received, money spent, and supporting receipt evidence. It connects Clients → Sessions → Invoices → Payments while preserving Business, Mixed, and Personal expense classification. It does not interpret records for taxes or calculate travel mileage.
+
+## V4 addition
+
+- Added a fifth **Planner** workspace using the connected two-pane folio design: spacious vertical plans on the left and a focused upcoming agenda on the right.
+- Plans stay lightweight: free-form text is always valid, while recognized dates are offered as an optional confirmation and matching client names are linked quietly.
+- Dated plans appear beside upcoming work sessions in Agenda and due/overdue plans can surface in Home → Needs attention.
+- One-click completion moves a plan into a recoverable archive; completed plans are automatically removed after 30 days.
+- Planner records are included in local persistence, workspace switching, command search, and JSON backup.
 
 ## V3 additions
 
