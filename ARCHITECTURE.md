@@ -1,6 +1,6 @@
 # Business Ledger — Architecture
 
-## Simple Mode Complete V1 product boundary
+## Simple Mode Complete V2 product boundary
 
 Business Ledger records:
 

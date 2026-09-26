@@ -268,6 +268,7 @@
   let atriumViewportWidth = window.innerWidth;
   let activeFilterMenu = null;
   let receiptArchiveObserver = null;
+  let clientCardRevealObserver = null;
 
   function enhanceDateInputs(root = document) {
     if (!root?.querySelectorAll || !document?.createElement) return;
@@ -1423,13 +1424,36 @@
       const matchesFilter = ui.clientFilter === 'all' || c.status === ui.clientFilter;
       return matchesTerm && matchesFilter;
     });
-    $('#clientsContainer').innerHTML = clients.length ? clients.map(c => {
+    $('#clientsContainer').innerHTML = clients.length ? clients.map((c,index) => {
       const sessions = businessSessions().filter(s => s.clientId === c.id);
       const minutes = sessions.reduce((sum,s) => sum + sessionMinutes(s), 0);
-      return `<button class="client-card" data-client-detail="${c.id}"><div class="client-top"><span class="client-avatar client-avatar-color client-bg-${clientColorKey(c)}">${escapeHtml(initials(c.displayName))}</span><span class="status-pill ${c.status === 'active' ? 'success' : ''}">${escapeHtml(c.status)}</span></div><strong>${escapeHtml(c.displayName)}</strong><small>${escapeHtml(c.notes || 'No notes yet')}</small><div class="client-meta"><span><b>${formatMoney(c.defaultRateCents || 0)}</b><small>/hr default</small></span><span><b>${sessions.length}</b><small>sessions</small></span><span><b>${hoursLabel(minutes)}</b><small>logged</small></span></div></button>`;
+      return `<button class="client-card client-card-reveal" data-client-detail="${c.id}" data-client-reveal-index="${index}"><div class="client-top"><span class="client-avatar client-avatar-color client-bg-${clientColorKey(c)}">${escapeHtml(initials(c.displayName))}</span><span class="status-pill ${c.status === 'active' ? 'success' : ''}">${escapeHtml(c.status)}</span></div><strong>${escapeHtml(c.displayName)}</strong><small>${escapeHtml(c.notes || 'No notes yet')}</small><div class="client-meta"><span><b>${formatMoney(c.defaultRateCents || 0)}</b><small>/hr default</small></span><span><b>${sessions.length}</b><small>sessions</small></span><span><b>${hoursLabel(minutes)}</b><small>logged</small></span></div></button>`;
     }).join('') : emptyState(businessClients().length ? 'No clients match this filter' : 'No clients yet', businessClients().length ? 'Choose another client status to see the rest.' : 'Add the people or organizations you do work for. Names can be aliases if you prefer.', businessClients().length ? 'Show all clients' : 'Add first client', businessClients().length ? 'all-clients' : 'add-client');
     $$('[data-client-detail]').forEach(btn => btn.addEventListener('click', () => openClientDetail(btn.dataset.clientDetail)));
+    bindClientCardReveals(clients.length);
     bindEmptyActions();
+  }
+
+  function bindClientCardReveals(clientCount) {
+    clientCardRevealObserver?.disconnect();
+    clientCardRevealObserver = null;
+    const cards = $$('.client-card-reveal', $('#clientsContainer'));
+    if (!cards.length) return;
+
+    const revealImmediately = clientCount < 7 || prefersReducedMotion.matches || !('IntersectionObserver' in window);
+    if (revealImmediately) {
+      cards.forEach(card => card.classList.add('is-revealed'));
+      return;
+    }
+
+    cards.forEach(card => {
+      const index = Number(card.dataset.clientRevealIndex || 0);
+      card.style.setProperty('--client-reveal-delay', `${(index % 3) * 45}ms`);
+    });
+    clientCardRevealObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => entry.target.classList.toggle('is-revealed', entry.isIntersecting));
+    }, { root:null, rootMargin:'80px 0px 80px', threshold:0.08 });
+    cards.forEach(card => clientCardRevealObserver.observe(card));
   }
 
   function emptyState(title, copy, actionLabel, action) {

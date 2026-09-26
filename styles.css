@@ -3945,3 +3945,30 @@ html.atrium-lite body.records-atrium-active .records-atrium-view .receipt-month-
   .analytics-expanded-chart .analytics-svg { min-height:390px; }
 }
 @media(prefers-reduced-motion:reduce) { .analytics-expanded-dialog { animation:none; } }
+
+/* Simple Mode V3 — WebKit-safe progressive reveal for larger client libraries. */
+.client-card.client-card-reveal {
+  opacity:0;
+  transform:translateY(16px) scale(.992);
+  transition:
+    opacity .38s var(--ease) var(--client-reveal-delay,0ms),
+    transform .46s var(--ease) var(--client-reveal-delay,0ms),
+    box-shadow .14s var(--ease),
+    background .14s var(--ease);
+  will-change:opacity,transform;
+}
+.client-card.client-card-reveal.is-revealed {
+  opacity:1;
+  transform:translateY(0) scale(1);
+  will-change:auto;
+}
+.client-card.client-card-reveal.is-revealed:hover { transform:translateY(-2px); }
+html.atrium-lite .client-card.client-card-reveal.is-revealed:hover { transform:none; }
+@media(prefers-reduced-motion:reduce) {
+  .client-card.client-card-reveal,
+  .client-card.client-card-reveal.is-revealed {
+    opacity:1;
+    transform:none;
+    transition:none;
+  }
+}
