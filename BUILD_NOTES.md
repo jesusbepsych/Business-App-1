@@ -1,3 +1,11 @@
+# Revision 52 — Action counts + expanded Business Flow
+
+- Changed the Sessions badge to the complete search/filter result count, independent of pagination.
+- Changed Money badges to attention counts: draft invoices, explicitly unverified/draft/incomplete payments, and expenses marked Needs review.
+- Added a compact expand icon beside the Business/All net-basis selector without changing the card header structure.
+- Added a near-full-screen Business Flow view with two chronological buckets per month: days 1–15 and 16–month end.
+- Preserved the selected analytics range, Business/All calculation, proportional currency axis, pointer/touch scrubbing, and haptic stepping.
+
 # Revision 51 — Production sidebar + portrait Quick Add
 
 - Removed the internal Business Ledger / Phase 8 identity block from the sidebar.

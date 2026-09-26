@@ -1,4 +1,6 @@
-# Business Ledger — Phase 8, Revision 51
+# Business Ledger — Phase 8, Revision 52
+
+Revision 52 turns the Work and Money tab badges into contextual action counts. Sessions now reflects the full filtered/search result set; invoice, payment, and expense badges count only drafts or records needing verification/review. The monthly Business Flow card also gains a compact expand control whose near-full-screen view splits each month into days 1–15 and 16–month-end while preserving the selected range, Business/All basis, scrub interaction, and haptics.
 
 Revision 51 removes the prototype-only brand/version block and local-preview status card from the desktop sidebar, then tightens the remaining workspace, navigation, settings, and profile spacing. On portrait layouts, the center Quick Add action now uses the same warm gold treatment as the Home add action; landscape and desktop styling remain unchanged.
 
