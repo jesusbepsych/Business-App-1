@@ -2782,6 +2782,43 @@
     const today = businessToday();
     if (/\btoday\b/.test(normalized)) return today;
     if (/\btomorrow\b/.test(normalized)) return addDays(today, 1);
+
+    const validDateOnly = (year, month, day) => {
+      const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+      return date.getUTCFullYear() === Number(year) && date.getUTCMonth() === Number(month) - 1 && date.getUTCDate() === Number(day)
+        ? date.toISOString().slice(0,10)
+        : '';
+    };
+    const futureDate = (month, day, statedYear = '') => {
+      let year = Number(statedYear) || Number(today.slice(0,4));
+      let candidate = validDateOnly(year, month, day);
+      if (!candidate) return '';
+      if (!statedYear && candidate < today) candidate = validDateOnly(year + 1, month, day);
+      return candidate;
+    };
+
+    const isoMatch = normalized.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
+    if (isoMatch) return validDateOnly(isoMatch[1], isoMatch[2], isoMatch[3]);
+
+    const monthAliases = {
+      january:1, jan:1, february:2, feb:2, march:3, mar:3, april:4, apr:4,
+      may:5, june:6, jun:6, july:7, jul:7, august:8, aug:8,
+      september:9, sept:9, sep:9, october:10, oct:10,
+      november:11, nov:11, december:12, dec:12
+    };
+    const monthToken = Object.keys(monthAliases).sort((a,b) => b.length - a.length).join('|');
+    const namedMonth = normalized.match(new RegExp(`\\b(${monthToken})\\.?\\s+(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?(?:\\s*,?\\s*(\\d{4}))?\\b`, 'i'));
+    if (namedMonth) return futureDate(monthAliases[namedMonth[1].toLowerCase()], namedMonth[2], namedMonth[3]);
+    const reversedMonth = normalized.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(${monthToken})\\.?(?:\\s*,?\\s*(\\d{4}))?\\b`, 'i'));
+    if (reversedMonth) return futureDate(monthAliases[reversedMonth[2].toLowerCase()], reversedMonth[1], reversedMonth[3]);
+
+    const numeric = normalized.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+    if (numeric) {
+      let statedYear = numeric[3] || '';
+      if (statedYear && Number(statedYear) < 100) statedYear = String(Number(statedYear) + 2000);
+      return futureDate(numeric[1], numeric[2], statedYear);
+    }
+
     const weekdays = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
     const weekdayIndex = weekdays.findIndex(day => new RegExp(`\\b${day}\\b`).test(normalized));
     if (weekdayIndex >= 0) {
@@ -2789,24 +2826,6 @@
       let offset = (weekdayIndex - currentDay + 7) % 7;
       if (!offset) offset = 7;
       return addDays(today, offset);
-    }
-    const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-    const monthPattern = new RegExp(`\\b(${monthNames.join('|')})\\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?\\b`, 'i');
-    const match = String(text || '').match(monthPattern);
-    if (match) {
-      const month = monthNames.indexOf(match[1].toLowerCase()) + 1;
-      const day = Math.max(1, Math.min(31, Number(match[2])));
-      let year = Number(match[3]) || Number(today.slice(0,4));
-      let candidate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      if (!match[3] && candidate < today) candidate = `${year + 1}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      return candidate;
-    }
-    const numeric = String(text || '').match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
-    if (numeric) {
-      let year = Number(numeric[3]) || Number(today.slice(0,4));
-      if (year < 100) year += 2000;
-      const candidate = `${year}-${String(Math.min(12,Number(numeric[1]))).padStart(2,'0')}-${String(Math.min(31,Number(numeric[2]))).padStart(2,'0')}`;
-      return candidate;
     }
     return '';
   }
@@ -2897,6 +2916,7 @@
     const plans = businessPlans();
     const openPlans = plans.filter(plan => plan.status !== 'completed').sort((a,b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const completed = plans.filter(plan => plan.status === 'completed').sort((a,b) => String(b.completedAt || '').localeCompare(String(a.completedAt || '')));
+    list.classList.toggle('is-scrollable', openPlans.length > 5);
     list.innerHTML = openPlans.length ? openPlans.map((plan,index) => {
       const client = clientById(plan.clientId);
       const due = plannerDueLabel(plan.dueDate);

@@ -1,4 +1,16 @@
-# Simple Mode Complete V4 Planner release notes
+# Simple Mode Complete V5 Obsidian Planner release notes
+
+## V5 — Obsidian Mirror
+
+- Re-skinned the Planner with the selected smoky graphite, matte obsidian, platinum, and restrained champagne visual direction.
+- Preserved the connected-folio geometry, five-item scrolling threshold, plan interactions, agenda grouping, and deadline recognition exactly.
+- Added dedicated low-power WebKit and narrow-screen treatments so the new surface remains visually consistent without requiring expensive blur effects.
+
+## V4.1 — Planner refinement
+
+- The Plans list now keeps five open items visible and becomes independently scrollable when additional items are added.
+- Natural deadline recognition now supports full and abbreviated month names, ordinal dates, reversed day/month phrasing, numeric dates, and ISO dates.
+- Dates without a written year roll into the next year only when that calendar date has already passed; impossible dates are ignored.
 
 ## V4 — Planner folio
 

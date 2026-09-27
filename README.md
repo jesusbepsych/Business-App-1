@@ -1,10 +1,16 @@
-# Business Ledger — Simple Mode Complete V4 Planner
+# Business Ledger — Simple Mode Complete V5 Obsidian Planner
 
 This release marks the completed local-first Simple Mode baseline for Business Ledger.
 
 ## Product boundary
 
 The app records work performed, money received, money spent, and supporting receipt evidence. It connects Clients → Sessions → Invoices → Payments while preserving Business, Mixed, and Personal expense classification. It does not interpret records for taxes or calculate travel mileage.
+
+## V5 addition
+
+- Applied the selected **Obsidian Mirror** graphical treatment to the Planner without changing its folio structure or behavior.
+- Plans now use translucent smoky graphite glass, while Agenda uses a deeper matte-obsidian surface with platinum dividers and restrained champagne accents.
+- Added matching WebKit lite-mode and narrow-screen materials so the treatment remains consistent on iPad portrait, landscape, and split view.
 
 ## V4 addition
 
