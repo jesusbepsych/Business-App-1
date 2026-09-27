@@ -1,10 +1,17 @@
-# Business Ledger — Simple Mode Complete V10 Planner Polish
+# Business Ledger — Simple Mode Complete V11 Planner Contrast
 
 This release marks the completed local-first Simple Mode baseline for Business Ledger.
 
 ## Product boundary
 
 The app records work performed, money received, money spent, and supporting receipt evidence. It connects Clients → Sessions → Invoices → Payments while preserving Business, Mixed, and Personal expense classification. It does not interpret records for taxes or calculate travel mileage.
+
+## V11 addition
+
+- Darkened the Agenda panel to contrast with the lighter notes surface.
+- Increased Planner task and calendar typography weight and size.
+- Strengthened completion and pencil-edit control visibility.
+- Removed sticky iPad touch-hover/focus styling from newly shifted completion controls.
 
 ## V10 addition
 

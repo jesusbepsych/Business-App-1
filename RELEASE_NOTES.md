@@ -1,4 +1,11 @@
-# Simple Mode Complete V10 Planner Polish release notes
+# Simple Mode Complete V11 Planner Contrast release notes
+
+## V11 — Planner Contrast
+
+- Added a dark Money-style Agenda surface against the lighter notes panel.
+- Enlarged and strengthened calendar, event, and task typography.
+- Added clearer mint and gold treatments to completion and edit controls.
+- Fixed the misleading checkmark appearance caused by sticky iPad hover/focus state after list reflow.
 
 ## V10 — Planner Polish
 

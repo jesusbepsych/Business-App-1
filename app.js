@@ -2946,6 +2946,7 @@
       if (Date.now() < ui.plannerCompletionLockUntil) return;
       ui.plannerCompletionLockUntil = Date.now() + 700;
       button.disabled = true;
+      button.blur();
       const plan = planById(button.dataset.completePlan); if (!plan) return;
       if (ui.plannerEditingId === plan.id) resetPlannerEditor();
       ui.plannerCompletedPage = 1;
