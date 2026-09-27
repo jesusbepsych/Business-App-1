@@ -1,10 +1,24 @@
-# Business Ledger — Simple Mode Complete V8 Brighter Obsidian Planner
+# Business Ledger — Simple Mode Complete V10 Planner Polish
 
 This release marks the completed local-first Simple Mode baseline for Business Ledger.
 
 ## Product boundary
 
 The app records work performed, money received, money spent, and supporting receipt evidence. It connects Clients → Sessions → Invoices → Payments while preserving Business, Mixed, and Personal expense classification. It does not interpret records for taxes or calculate travel mileage.
+
+## V10 addition
+
+- Completed-plan archive pagination begins after eight items.
+- Planner tasks now include a compact pencil editor using the existing compose field.
+- Completion taps are guarded so one tap can complete only one item.
+- The Planner bay uses the lighter Sessions glass recipe for closer visual parity.
+- The obsolete Attention check-mark illustration has been removed.
+
+## V9 addition
+
+- Unified the Planner surfaces with the Sessions tab's **Frosted Window Bays** material.
+- Planner now uses the same blue-gray translucent glass, pale borders, local blur, window-wash highlights, and dense glass controls as the Sessions workspace.
+- Preserved the Planner's two-column folio layout, deadline recognition, scrolling, completion archive, and agenda behavior.
 
 ## V8 addition
 

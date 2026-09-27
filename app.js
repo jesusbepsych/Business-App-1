@@ -250,7 +250,7 @@
   function mostRecentRecord(records, dateField = 'createdAt') {
     return (records || []).slice().sort((a,b) => `${b?.[dateField] || ''}${b?.createdAt || ''}`.localeCompare(`${a?.[dateField] || ''}${a?.createdAt || ''}`))[0] || null;
   }
-  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsStartMonth: '', analyticsEndMonth: '', analyticsNetExpenseBasis: 'business', analyticsClientPage: 1, analyticsExpensePage: 1, analyticsPageSize: 4, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionClientFilters: [], clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expenseCategoryFilters: [], expensePage: 1, expensePageSize: 7, expenseReceiptsOpen: false, receiptMonthLimit: 6, receiptOpenMonths: [], receiptArchiveBusinessId: '', invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null, plannerSuggestedDueDate: '', plannerSuggestionDismissedFor: '' };
+  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsStartMonth: '', analyticsEndMonth: '', analyticsNetExpenseBasis: 'business', analyticsClientPage: 1, analyticsExpensePage: 1, analyticsPageSize: 4, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionClientFilters: [], clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expenseCategoryFilters: [], expensePage: 1, expensePageSize: 7, expenseReceiptsOpen: false, receiptMonthLimit: 6, receiptOpenMonths: [], receiptArchiveBusinessId: '', invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null, plannerSuggestedDueDate: '', plannerSuggestionDismissedFor: '', plannerCompletedPage: 1, plannerCompletedPageSize: 8, plannerEditingId: '', plannerCompletionLockUntil: 0 };
   let homeRecentRotationTimer = null;
   let homeRecentSignature = '';
   let homeRecentSwapTimer = null;
@@ -2920,20 +2920,84 @@
     list.innerHTML = openPlans.length ? openPlans.map((plan,index) => {
       const client = clientById(plan.clientId);
       const due = plannerDueLabel(plan.dueDate);
-      return `<article class="planner-row" data-plan-row="${plan.id}" style="--planner-row-delay:${Math.min(index,6)*35}ms"><button class="planner-complete-btn" type="button" data-complete-plan="${plan.id}" aria-label="Complete ${escapeHtml(plan.title || plan.text || 'plan')}">✓</button><span class="planner-row-copy"><strong>${escapeHtml(plan.title || plan.text || 'Untitled plan')}</strong>${plan.description ? `<small>${escapeHtml(plan.description)}</small>` : '<small>Open plan</small>'}</span>${client ? `<span class="planner-client-mark client-bg-${clientColorKey(client)}" title="${escapeHtml(client.displayName)}">${escapeHtml(initials(client.displayName))}</span>` : '<span></span>'}${due ? `<span class="planner-due ${plan.dueDate < businessToday() ? 'overdue' : ''}">${escapeHtml(due)}</span>` : ''}</article>`;
+      const label = escapeHtml(plan.title || plan.text || 'plan');
+      return `<article class="planner-row" data-plan-row="${plan.id}" style="--planner-row-delay:${Math.min(index,6)*35}ms"><span class="planner-row-actions"><button class="planner-edit-btn" type="button" data-edit-plan="${plan.id}" aria-label="Edit ${label}" title="Edit plan">✎</button><button class="planner-complete-btn" type="button" data-complete-plan="${plan.id}" aria-label="Complete ${label}">✓</button></span><span class="planner-row-copy"><strong>${escapeHtml(plan.title || plan.text || 'Untitled plan')}</strong>${plan.description ? `<small>${escapeHtml(plan.description)}</small>` : '<small>Open plan</small>'}</span>${client ? `<span class="planner-client-mark client-bg-${clientColorKey(client)}" title="${escapeHtml(client.displayName)}">${escapeHtml(initials(client.displayName))}</span>` : '<span></span>'}${due ? `<span class="planner-due ${plan.dueDate < businessToday() ? 'overdue' : ''}">${escapeHtml(due)}</span>` : ''}</article>`;
     }).join('') : `<div class="planner-empty"><strong>A quiet page, ready when you are.</strong><small>Add any note or plan above. Dates and client names can be recognized without making them required.</small></div>`;
     $('#plannerCompletedCount').textContent = completed.length;
     $('#plannerCompleted').hidden = !completed.length;
-    $('#plannerCompletedList').innerHTML = completed.map(plan => `<article class="planner-completed-item"><span><strong>${escapeHtml(plan.title || plan.text || 'Completed plan')}</strong><small>Completed ${formatDate(plan.completedAt,{month:'short',day:'numeric'})} · removed after 30 days</small></span><button type="button" data-restore-plan="${plan.id}">Restore</button></article>`).join('');
-    $$('[data-complete-plan]', list).forEach(button => button.addEventListener('click', () => {
+    const pageSize = ui.plannerCompletedPageSize;
+    const totalPages = Math.max(1, Math.ceil(completed.length / pageSize));
+    ui.plannerCompletedPage = Math.min(Math.max(1, ui.plannerCompletedPage), totalPages);
+    const completedPage = completed.slice((ui.plannerCompletedPage - 1) * pageSize, ui.plannerCompletedPage * pageSize);
+    $('#plannerCompletedList').innerHTML = completedPage.map(plan => `<article class="planner-completed-item"><span><strong>${escapeHtml(plan.title || plan.text || 'Completed plan')}</strong><small>Completed ${formatDate(plan.completedAt,{month:'short',day:'numeric'})} · removed after 30 days</small></span><button type="button" data-restore-plan="${plan.id}">Restore</button></article>`).join('');
+    const completedPagination = $('#plannerCompletedPagination');
+    if (completedPagination) completedPagination.hidden = totalPages <= 1;
+    if ($('#plannerCompletedPageLabel')) $('#plannerCompletedPageLabel').textContent = `Page ${ui.plannerCompletedPage}`;
+    if ($('#plannerCompletedPageMeta')) $('#plannerCompletedPageMeta').textContent = `of ${totalPages} · ${completed.length} completed`;
+    const previousCompletedPage = completedPagination ? $('[data-planner-completed-page="previous"]', completedPagination) : null;
+    const nextCompletedPage = completedPagination ? $('[data-planner-completed-page="next"]', completedPagination) : null;
+    if (previousCompletedPage) previousCompletedPage.disabled = ui.plannerCompletedPage === 1;
+    if (nextCompletedPage) nextCompletedPage.disabled = ui.plannerCompletedPage === totalPages;
+    $$('[data-edit-plan]', list).forEach(button => button.addEventListener('click', event => {
+      event.preventDefault(); event.stopPropagation(); startPlannerEdit(button.dataset.editPlan);
+    }));
+    $$('[data-complete-plan]', list).forEach(button => button.addEventListener('click', event => {
+      event.preventDefault(); event.stopPropagation();
+      if (Date.now() < ui.plannerCompletionLockUntil) return;
+      ui.plannerCompletionLockUntil = Date.now() + 700;
+      button.disabled = true;
       const plan = planById(button.dataset.completePlan); if (!plan) return;
+      if (ui.plannerEditingId === plan.id) resetPlannerEditor();
+      ui.plannerCompletedPage = 1;
       plan.status='completed'; plan.completedAt=nowIso(); plan.updatedAt=nowIso(); repository.save(data); renderPlanner(); renderHome(); showToast('Plan completed');
     }));
     $$('[data-restore-plan]', $('#plannerCompletedList')).forEach(button => button.addEventListener('click', () => {
       const plan = planById(button.dataset.restorePlan); if (!plan) return;
-      plan.status='open'; plan.completedAt=null; plan.updatedAt=nowIso(); repository.save(data); renderPlanner(); renderHome(); showToast('Plan restored');
+      plan.status='open'; plan.completedAt=null; plan.updatedAt=nowIso(); repository.save(data);
+      const remainingPages = Math.max(1, Math.ceil((completed.length - 1) / pageSize));
+      ui.plannerCompletedPage = Math.min(ui.plannerCompletedPage, remainingPages);
+      renderPlanner(); renderHome(); showToast('Plan restored');
     }));
+    const changeCompletedPage = delta => {
+      ui.plannerCompletedPage += delta;
+      renderPlanner();
+      requestAnimationFrame(() => $('#plannerCompleted')?.scrollIntoView({ block:'nearest', behavior:prefersReducedMotion.matches ? 'auto' : 'smooth' }));
+    };
+    if (previousCompletedPage) previousCompletedPage.onclick = () => { if (!previousCompletedPage.disabled) changeCompletedPage(-1); };
+    if (nextCompletedPage) nextCompletedPage.onclick = () => { if (!nextCompletedPage.disabled) changeCompletedPage(1); };
     renderPlannerAgenda();
+  }
+
+  function resetPlannerEditor(options = {}) {
+    const input = $('#plannerComposeInput');
+    ui.plannerEditingId = '';
+    ui.plannerSuggestedDueDate = '';
+    ui.plannerSuggestionDismissedFor = '';
+    if (input) { input.value=''; delete input.dataset.acceptedDueDate; }
+    const submit = $('#plannerComposeSubmit');
+    if (submit) { submit.textContent='Add'; submit.setAttribute('aria-label','Add plan'); }
+    const cancel = $('#plannerEditCancel');
+    if (cancel) cancel.hidden = true;
+    const suggestion = $('#plannerSuggestion');
+    if (suggestion) suggestion.hidden = true;
+    if (options.focus) input?.focus();
+  }
+
+  function startPlannerEdit(planId) {
+    const plan = planById(planId);
+    const input = $('#plannerComposeInput');
+    if (!plan || !input || plan.status === 'completed') return;
+    ui.plannerEditingId = plan.id;
+    input.value = plan.text || [plan.title,plan.description].filter(Boolean).join('. ');
+    if (plan.dueDate) input.dataset.acceptedDueDate = plan.dueDate;
+    else delete input.dataset.acceptedDueDate;
+    $('#plannerComposeSubmit').textContent = 'Save';
+    $('#plannerComposeSubmit').setAttribute('aria-label','Save plan changes');
+    $('#plannerEditCancel').hidden = false;
+    $('#plannerSuggestion').hidden = true;
+    $('#plannerComposeForm').scrollIntoView({ block:'center', behavior:prefersReducedMotion.matches ? 'auto' : 'smooth' });
+    requestAnimationFrame(() => { input.focus(); input.setSelectionRange(input.value.length,input.value.length); });
+    showToast('Editing plan');
   }
 
   function submitPlannerEntry() {
@@ -2942,10 +3006,15 @@
     if (!text) return;
     const parts = planDisplayParts(text);
     const acceptedDueDate = input.dataset.acceptedDueDate || '';
-    data.plans.push({ id:uid('plan'), businessId:data.activeBusinessId, text, title:parts.title, description:parts.description, dueDate:acceptedDueDate, clientId:inferPlanClientId(text), status:'open', createdAt:nowIso(), updatedAt:nowIso(), completedAt:null });
+    const editing = ui.plannerEditingId ? planById(ui.plannerEditingId) : null;
+    if (editing) {
+      editing.text=text; editing.title=parts.title; editing.description=parts.description; editing.dueDate=acceptedDueDate; editing.clientId=inferPlanClientId(text); editing.updatedAt=nowIso();
+    } else {
+      data.plans.push({ id:uid('plan'), businessId:data.activeBusinessId, text, title:parts.title, description:parts.description, dueDate:acceptedDueDate, clientId:inferPlanClientId(text), status:'open', createdAt:nowIso(), updatedAt:nowIso(), completedAt:null });
+    }
     repository.save(data);
-    input.value=''; delete input.dataset.acceptedDueDate; ui.plannerSuggestedDueDate=''; ui.plannerSuggestionDismissedFor=''; $('#plannerSuggestion').hidden=true;
-    renderPlanner(); renderHome(); showToast('Plan added');
+    resetPlannerEditor();
+    renderPlanner(); renderHome(); showToast(editing ? 'Plan updated' : 'Plan added');
   }
 
   function renderCommandPalette() {
@@ -3567,6 +3636,7 @@
   });
   navButtons.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
   $('#plannerComposeForm')?.addEventListener('submit', event => { event.preventDefault(); submitPlannerEntry(); });
+  $('#plannerEditCancel')?.addEventListener('click', () => { resetPlannerEditor({ focus:true }); showToast('Edit cancelled'); });
   $('#plannerComposeInput')?.addEventListener('input', event => {
     const accepted = event.currentTarget.dataset.acceptedDueDate;
     if (accepted && inferPlanDueDate(event.currentTarget.value) !== accepted) delete event.currentTarget.dataset.acceptedDueDate;

@@ -4117,6 +4117,22 @@ body.planner-atrium-active .topbar .avatar-btn {
   animation-delay:var(--planner-row-delay,0ms);
 }
 @keyframes planner-row-in { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:none; } }
+.planner-row-actions { display:grid; place-items:center; gap:5px; }
+.planner-edit-btn {
+  width:23px;
+  height:23px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(229,242,248,.22);
+  border-radius:7px;
+  background:rgba(255,255,255,.045);
+  color:rgba(235,245,249,.68);
+  font:700 12px/1 inherit;
+  cursor:pointer;
+  transition:color .16s ease,border-color .16s ease,background .16s ease,transform .16s ease;
+}
+.planner-edit-btn:hover,
+.planner-edit-btn:focus-visible { color:#fff; border-color:rgba(239,205,138,.48); background:rgba(239,205,138,.14); transform:translateY(-1px); outline:0; }
 .planner-complete-btn {
   width:34px;
   height:34px;
@@ -4196,6 +4212,40 @@ body.planner-atrium-active .topbar .avatar-btn {
 .planner-completed-item strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:rgba(237,244,247,.7); font-size:10px; font-weight:650; }
 .planner-completed-item small { color:rgba(210,228,236,.42); font-size:8px; }
 .planner-completed-item button { border:0; background:transparent; color:#9edec4; font:750 9px inherit; cursor:pointer; }
+.planner-completed-pagination {
+  min-height:51px;
+  display:grid;
+  grid-template-columns:40px minmax(0,1fr) 40px;
+  align-items:center;
+  gap:12px;
+  margin-top:2px;
+  padding:8px 0 4px;
+  border-top:1px solid rgba(234,246,251,.11);
+}
+.planner-completed-pagination[hidden] { display:none; }
+.planner-completed-pagination > span { display:grid; gap:2px; text-align:center; }
+.planner-completed-pagination strong { color:rgba(246,251,253,.82); font-size:9px; }
+.planner-completed-pagination small { color:rgba(222,237,244,.48); font-size:8px; }
+.planner-completed-pagination button {
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(230,244,250,.18);
+  border-radius:11px;
+  background:rgba(255,255,255,.055);
+  color:rgba(247,251,253,.86);
+  cursor:pointer;
+}
+.planner-completed-pagination button:hover:not(:disabled),
+.planner-completed-pagination button:focus-visible:not(:disabled) { border-color:rgba(173,218,237,.42); background:rgba(173,218,237,.13); outline:0; }
+.planner-completed-pagination button:disabled { opacity:.28; cursor:default; }
+.planner-compose .planner-edit-cancel {
+  color:rgba(244,249,251,.76);
+  border-color:rgba(232,244,249,.17);
+  background:rgba(255,255,255,.06);
+}
+.planner-compose .planner-edit-cancel[hidden] { display:none; }
 .planner-agenda-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding-bottom:21px; border-bottom:1px solid rgba(225,240,247,.15); }
 .planner-agenda-head h2 { font-size:clamp(38px,4.2vw,55px); line-height:1; }
 .planner-calendar-mark { width:38px; height:38px; display:grid; place-items:center; border:1px solid rgba(232,243,248,.16); border-radius:12px; color:#a9ddf2; background:rgba(136,201,231,.07); font-size:19px; }
@@ -4238,6 +4288,205 @@ html.atrium-lite .planner-agenda { background:linear-gradient(155deg,rgba(17,35,
   .planner-plans { min-height:610px; padding:28px 24px 22px; }
   .planner-agenda { margin-top:14px; padding:27px 24px 30px; }
   .planner-list { overflow:visible; }
+}
+
+/* Simple Mode V9 — final Sessions material lock.
+   Planner keeps its two-column geometry, but uses the same blue-gray
+   Frosted Window Bays surface as the Sessions view. */
+body.planner-atrium-active .planner-folio {
+  position:relative;
+  border-color:var(--bay-border) !important;
+  background:linear-gradient(145deg,rgba(92,121,138,.38),rgba(58,84,99,.35) 52%,rgba(43,68,83,.42)) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.035),var(--bay-shadow) !important;
+  backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+  -webkit-backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+}
+body.planner-atrium-active .planner-folio::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 28%,transparent 54%,rgba(205,232,244,.055) 100%);
+  opacity:.54;
+}
+body.planner-atrium-active .planner-folio > * { position:relative; z-index:1; }
+body.planner-atrium-active .planner-plans,
+body.planner-atrium-active .planner-agenda {
+  background:transparent !important;
+  box-shadow:none !important;
+}
+body.planner-atrium-active .planner-plans::after { display:none !important; }
+body.planner-atrium-active .planner-compose {
+  border-color:rgba(235,247,252,.17);
+  background:rgba(7,17,23,.50);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 28px rgba(0,0,0,.11);
+  backdrop-filter:blur(11px) saturate(1.05);
+  -webkit-backdrop-filter:blur(11px) saturate(1.05);
+}
+body.planner-atrium-active .planner-compose:focus-within {
+  border-color:rgba(239,248,252,.34);
+  background:rgba(15,29,37,.62);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 0 0 3px rgba(173,218,237,.08),0 12px 28px rgba(0,0,0,.11);
+}
+body.planner-atrium-active .planner-compose > span { color:rgba(226,237,242,.70); }
+body.planner-atrium-active .planner-compose input::placeholder { color:rgba(224,235,240,.56); }
+body.planner-atrium-active .planner-row { border-bottom-color:rgba(239,248,252,.13); }
+body.planner-atrium-active .planner-row-copy small { color:rgba(240,246,249,.82); }
+body.planner-atrium-active .planner-completed { border-top-color:rgba(239,248,252,.13); }
+body.planner-atrium-active .planner-agenda-head { border-bottom-color:rgba(239,248,252,.16); }
+body.planner-atrium-active .planner-agenda-group { border-bottom-color:rgba(239,248,252,.13); }
+body.planner-atrium-active .planner-agenda-group-head small,
+body.planner-atrium-active .planner-event-copy small { color:rgba(240,246,249,.72); }
+body.planner-atrium-active .planner-calendar-mark {
+  color:#f8fbfc;
+  border-color:rgba(234,247,252,.30);
+  background:rgba(116,148,165,.26);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 28px rgba(0,0,0,.12);
+  backdrop-filter:blur(14px) saturate(1.06);
+  -webkit-backdrop-filter:blur(14px) saturate(1.06);
+}
+html.atrium-lite body.planner-atrium-active .planner-folio {
+  background:linear-gradient(145deg,rgba(94,126,143,.63),rgba(56,88,105,.60) 52%,rgba(40,70,87,.64)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.17),inset 0 -1px 0 rgba(255,255,255,.035),0 18px 38px rgba(0,0,0,.15) !important;
+}
+html.atrium-lite body.planner-atrium-active .planner-compose,
+html.atrium-lite body.planner-atrium-active .planner-calendar-mark {
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+@media (max-width:820px) {
+  body.planner-atrium-active .planner-folio {
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  body.planner-atrium-active .planner-plans,
+  body.planner-atrium-active .planner-agenda {
+    position:relative;
+    border:1px solid var(--bay-border) !important;
+    border-radius:22px;
+    background:linear-gradient(145deg,rgba(92,121,138,.38),rgba(58,84,99,.35) 52%,rgba(43,68,83,.42)) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.035),var(--bay-shadow) !important;
+    backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+    -webkit-backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+    overflow:hidden;
+  }
+  body.planner-atrium-active .planner-plans::before,
+  body.planner-atrium-active .planner-agenda::before {
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 28%,transparent 54%,rgba(205,232,244,.055) 100%);
+    opacity:.54;
+  }
+  body.planner-atrium-active .planner-plans > *,
+  body.planner-atrium-active .planner-agenda > * { position:relative; z-index:1; }
+  html.atrium-lite body.planner-atrium-active .planner-plans,
+  html.atrium-lite body.planner-atrium-active .planner-agenda {
+    background:linear-gradient(145deg,rgba(94,126,143,.63),rgba(56,88,105,.60) 52%,rgba(40,70,87,.64)) !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+}
+
+/* Simple Mode V9 — Planner unified with the Sessions / Frosted Window Bays theme.
+   Keep the Planner's connected folio geometry, but use the same shared glass
+   material as the Sessions data surface so the workspace reads as one product. */
+body.planner-atrium-active .planner-folio {
+  border-color:var(--bay-border) !important;
+  background:linear-gradient(145deg,rgba(180,205,217,.23),rgba(103,136,153,.20) 48%,rgba(70,100,116,.27)) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.035),var(--bay-shadow) !important;
+  backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+  -webkit-backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+}
+body.planner-atrium-active .planner-plans,
+body.planner-atrium-active .planner-agenda {
+  background:transparent !important;
+  box-shadow:none !important;
+}
+body.planner-atrium-active .planner-plans::after {
+  z-index:0;
+  inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 28%,transparent 54%,rgba(205,232,244,.055) 100%);
+  opacity:.54;
+}
+body.planner-atrium-active .planner-plans > *,
+body.planner-atrium-active .planner-agenda > * {
+  position:relative;
+  z-index:1;
+}
+body.planner-atrium-active .planner-compose {
+  border-color:rgba(235,247,252,.17);
+  background:rgba(7,17,23,.50);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 28px rgba(0,0,0,.11);
+  backdrop-filter:blur(11px) saturate(1.05);
+  -webkit-backdrop-filter:blur(11px) saturate(1.05);
+}
+body.planner-atrium-active .planner-compose:focus-within {
+  border-color:rgba(239,248,252,.34);
+  background:rgba(15,29,37,.62);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 0 0 3px rgba(173,218,237,.08),0 12px 28px rgba(0,0,0,.11);
+}
+body.planner-atrium-active .planner-compose > span { color:rgba(226,237,242,.70); }
+body.planner-atrium-active .planner-compose input::placeholder { color:rgba(224,235,240,.56); }
+body.planner-atrium-active .planner-row { border-bottom-color:rgba(239,248,252,.13); }
+body.planner-atrium-active .planner-row-copy small { color:rgba(240,246,249,.82); }
+body.planner-atrium-active .planner-completed { border-top-color:rgba(239,248,252,.13); }
+body.planner-atrium-active .planner-agenda-head { border-bottom-color:rgba(239,248,252,.16); }
+body.planner-atrium-active .planner-agenda-group { border-bottom-color:rgba(239,248,252,.13); }
+body.planner-atrium-active .planner-agenda-group-head small,
+body.planner-atrium-active .planner-event-copy small { color:rgba(240,246,249,.72); }
+body.planner-atrium-active .planner-calendar-mark {
+  color:#f8fbfc;
+  border-color:rgba(234,247,252,.30);
+  background:rgba(116,148,165,.26);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 28px rgba(0,0,0,.12);
+  backdrop-filter:blur(14px) saturate(1.06);
+  -webkit-backdrop-filter:blur(14px) saturate(1.06);
+}
+
+html.atrium-lite body.planner-atrium-active .planner-folio {
+  background:linear-gradient(145deg,rgba(139,169,184,.49),rgba(86,119,136,.47) 49%,rgba(58,89,105,.53)) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.17),inset 0 -1px 0 rgba(255,255,255,.035),0 18px 38px rgba(0,0,0,.15) !important;
+}
+html.atrium-lite body.planner-atrium-active .planner-compose,
+html.atrium-lite body.planner-atrium-active .planner-calendar-mark {
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+
+@media (max-width:820px) {
+  body.planner-atrium-active .planner-folio {
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  body.planner-atrium-active .planner-plans,
+  body.planner-atrium-active .planner-agenda {
+    border:1px solid var(--bay-border) !important;
+    border-radius:22px;
+    background:linear-gradient(145deg,rgba(180,205,217,.23),rgba(103,136,153,.20) 48%,rgba(70,100,116,.27)) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.035),var(--bay-shadow) !important;
+    backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+    -webkit-backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+  }
+  html.atrium-lite body.planner-atrium-active .planner-plans,
+  html.atrium-lite body.planner-atrium-active .planner-agenda {
+    background:linear-gradient(145deg,rgba(139,169,184,.49),rgba(86,119,136,.47) 49%,rgba(58,89,105,.53)) !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
 }
 @media (max-width:620px) {
   .planner-column-head h1 { font-size:46px; }
@@ -4391,5 +4640,100 @@ html.atrium-lite .planner-agenda {
   }
   .planner-agenda {
     background:linear-gradient(158deg,rgba(61,68,76,.72),rgba(36,42,49,.75));
+  }
+}
+
+/* Simple Mode V9 — final Sessions material lock (last cascade layer). */
+body.planner-atrium-active .planner-folio {
+  position:relative;
+  border-color:var(--bay-border) !important;
+  background:linear-gradient(145deg,rgba(92,121,138,.38),rgba(58,84,99,.35) 52%,rgba(43,68,83,.42)) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.035),var(--bay-shadow) !important;
+  backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+  -webkit-backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+}
+body.planner-atrium-active .planner-folio::before {
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 28%,transparent 54%,rgba(205,232,244,.055) 100%);
+  opacity:.54;
+}
+body.planner-atrium-active .planner-folio > * { position:relative; z-index:1; }
+body.planner-atrium-active .planner-plans,
+body.planner-atrium-active .planner-agenda { background:transparent !important; box-shadow:none !important; }
+body.planner-atrium-active .planner-plans::after { display:none !important; }
+body.planner-atrium-active .planner-compose {
+  border-color:rgba(235,247,252,.17); background:rgba(7,17,23,.50);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 28px rgba(0,0,0,.11);
+  backdrop-filter:blur(11px) saturate(1.05); -webkit-backdrop-filter:blur(11px) saturate(1.05);
+}
+body.planner-atrium-active .planner-compose:focus-within {
+  border-color:rgba(239,248,252,.34); background:rgba(15,29,37,.62);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 0 0 3px rgba(173,218,237,.08),0 12px 28px rgba(0,0,0,.11);
+}
+body.planner-atrium-active .planner-compose > span { color:rgba(226,237,242,.70); }
+body.planner-atrium-active .planner-compose input::placeholder { color:rgba(224,235,240,.56); }
+body.planner-atrium-active .planner-row { border-bottom-color:rgba(239,248,252,.13); }
+body.planner-atrium-active .planner-row-copy small { color:rgba(240,246,249,.82); }
+body.planner-atrium-active .planner-completed { border-top-color:rgba(239,248,252,.13); }
+body.planner-atrium-active .planner-agenda-head { border-bottom-color:rgba(239,248,252,.16); }
+body.planner-atrium-active .planner-agenda-group { border-bottom-color:rgba(239,248,252,.13); }
+body.planner-atrium-active .planner-agenda-group-head small,
+body.planner-atrium-active .planner-event-copy small { color:rgba(240,246,249,.72); }
+body.planner-atrium-active .planner-calendar-mark {
+  color:#f8fbfc; border-color:rgba(234,247,252,.30); background:rgba(116,148,165,.26);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 28px rgba(0,0,0,.12);
+  backdrop-filter:blur(14px) saturate(1.06); -webkit-backdrop-filter:blur(14px) saturate(1.06);
+}
+html.atrium-lite body.planner-atrium-active .planner-folio {
+  background:linear-gradient(145deg,rgba(94,126,143,.63),rgba(56,88,105,.60) 52%,rgba(40,70,87,.64)) !important;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.17),inset 0 -1px 0 rgba(255,255,255,.035),0 18px 38px rgba(0,0,0,.15) !important;
+}
+html.atrium-lite body.planner-atrium-active .planner-compose,
+html.atrium-lite body.planner-atrium-active .planner-calendar-mark { backdrop-filter:none; -webkit-backdrop-filter:none; }
+@media (max-width:820px) {
+  body.planner-atrium-active .planner-folio {
+    background:transparent !important; border:0 !important; box-shadow:none !important;
+    backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  }
+  body.planner-atrium-active .planner-plans,
+  body.planner-atrium-active .planner-agenda {
+    position:relative; border:1px solid var(--bay-border) !important; border-radius:22px;
+    background:linear-gradient(145deg,rgba(92,121,138,.38),rgba(58,84,99,.35) 52%,rgba(43,68,83,.42)) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.035),var(--bay-shadow) !important;
+    backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+    -webkit-backdrop-filter:blur(var(--bay-blur)) saturate(1.08) contrast(1.02) !important;
+    overflow:hidden;
+  }
+  body.planner-atrium-active .planner-plans::before,
+  body.planner-atrium-active .planner-agenda::before {
+    content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+    background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 28%,transparent 54%,rgba(205,232,244,.055) 100%); opacity:.54;
+  }
+  body.planner-atrium-active .planner-plans > *,
+  body.planner-atrium-active .planner-agenda > * { position:relative; z-index:1; }
+  html.atrium-lite body.planner-atrium-active .planner-plans,
+  html.atrium-lite body.planner-atrium-active .planner-agenda {
+    background:linear-gradient(145deg,rgba(94,126,143,.63),rgba(56,88,105,.60) 52%,rgba(40,70,87,.64)) !important;
+    backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  }
+}
+
+/* Simple Mode V10 — lighter Planner bay matched to the Sessions surface. */
+body.planner-atrium-active .planner-folio {
+  background:linear-gradient(145deg,rgba(180,205,217,.23),rgba(103,136,153,.20) 48%,rgba(70,100,116,.27)) !important;
+}
+html.atrium-lite body.planner-atrium-active .planner-folio {
+  background:linear-gradient(145deg,rgba(151,181,195,.54),rgba(96,130,147,.52) 49%,rgba(68,101,117,.56)) !important;
+}
+@media (max-width:820px) {
+  body.planner-atrium-active .planner-folio { background:transparent !important; }
+  body.planner-atrium-active .planner-plans,
+  body.planner-atrium-active .planner-agenda {
+    background:linear-gradient(145deg,rgba(180,205,217,.23),rgba(103,136,153,.20) 48%,rgba(70,100,116,.27)) !important;
+  }
+  html.atrium-lite body.planner-atrium-active .planner-plans,
+  html.atrium-lite body.planner-atrium-active .planner-agenda {
+    background:linear-gradient(145deg,rgba(151,181,195,.54),rgba(96,130,147,.52) 49%,rgba(68,101,117,.56)) !important;
   }
 }

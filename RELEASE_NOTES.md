@@ -1,4 +1,18 @@
-# Simple Mode Complete V8 Brighter Obsidian Planner release notes
+# Simple Mode Complete V10 Planner Polish release notes
+
+## V10 — Planner Polish
+
+- Added clean eight-item pagination to Recently completed.
+- Added in-place Planner editing from a compact pencil control.
+- Prevented touch/click rollover from completing the next task after a re-render.
+- Lightened Planner surfaces to match the Sessions Frosted Window Bays material.
+- Removed the decorative check-mark artifact from the Home Attention panel.
+
+## V9 — Sessions Theme Planner
+
+- Retired the separate Obsidian panel treatment from Planner.
+- Reused the Sessions tab's shared Frosted Window Bays material so Planner, Sessions, and the surrounding Work workspace read as one cohesive interface.
+- Added equivalent WebKit lite and narrow-screen material rules while leaving Planner structure and interactions unchanged.
 
 ## V8 — Brighter Obsidian
 
