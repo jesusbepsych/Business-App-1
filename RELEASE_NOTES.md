@@ -1,4 +1,10 @@
-# Simple Mode Complete V7 Bright Obsidian Planner release notes
+# Simple Mode Complete V8 Brighter Obsidian Planner release notes
+
+## V8 — Brighter Obsidian
+
+- Brightened Plans and Agenda one additional step while preserving translucency.
+- Maintained the established light-left/dark-right hierarchy and existing content contrast.
+- Matched the revised tones across standard glass, WebKit lite, and stacked narrow-screen modes.
 
 ## V7 — Bright Obsidian
 
