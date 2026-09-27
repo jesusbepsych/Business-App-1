@@ -1,4 +1,10 @@
-# Simple Mode Complete V6 Translucent Obsidian Planner release notes
+# Simple Mode Complete V7 Bright Obsidian Planner release notes
+
+## V7 — Bright Obsidian
+
+- Lifted the luminance of both Planner panels while retaining the V6 transparency levels.
+- Preserved Agenda as the darker pane, but replaced near-black values with brighter architectural graphite.
+- Matched the adjustment across standard glass, WebKit lite, and stacked narrow-screen modes.
 
 ## V6 — Translucent Obsidian
 

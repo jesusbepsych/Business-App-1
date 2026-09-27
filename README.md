@@ -1,10 +1,16 @@
-# Business Ledger — Simple Mode Complete V6 Translucent Obsidian Planner
+# Business Ledger — Simple Mode Complete V7 Bright Obsidian Planner
 
 This release marks the completed local-first Simple Mode baseline for Business Ledger.
 
 ## Product boundary
 
 The app records work performed, money received, money spent, and supporting receipt evidence. It connects Clients → Sessions → Invoices → Payments while preserving Business, Mixed, and Personal expense classification. It does not interpret records for taxes or calculate travel mileage.
+
+## V7 addition
+
+- Brightened both translucent Planner panels by lifting their graphite color values without increasing opacity.
+- Plans now uses a lighter smoke-silver surface; Agenda uses a brighter graphite surface while retaining clear visual separation.
+- Increased platinum edge definition slightly to keep the connected folio crisp against the brighter glass.
 
 ## V6 addition
 
