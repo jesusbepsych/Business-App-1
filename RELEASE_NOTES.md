@@ -1,4 +1,11 @@
-# Simple Mode Complete V11 Planner Contrast release notes
+# Simple Mode Complete V12 Planner Shortcut release notes
+
+## V12 — Planner Shortcut
+
+- Replaced the duplicate top-right profile/settings control with a gold notebook Planner shortcut.
+- Removed Planner from the sidebar and mobile tab strip while retaining Settings in the sidebar.
+- Strengthened edit and completion-control edges and fills.
+- Added a distinct mid-dark surface behind completed plans and increased archived-text contrast.
 
 ## V11 — Planner Contrast
 

@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, and records." />
-  <title>Business Ledger — Simple Mode Complete V11 Planner Contrast</title>
+  <title>Business Ledger — Simple Mode Complete V12 Planner Shortcut</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=simple-mode-v11-planner-contrast" />
-  <link rel="stylesheet" href="aurora-frost.css?v=simple-mode-v11-planner-contrast" />
-  <link rel="stylesheet" href="clock-companion.css?v=simple-mode-v11-planner-contrast" />
-  <link rel="stylesheet" href="compact-calendar.css?v=simple-mode-v11-planner-contrast" />
+  <link rel="stylesheet" href="styles.css?v=simple-mode-v12-planner-shortcut" />
+  <link rel="stylesheet" href="aurora-frost.css?v=simple-mode-v12-planner-shortcut" />
+  <link rel="stylesheet" href="clock-companion.css?v=simple-mode-v12-planner-shortcut" />
+  <link rel="stylesheet" href="compact-calendar.css?v=simple-mode-v12-planner-shortcut" />
 </head>
 <body class="home-atrium-active" data-analytics-sample="true">
 
@@ -38,7 +38,6 @@
         <button class="nav-item" data-view="work"><span class="nav-icon">◫</span><span>Work</span></button>
         <button class="nav-item" data-view="money"><span class="nav-icon">$</span><span>Money</span></button>
         <button class="nav-item" data-view="records"><span class="nav-icon">▤</span><span>Records</span></button>
-        <button class="nav-item" data-view="planner"><span class="nav-icon">◇</span><span>Planner</span></button>
       </nav>
 
       <div class="sidebar-spacer"></div>
@@ -54,7 +53,9 @@
         </button>
         <div class="topbar-actions">
           <button class="search-trigger" id="searchTrigger" aria-label="Open command search"><span>⌕</span><span class="search-label">Search anything</span><kbd>/</kbd></button>
-          <button class="avatar-btn" id="profileBtn" aria-label="Open settings">JG</button>
+          <button class="planner-shortcut-btn" id="plannerShortcutBtn" type="button" aria-label="Open Planner" title="Planner">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.75h10.25A2.25 2.25 0 0 1 19 6v12a2.25 2.25 0 0 1-2.25 2.25H6.5A1.5 1.5 0 0 1 5 18.75V5.25a1.5 1.5 0 0 1 1.5-1.5Z"/><path d="M8 3.75v16.5M11 8h5M11 12h5M11 16h3.25"/></svg>
+          </button>
         </div>
       </header>
 
@@ -281,7 +282,6 @@
         <button class="mobile-add" id="mobileAddBtn" aria-label="Add new record">＋</button>
         <button class="mobile-nav-item" data-view="money"><span>$</span><small>Money</small></button>
         <button class="mobile-nav-item" data-view="records"><span>▤</span><small>Records</small></button>
-        <button class="mobile-nav-item" data-view="planner"><span>◇</span><small>Planner</small></button>
       </nav>
     </main>
   </div>
@@ -382,6 +382,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=simple-mode-v11-planner-contrast"></script>
+  <script src="app.js?v=simple-mode-v12-planner-shortcut"></script>
 </body>
 </html>

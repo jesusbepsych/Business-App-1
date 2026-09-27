@@ -3668,7 +3668,7 @@
   $('#businessSwitcher').addEventListener('click', () => { renderWorkspaceOptions(); openModal($('#businessSheet')); });
   $('#mobileBusinessSwitcher').addEventListener('click', () => { renderWorkspaceOptions(); openModal($('#businessSheet')); });
   $('#openSettings').addEventListener('click', () => openModal($('#settingsSheet')));
-  $('#profileBtn').addEventListener('click', () => openModal($('#settingsSheet')));
+  $('#plannerShortcutBtn').addEventListener('click', () => setView('planner'));
   $('#addClientBtn').addEventListener('click', () => openClientForm());
   $('#addSessionBtn').addEventListener('click', () => openSessionForm());
   $('#addBusinessBtn').addEventListener('click', () => openBusinessForm());

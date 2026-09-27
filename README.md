@@ -1,10 +1,17 @@
-# Business Ledger — Simple Mode Complete V11 Planner Contrast
+# Business Ledger — Simple Mode Complete V12 Planner Shortcut
 
 This release marks the completed local-first Simple Mode baseline for Business Ledger.
 
 ## Product boundary
 
 The app records work performed, money received, money spent, and supporting receipt evidence. It connects Clients → Sessions → Invoices → Payments while preserving Business, Mixed, and Personal expense classification. It does not interpret records for taxes or calculate travel mileage.
+
+## V12 addition
+
+- Moved Planner from the primary sidebar and mobile tab strip to a dedicated gold notebook shortcut beside global Search.
+- Removed the duplicate top-right profile/settings control; Settings remains in the sidebar.
+- Increased the gold edit and mint completion-control contrast.
+- Added a mid-dark completed-plan archive surface with stronger archived-text legibility.
 
 ## V11 addition
 
