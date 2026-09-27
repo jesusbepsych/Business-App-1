@@ -1,4 +1,10 @@
-# Simple Mode Complete V5 Obsidian Planner release notes
+# Simple Mode Complete V6 Translucent Obsidian Planner release notes
+
+## V6 — Translucent Obsidian
+
+- Reduced the opacity of the connected folio and both Planner panels to restore more of the app's atrium-through-glass character.
+- Kept the Agenda visually grounded while allowing architectural light and background detail to remain perceptible.
+- Applied separate transparency levels for standard blur, WebKit lite mode, and stacked narrow-screen panels.
 
 ## V5 — Obsidian Mirror
 
