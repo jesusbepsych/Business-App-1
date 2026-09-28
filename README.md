@@ -1,6 +1,13 @@
-# Business Ledger — Simple Mode Complete V12 Planner Shortcut
+# Business Ledger — Simple Mode Complete V13 Safe Forms & Legibility
 
 This release marks the completed local-first Simple Mode baseline for Business Ledger.
+
+## V13 addition
+
+- Protects session, payment, expense, and invoice forms from accidental loss after a real user edit.
+- Untouched forms still close immediately; the confirmation appears only when current values differ from the form's opening state.
+- Applies the protection consistently to Cancel, close, backdrop tap, and Escape interactions.
+- Raises meaningful secondary labels and metadata to an 11–12px floor while leaving decorative micro-labels compact.
 
 ## Product boundary
 

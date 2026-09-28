@@ -4897,3 +4897,122 @@ body.planner-atrium-active .planner-completed-item small { color:rgba(220,235,24
   .planner-shortcut-btn { width:40px; height:40px; flex-basis:40px; border-radius:13px; }
   .planner-shortcut-btn svg { width:20px; height:20px; }
 }
+
+/* Simple Mode V13 — form-loss protection and meaningful metadata legibility. */
+.discard-changes-dialog {
+  position:fixed;
+  z-index:75;
+  left:50%;
+  top:50%;
+  width:min(440px,calc(100vw - 32px));
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr);
+  gap:14px 16px;
+  padding:22px;
+  transform:translate(-50%,-50%);
+  border:1px solid rgba(226,239,246,.20);
+  border-radius:20px;
+  background:linear-gradient(145deg,rgba(24,40,51,.97),rgba(8,20,29,.98));
+  color:#f5fafc;
+  box-shadow:inset 0 1px rgba(255,255,255,.09),0 28px 80px rgba(0,0,0,.42);
+  backdrop-filter:blur(22px) saturate(1.1);
+  -webkit-backdrop-filter:blur(22px) saturate(1.1);
+  animation:discardDialogIn .18s var(--ease);
+}
+.discard-changes-dialog[hidden] { display:none; }
+.discard-changes-icon {
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(244,195,123,.38);
+  border-radius:14px;
+  background:rgba(238,181,91,.12);
+  color:#f0c977;
+  font-size:22px;
+}
+.discard-changes-copy .eyebrow { margin-bottom:5px; color:rgba(241,202,126,.76); }
+.discard-changes-copy h2 { margin:0; font-size:23px; letter-spacing:-.025em; }
+.discard-changes-copy > p:last-child { margin:7px 0 0; color:rgba(224,236,242,.70); font-size:12px; line-height:1.55; }
+.discard-changes-actions { grid-column:1/-1; display:flex; justify-content:flex-end; gap:9px; margin-top:4px; }
+.discard-changes-actions .danger-btn { border-color:rgba(246,146,139,.40); background:rgba(209,78,72,.18); color:#ffc5c0; }
+.discard-changes-actions .danger-btn:hover,.discard-changes-actions .danger-btn:focus-visible { background:rgba(216,87,80,.29); border-color:rgba(255,165,158,.60); }
+body.confirming-discard :is(.sheet,.detail-panel,.command-palette,.analytics-expanded-dialog) { pointer-events:none; }
+@keyframes discardDialogIn { from { opacity:0; transform:translate(-50%,-47%) scale(.97); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+
+/* Meaningful secondary information uses an 11–12px floor. Compact decorative
+   eyebrows, chart micro-labels, and dense dial markings intentionally remain smaller. */
+:is(.command-result,.quick-card,.recent-main,.attention-list,.inline-empty) small,
+.pagination-copy small,
+.client-meta small,
+.field small,
+.setting-card p,
+.status-label,
+.delete-confirm-card p,
+.detail-metrics small,
+.trace-banner small,
+.phase-next-note small,
+.payment-type-option small,
+.payment-hero-card > small,
+.payment-balance-line span,
+.payment-mini-list button span small,
+.optional-fields > summary span,
+.form-info-note,
+.invoice-sheet-head small,
+.builder-title > small,
+.invoice-session-date small,
+.invoice-session-main small,
+.invoice-form-summary #invoiceDraftItemCount,
+.invoice-form-summary > p,
+.expense-type-option small,
+.receipt-upload-copy small,
+.expense-remove-receipt,
+.review-toggle small,
+.expense-hero-card > small,
+.receipt-empty-detail small,
+.receipt-missing small,
+.receipt-preview-footer small,
+.receipt-file-tile small,
+.receipt-vault-main small,
+.receipt-vault-meta small,
+.records-local-note p,
+.receipt-search-summary small,
+.planner-empty small,
+.planner-completed-item small,
+.planner-completed-pagination small,
+.planner-agenda-group-head small,
+.planner-event-copy small,
+.planner-agenda-empty small,
+.session-note-disclosure small,
+.quick-time-help,
+.single-clock-hint,
+.single-direct-time,
+.integrated-profile-sheet .field > small,
+.integrated-profile-sheet .client-color-field > small,
+.integrated-profile-sheet .check-row small {
+  font-size:11px !important;
+}
+.status-pill,
+.muted-chip,
+.quiet-badge,
+.receipt-mini,
+.expense-summary-line span,
+.subfilter-category-choice,
+.mosaic-unit-key,
+.category-stack-legend,
+.analytics-pagination > span,
+.analytics-pagination small {
+  font-size:11px !important;
+}
+.planner-completed-item strong,
+.planner-completed-pagination strong { font-size:12px !important; }
+body.planner-atrium-active .planner-agenda-group-head small,
+body.planner-atrium-active .planner-event-copy small { font-size:11px !important; }
+
+@media (max-width:620px) {
+  .discard-changes-dialog { top:auto; bottom:calc(18px + env(safe-area-inset-bottom)); transform:translateX(-50%); padding:19px; }
+  @keyframes discardDialogIn { from { opacity:0; transform:translate(-50%,10px) scale(.98); } to { opacity:1; transform:translate(-50%,0) scale(1); } }
+  .discard-changes-actions { display:grid; grid-template-columns:1fr 1fr; }
+  .discard-changes-actions button { min-height:44px; }
+  .mobile-nav-item small { font-size:11px !important; }
+}

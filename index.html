@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, and records." />
-  <title>Business Ledger — Simple Mode Complete V12 Planner Shortcut</title>
+  <title>Business Ledger — Simple Mode Complete V13 Safe Forms &amp; Legibility</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=simple-mode-v12-planner-shortcut" />
-  <link rel="stylesheet" href="aurora-frost.css?v=simple-mode-v12-planner-shortcut" />
-  <link rel="stylesheet" href="clock-companion.css?v=simple-mode-v12-planner-shortcut" />
-  <link rel="stylesheet" href="compact-calendar.css?v=simple-mode-v12-planner-shortcut" />
+  <link rel="stylesheet" href="styles.css?v=simple-mode-v13-safe-forms-legibility" />
+  <link rel="stylesheet" href="aurora-frost.css?v=simple-mode-v13-safe-forms-legibility" />
+  <link rel="stylesheet" href="clock-companion.css?v=simple-mode-v13-safe-forms-legibility" />
+  <link rel="stylesheet" href="compact-calendar.css?v=simple-mode-v13-safe-forms-legibility" />
 </head>
 <body class="home-atrium-active" data-analytics-sample="true">
 
@@ -288,6 +288,19 @@
 
   <div class="overlay" id="overlay" hidden></div>
 
+  <section class="discard-changes-dialog" id="discardChangesDialog" role="alertdialog" aria-modal="true" aria-labelledby="discardChangesTitle" aria-describedby="discardChangesCopy" hidden>
+    <span class="discard-changes-icon" aria-hidden="true">↶</span>
+    <div class="discard-changes-copy">
+      <p class="eyebrow">UNSAVED WORK</p>
+      <h2 id="discardChangesTitle">Discard changes?</h2>
+      <p id="discardChangesCopy">The information entered in this form has not been saved.</p>
+    </div>
+    <div class="discard-changes-actions">
+      <button type="button" class="secondary-btn" id="keepEditingBtn">Keep editing</button>
+      <button type="button" class="danger-btn" id="discardChangesBtn">Discard changes</button>
+    </div>
+  </section>
+
   <section class="analytics-expanded-dialog" id="analyticsCashflowExpanded" role="dialog" aria-modal="true" aria-labelledby="analyticsCashflowExpandedTitle" hidden>
     <div class="analytics-expanded-head"><div><p class="eyebrow">NET MOVEMENT DETAIL</p><h2 id="analyticsCashflowExpandedTitle">Business flow</h2><small id="analyticsCashflowExpandedRange">Two points per month</small></div><div class="analytics-expanded-meta"><span id="analyticsCashflowExpandedBasis">Business expenses</span><button class="close-btn" data-close aria-label="Close expanded chart">×</button></div></div>
     <div class="analytics-expanded-chart" id="analyticsCashflowExpandedChart"></div>
@@ -382,6 +395,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=simple-mode-v12-planner-shortcut"></script>
+  <script src="app.js?v=simple-mode-v13-safe-forms-legibility"></script>
 </body>
 </html>

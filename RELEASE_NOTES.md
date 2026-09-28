@@ -1,4 +1,11 @@
-# Simple Mode Complete V12 Planner Shortcut release notes
+# Simple Mode Complete V13 Safe Forms & Legibility release notes
+
+## V13 — Safe Forms & Legibility
+
+- Added a lightweight in-app “Discard changes?” confirmation to session, payment, expense, and invoice forms.
+- The confirmation is state-aware: prefilled defaults do not trigger it, and it appears only after form content actually changes.
+- Kept successful saves, untouched forms, and non-form overlays free of unnecessary prompts.
+- Increased meaningful supporting text and metadata to an 11–12px minimum without enlarging decorative eyebrow labels or compact dial markings.
 
 ## V12 — Planner Shortcut
 

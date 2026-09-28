@@ -260,7 +260,10 @@
   const views = $$('[data-page]');
   const navButtons = $$('[data-view]');
   const overlay = $('#overlay');
+  const discardChangesDialog = $('#discardChangesDialog');
   const modals = [$('#quickAddSheet'), $('#commandPalette'), $('#businessSheet'), $('#formSheet'), $('#invoiceSheet'), $('#settingsSheet'), $('#detailPanel'), $('#analyticsCashflowExpanded')];
+  const guardedFormModes = new Set(['session', 'payment', 'expense']);
+  const formGuard = { modal:null, form:null, baseline:'', armed:false, token:0, pendingHideOverlay:true };
   const toast = $('#toast');
   const appShell = $('#appShell');
   const sidebarCollapseBtn = $('#sidebarCollapseBtn');
@@ -764,17 +767,74 @@
   }
 
   function setView(viewName) {
+    if (ui.modal && !closeModal()) return false;
     ui.activeView = viewName;
     if (viewName === 'planner') renderPlanner();
     applyHomeAtriumState(viewName);
     views.forEach(view => view.classList.toggle('active', view.dataset.page === viewName));
     navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
     window.scrollTo({ top: 0, behavior: 'auto' });
-    closeModal();
+    return true;
+  }
+
+  function guardedFormFor(modal = ui.modal) {
+    if (modal === $('#invoiceSheet')) return $('#invoiceForm');
+    if (modal === $('#formSheet') && guardedFormModes.has(ui.formMode)) return $('#dynamicForm');
+    return null;
+  }
+
+  function formSnapshot(form) {
+    if (!form) return '';
+    const controls = $$('input, select, textarea', form).filter(control => !control.closest('[data-form-guard-ignore]')).map((control, index) => {
+      const key = control.name || control.id || `${control.tagName.toLowerCase()}-${index}`;
+      if (control.type === 'file') {
+        return [key, [...(control.files || [])].map(file => [file.name, file.size, file.lastModified, file.type])];
+      }
+      if (control.type === 'checkbox' || control.type === 'radio') return [key, control.value, control.checked];
+      return [key, control.value];
+    });
+    return JSON.stringify(controls);
+  }
+
+  function armFormGuard(modal) {
+    const token = ++formGuard.token;
+    formGuard.modal = modal;
+    formGuard.form = guardedFormFor(modal);
+    formGuard.baseline = '';
+    formGuard.armed = false;
+    if (!formGuard.form) return;
+    Promise.resolve().then(() => {
+      if (token !== formGuard.token || ui.modal !== modal || !formGuard.form) return;
+      formGuard.baseline = formSnapshot(formGuard.form);
+      formGuard.armed = true;
+    });
+  }
+
+  function markActiveFormSaved() {
+    if (formGuard.form) formGuard.baseline = formSnapshot(formGuard.form);
+    formGuard.armed = false;
+  }
+
+  function activeFormHasUnsavedChanges() {
+    return Boolean(formGuard.armed && formGuard.modal === ui.modal && formGuard.form && formSnapshot(formGuard.form) !== formGuard.baseline);
+  }
+
+  function hideDiscardChangesDialog({ restoreFocus = false } = {}) {
+    if (!discardChangesDialog || discardChangesDialog.hidden) return;
+    discardChangesDialog.hidden = true;
+    document.body.classList.remove('confirming-discard');
+    if (restoreFocus) formGuard.form?.querySelector('input:not([type="hidden"]), select, textarea, button')?.focus();
+  }
+
+  function showDiscardChangesDialog(hideOverlay = true) {
+    formGuard.pendingHideOverlay = hideOverlay;
+    discardChangesDialog.hidden = false;
+    document.body.classList.add('confirming-discard');
+    setTimeout(() => $('#keepEditingBtn')?.focus(), 20);
   }
 
   function openModal(modal) {
-    closeModal(false);
+    if (!closeModal(false)) return false;
     const isFormSheet = modal === $('#formSheet');
     $('#formSubmitBtn').disabled=false; $('#formSubmitBtn').title='';
     $('#formSheet').classList.toggle('expense-compose-sheet', isFormSheet && ui.formMode === 'expense');
@@ -789,14 +849,27 @@
     if (modal === $('#commandPalette')) setTimeout(() => $('#commandInput').focus(), 40);
     if (modal === $('#formSheet')) setTimeout(() => $('#dynamicForm input, #dynamicForm select, #dynamicForm textarea')?.focus(), 60);
     if (modal === $('#invoiceSheet')) setTimeout(() => $('#invoiceClient')?.focus(), 60);
+    armFormGuard(modal);
+    return true;
   }
 
-  function closeModal(hideOverlay = true) {
+  function closeModal(hideOverlay = true, { force = false } = {}) {
+    if (!force && activeFormHasUnsavedChanges()) {
+      showDiscardChangesDialog(hideOverlay);
+      return false;
+    }
+    hideDiscardChangesDialog();
     modals.forEach(item => { if (item) item.hidden = true; });
     resetDetailPanelTheme();
     ui.modal = null;
+    formGuard.token += 1;
+    formGuard.modal = null;
+    formGuard.form = null;
+    formGuard.baseline = '';
+    formGuard.armed = false;
     if (hideOverlay) overlay.hidden = true;
     document.body.style.overflow = '';
+    return true;
   }
 
   function showToast(message) {
@@ -2033,6 +2106,7 @@
     }
     if (creating) rememberEntryDefaults('invoice', { clientId });
     ui.invoiceFormId = null;
+    markActiveFormSaved();
     closeModal();
     renderAll();
     setView('money');
@@ -3126,7 +3200,7 @@
           <div class="companion-presets-head"><strong>Client presets</strong><button type="button" id="quickTimeAdd">＋ Add preset</button></div>
           <div class="quick-time-grid" id="sessionQuickTimes" tabindex="0" role="region" aria-label="Client presets, scroll for more"></div>
           <button type="button" class="quick-time-manage" id="quickTimeManage" hidden>Done</button>
-        <div class="quick-time-editor" id="quickTimeEditor" hidden>
+        <div class="quick-time-editor" id="quickTimeEditor" data-form-guard-ignore hidden>
             <div class="quick-editor-heading"><div><small id="quickTimeEditorTitle">Set quick time</small><span>Reusable start and end for this client</span></div><b aria-hidden="true">↗</b></div>
             <label class="preset-name"><span>Name · optional</span><input id="quickTimeName" maxlength="40" placeholder="e.g. Morning session" /></label><div class="quick-editor-fields"><label><span>START</span><input type="time" id="quickTimeStart" step="300" /></label><i aria-hidden="true">→</i><label><span>END</span><input type="time" id="quickTimeEnd" step="300" /></label></div>
             <button type="button" id="quickTimeUseCurrent">Use current session times</button><div class="quick-editor-actions"><button type="button" class="quick-time-remove" id="quickTimeDelete" hidden>Remove</button><span><button type="button" id="quickTimeCancel">Cancel</button><button type="button" id="quickTimeSave">Save preset</button></span></div>
@@ -3412,6 +3486,7 @@
       if (!savePayment(form)) return;
       const paymentId = ui.formRecordId;
       ui.moneyTab = 'payments';
+      markActiveFormSaved();
       closeModal(); renderAll(); setView('money');
       if (paymentId) setTimeout(() => openPaymentDetail(paymentId), 35);
       return;
@@ -3420,6 +3495,7 @@
       if (!(await saveExpense(form))) return;
       const expenseId = ui.formRecordId;
       ui.moneyTab = 'expenses'; ui.expensePage = 1;
+      markActiveFormSaved();
       closeModal(); renderAll(); setView('money'); syncMoneyTabs();
       if (expenseId) setTimeout(() => openExpenseDetail(expenseId), 35);
       return;
@@ -3473,6 +3549,7 @@
       data.businesses.push(business); data.activeBusinessId = business.id; persist('created', 'Business', business.id); showToast('Workspace created');
     }
     const completedMode = ui.formMode;
+    markActiveFormSaved();
     closeModal(); renderAll(); setView(completedMode === 'business' ? 'home' : completedMode === 'invoice-settings' ? 'money' : 'work');
   }
 
@@ -3675,8 +3752,17 @@
   $('#dynamicForm').addEventListener('submit', handleFormSubmit);
   $('#exportBackupBtn').addEventListener('click', exportBackup);
   $('#exportBackupFromRecords').addEventListener('click', exportBackup);
-  overlay.addEventListener('click', () => closeModal());
+  overlay.addEventListener('click', () => {
+    if (!discardChangesDialog.hidden) { hideDiscardChangesDialog({ restoreFocus:true }); return; }
+    closeModal();
+  });
   $$('[data-close]').forEach(btn => btn.addEventListener('click', () => closeModal()));
+  $('#keepEditingBtn').addEventListener('click', () => hideDiscardChangesDialog({ restoreFocus:true }));
+  $('#discardChangesBtn').addEventListener('click', () => {
+    const hideOverlay = formGuard.pendingHideOverlay;
+    markActiveFormSaved();
+    closeModal(hideOverlay, { force:true });
+  });
 
   $$('.quick-card').forEach(btn => btn.addEventListener('click', () => {
     if (btn.dataset.action === 'add-client') { closeModal(); openClientForm(); return; }
@@ -3821,6 +3907,7 @@
   document.addEventListener('keydown', event => {
     if (event.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) { event.preventDefault(); $('#commandInput').value = ''; renderCommandPalette(); openModal($('#commandPalette')); }
     if (event.key === 'Escape' && activeFilterMenu) { closeFilterMenu(); return; }
+    if (event.key === 'Escape' && !discardChangesDialog.hidden) { event.preventDefault(); hideDiscardChangesDialog({ restoreFocus:true }); return; }
     if (event.key === 'Escape' && ui.modal) closeModal();
   });
 
