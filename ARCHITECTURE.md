@@ -1,6 +1,6 @@
 # Business Ledger — Architecture
 
-## Simple Mode Complete V2 product boundary
+## Smart Mode V1 product boundary
 
 Business Ledger records:
 
@@ -38,6 +38,21 @@ The app uses a versioned `LocalRepository` backed by browser localStorage. Recei
 Schema-version 9 data remains loadable. The legacy `vehicles` and `mileageTrips` arrays are accepted and preserved only to avoid destructive loading of an older workspace. They are retired compatibility fields: active application code does not read, render, search, edit, count, or derive values from them.
 
 The repository boundary keeps persistence concerns separate from calculations, rendering, and interaction handling.
+
+## Internal code boundaries
+
+The browser build remains intentionally dependency-free and uses one canonical `app.js`, but its responsibilities are now divided into explicit sections:
+
+| Boundary | Responsibility |
+| --- | --- |
+| Storage adapters | Versioned localStorage workspace data and IndexedDB receipt bytes |
+| Repository mutations | Saves, audit events, and retained evidence snapshots |
+| Domain queries and calculations | Workspace-scoped selectors, money/time calculations, statuses, and formatting |
+| Rendering | Reads current state and updates views without owning persistence |
+| Record workflows | Form setup, validation, saves, deletion, and detail panels |
+| Interaction wiring | Registers persistent navigation, filter, modal, and form controls |
+
+Feature-specific render functions may bind controls they create dynamically; persistent controls are registered together at the end of `app.js`.
 
 ## Active entities
 

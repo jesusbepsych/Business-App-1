@@ -1,6 +1,9 @@
 (() => {
   'use strict';
 
+  // ==========================================================================
+  // Domain configuration and versioned workspace schema
+  // ==========================================================================
   const STORAGE_KEY = 'business-ledger:v0.2';
   const SIDEBAR_COLLAPSE_KEY = 'business-ledger-sidebar-collapsed';
   const ENTRY_DEFAULTS_KEY = 'business-ledger-entry-defaults:v1';
@@ -134,6 +137,9 @@
     return deepClone(initialData);
   }
 
+  // ==========================================================================
+  // Storage adapters — the rest of the app talks through these boundaries
+  // ==========================================================================
   class LocalRepository {
     load() {
       try {
@@ -250,11 +256,10 @@
   function mostRecentRecord(records, dateField = 'createdAt') {
     return (records || []).slice().sort((a,b) => `${b?.[dateField] || ''}${b?.createdAt || ''}`.localeCompare(`${a?.[dateField] || ''}${a?.createdAt || ''}`))[0] || null;
   }
-  const ui = { activeView: 'home', modal: null, homeTab: 'snapshot', analyticsStartMonth: '', analyticsEndMonth: '', analyticsNetExpenseBasis: 'business', analyticsClientPage: 1, analyticsExpensePage: 1, analyticsPageSize: 4, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionClientFilters: [], clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expenseCategoryFilters: [], expensePage: 1, expensePageSize: 7, expenseReceiptsOpen: false, receiptMonthLimit: 6, receiptOpenMonths: [], receiptArchiveBusinessId: '', invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null, plannerSuggestedDueDate: '', plannerSuggestionDismissedFor: '', plannerCompletedPage: 1, plannerCompletedPageSize: 8, plannerEditingId: '', plannerCompletionLockUntil: 0 };
-  let homeRecentRotationTimer = null;
-  let homeRecentSignature = '';
-  let homeRecentSwapTimer = null;
-
+  // ==========================================================================
+  // UI state and DOM handles
+  // ==========================================================================
+  const ui = { activeView: 'home', plannerReturnView: 'home', modal: null, homeTab: 'snapshot', analyticsStartMonth: '', analyticsEndMonth: '', analyticsNetExpenseBasis: 'business', analyticsClientPage: 1, analyticsExpensePage: 1, analyticsPageSize: 4, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionClientFilters: [], clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expenseCategoryFilters: [], expensePage: 1, expensePageSize: 7, expenseReceiptsOpen: false, receiptMonthLimit: 6, receiptOpenMonths: [], receiptArchiveBusinessId: '', invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null, plannerSuggestedDueDate: '', plannerSuggestionDismissedFor: '', plannerCompletedPage: 1, plannerCompletedPageSize: 8, plannerEditingId: '', plannerCompletionLockUntil: 0 };
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const views = $$('[data-page]');
@@ -451,6 +456,9 @@
     closeFilterMenu();
   });
 
+  // ==========================================================================
+  // Repository mutations, audit trail, and retained evidence
+  // ==========================================================================
   function persist(eventType, entityType, entityId, details = {}) {
     if (eventType) {
       data.auditEvents.push({ id: uid('audit'), businessId: data.activeBusinessId, eventType, entityType, entityId, details, occurredAt: nowIso() });
@@ -484,6 +492,9 @@
     return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}).format(date);
   }
 
+  // ==========================================================================
+  // Domain queries, formatting, and calculations (DOM-free unless noted)
+  // ==========================================================================
   function activeBusiness() {
     return data.businesses.find(b => b.id === data.activeBusinessId) || data.businesses[0];
   }
@@ -766,13 +777,30 @@
     if (!atriumFrame) atriumFrame = requestAnimationFrame(commitAtriumMotion);
   }
 
+  function syncPlannerShortcutState() {
+    const button = $('#plannerShortcutBtn');
+    if (!button) return;
+    const isBack = ui.activeView === 'planner';
+    const returnLabels = { home:'Home', work:'Work', money:'Money', records:'Records' };
+    const returnLabel = returnLabels[ui.plannerReturnView] || 'previous tab';
+    button.classList.toggle('is-back', isBack);
+    button.setAttribute('aria-label', isBack ? `Back to ${returnLabel}` : 'Open Planner');
+    button.title = isBack ? `Back to ${returnLabel}` : 'Planner';
+    $('#plannerShortcutPlannerIcon')?.toggleAttribute('hidden', isBack);
+    $('#plannerShortcutBackIcon')?.toggleAttribute('hidden', !isBack);
+  }
+
   function setView(viewName) {
     if (ui.modal && !closeModal()) return false;
+    if (viewName === 'planner' && ui.activeView !== 'planner' && ['home','work','money','records'].includes(ui.activeView)) {
+      ui.plannerReturnView = ui.activeView;
+    }
     ui.activeView = viewName;
     if (viewName === 'planner') renderPlanner();
     applyHomeAtriumState(viewName);
     views.forEach(view => view.classList.toggle('active', view.dataset.page === viewName));
     navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
+    syncPlannerShortcutState();
     window.scrollTo({ top: 0, behavior: 'auto' });
     return true;
   }
@@ -879,6 +907,9 @@
     showToast.timer = setTimeout(() => { toast.hidden = true; }, 2300);
   }
 
+  // ==========================================================================
+  // Rendering boundary — view functions read state and update the DOM
+  // ==========================================================================
   function renderWorkspaceChrome() {
     const biz = activeBusiness();
     if (!biz) return;
@@ -941,8 +972,7 @@
       ? `<div class="attention-list">${attentionItems.slice(0,3).map(item => `<button ${item.type === 'invoice' ? `data-invoice-detail="${item.id}"` : item.type === 'expense' ? `data-expense-detail="${item.id}"` : item.type === 'plan' ? `data-plan-attention="${item.id}"` : `data-session-detail="${item.id}"`}><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.sub)}</small></button>`).join('')}</div>`
       : `<p class="panel-copy">Overdue invoices, due plans, incomplete work sessions, and expenses you mark for review will collect here.</p>`;
 
-    renderRandomHomeSessions(sessions, false);
-    startHomeRecentRotation();
+    renderHomeSessions(sessions);
 
     $$('[data-session-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
     $$('[data-invoice-detail]', $('#attentionBody')).forEach(btn => btn.addEventListener('click', () => openInvoiceDetail(btn.dataset.invoiceDetail)));
@@ -954,8 +984,7 @@
   function syncHomeTabs() {
     $$('[data-home-tab]').forEach(btn => { const active=btn.dataset.homeTab===ui.homeTab; btn.classList.toggle('active',active); btn.setAttribute('aria-selected',String(active)); });
     $$('[data-home-panel]').forEach(panel => panel.classList.toggle('active',panel.dataset.homePanel===ui.homeTab));
-    if (ui.homeTab === 'analytics') { stopHomeRecentRotation(); renderAnalytics(); }
-    else startHomeRecentRotation();
+    if (ui.homeTab === 'analytics') renderAnalytics();
   }
 
   function dateOnlyFromDate(date) {
@@ -1349,15 +1378,6 @@
     $$('[data-evidence-invoice]', $('#detailBody')).forEach(btn=>btn.addEventListener('click',()=>openInvoiceDetail(btn.dataset.evidenceInvoice)));
   }
 
-  function randomSample(items, count) {
-    const copy = items.slice();
-    for (let i = copy.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy.slice(0, Math.min(count, copy.length));
-  }
-
   function bindHomeRecentSessionClicks() {
     $$('[data-session-detail]', $('#recentSessions')).forEach(btn => btn.addEventListener('click', () => openSessionDetail(btn.dataset.sessionDetail)));
   }
@@ -1370,62 +1390,18 @@
     }).slice(0,4);
   }
 
-  function renderRandomHomeSessions(sessions = businessSessions(), animate = true) {
+  function renderHomeSessions(sessions = businessSessions()) {
     const host = $('#recentSessions');
     if (!host) return;
     if (!sessions.length) {
-      homeRecentSignature = '';
-      host.dataset.transitioning = 'false';
-      host.classList.remove('is-crossfading');
-      host.style.height = '';
       host.innerHTML = `<div class="inline-empty"><strong>No sessions yet</strong><small>Add your first work session and it will appear here.</small></div>`;
       return;
     }
 
     const chosen = pickHomeRecentSessions(sessions);
-    const nextSignature = chosen.map(item => item.id).sort().join('|');
-    const incomingHtml = chosen.map(sessionRowCompact).join('');
-    const commit = () => {
-      host.dataset.transitioning = 'false';
-      host.classList.remove('is-crossfading');
-      host.style.height = '';
-      host.innerHTML = incomingHtml;
-      homeRecentSignature = nextSignature;
-      bindHomeRecentSessionClicks();
-    };
-
-    clearTimeout(homeRecentSwapTimer);
-    if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      commit();
-      return;
-    }
-    if (host.dataset.transitioning === 'true') return;
-
-    const outgoingHtml = host.innerHTML;
-    const currentHeight = Math.max(host.getBoundingClientRect().height, 1);
-    host.dataset.transitioning = 'true';
-    host.classList.add('is-crossfading');
-    host.style.height = `${currentHeight}px`;
-    host.innerHTML = `
-      <div class="recent-transition-layer recent-transition-outgoing">${outgoingHtml}</div>
-      <div class="recent-transition-layer recent-transition-incoming">${incomingHtml}</div>`;
-
-    const outgoingRows = $$('.recent-transition-outgoing .recent-row', host);
-    const incomingRows = $$('.recent-transition-incoming .recent-row', host);
-    outgoingRows.forEach((row, index) => row.style.setProperty('--recent-stagger', `${index * 110}ms`));
-    incomingRows.forEach((row, index) => row.style.setProperty('--recent-stagger', `${index * 120}ms`));
-
-    // Keep both sets alive during the transition so this is a true dissolve/crossfade,
-    // not an opacity fade followed by an abrupt DOM replacement.
-    homeRecentSwapTimer = setTimeout(commit, 2550);
+    host.innerHTML = chosen.map(sessionRowCompact).join('');
+    bindHomeRecentSessionClicks();
   }
-
-  function startHomeRecentRotation() {
-    clearInterval(homeRecentRotationTimer);
-    homeRecentRotationTimer = null;
-  }
-
-  function stopHomeRecentRotation() { clearInterval(homeRecentRotationTimer); homeRecentRotationTimer=null; }
 
   function sessionRowCompact(s) {
     const client = clientById(s.clientId);
@@ -1784,6 +1760,9 @@
     return invoiceMonthKey(sessions.at(-1)?.date || issueDate);
   }
 
+  // ==========================================================================
+  // Record workflows — form setup, validation, persistence, and detail views
+  // ==========================================================================
   function openInvoiceForm({ existingId = null, clientId = null, sessionId = null } = {}) {
     const clients = businessClients().filter(client => client.status === 'active' || client.id === clientId || client.id === invoiceById(existingId)?.clientId);
     if (!clients.length) {
@@ -3691,6 +3670,9 @@
   }
 
 
+  // ==========================================================================
+  // Interaction boundary — one registration area for persistent UI controls
+  // ==========================================================================
   window.addEventListener('pointermove', event => queueAtriumMotion(event.clientX, event.clientY), { passive:true });
   window.addEventListener('resize', () => {
     /* iPad/iPhone Safari fires resize while its address/tab chrome collapses.
@@ -3745,7 +3727,9 @@
   $('#businessSwitcher').addEventListener('click', () => { renderWorkspaceOptions(); openModal($('#businessSheet')); });
   $('#mobileBusinessSwitcher').addEventListener('click', () => { renderWorkspaceOptions(); openModal($('#businessSheet')); });
   $('#openSettings').addEventListener('click', () => openModal($('#settingsSheet')));
-  $('#plannerShortcutBtn').addEventListener('click', () => setView('planner'));
+  $('#plannerShortcutBtn').addEventListener('click', () => {
+    setView(ui.activeView === 'planner' ? ui.plannerReturnView : 'planner');
+  });
   $('#addClientBtn').addEventListener('click', () => openClientForm());
   $('#addSessionBtn').addEventListener('click', () => openSessionForm());
   $('#addBusinessBtn').addEventListener('click', () => openBusinessForm());
@@ -3909,10 +3893,6 @@
     if (event.key === 'Escape' && activeFilterMenu) { closeFilterMenu(); return; }
     if (event.key === 'Escape' && !discardChangesDialog.hidden) { event.preventDefault(); hideDiscardChangesDialog({ restoreFocus:true }); return; }
     if (event.key === 'Escape' && ui.modal) closeModal();
-  });
-
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && ui.activeView === 'home') startHomeRecentRotation();
   });
 
   applyAtriumRuntimeProfile();

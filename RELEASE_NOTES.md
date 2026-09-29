@@ -1,4 +1,20 @@
-# Simple Mode Complete V13 Safe Forms & Legibility release notes
+# Smart Mode V1 Planner Back release notes
+
+## Smart Mode V1 — Context-aware Planner shortcut
+
+- Made the gold Planner shortcut remember the active main workspace before opening Planner.
+- While Planner is active, the notebook changes into a Back arrow and announces its precise return destination to assistive technology.
+- Returning preserves the existing Home, Work, Money, or Records state instead of forcing a default destination.
+- Kept the shortcut visually consistent with the established gold action treatment.
+
+## V14 — Internal Consolidation
+
+- Removed superseded Planner material experiments and retained one active Frosted Window Bays implementation plus its final contrast and responsive refinements.
+- Replaced the CSS-embedded atrium JPEG with the existing local image asset, reducing `styles.css` from roughly 875 KB to roughly 352 KB without changing the displayed scene.
+- Removed the discontinued recent-session rotation and its unreachable crossfade implementation. The Home card still renders the four newest sessions, newest first.
+- Added clear internal boundaries for persistence, domain queries/calculations, rendering, record workflows, and interaction registration.
+- Updated cache-busting identifiers and regression assertions for the consolidated V14 source.
+- Verified JavaScript syntax and all 13 Node regression suites. The optional Playwright WebKit runner remains present, but its browser binary was unavailable in the execution environment used for this release.
 
 ## V13 — Safe Forms & Legibility
 

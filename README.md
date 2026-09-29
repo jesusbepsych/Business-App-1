@@ -1,6 +1,21 @@
-# Business Ledger — Simple Mode Complete V13 Safe Forms & Legibility
+# Business Ledger — Smart Mode V1 Planner Back
 
-This release marks the completed local-first Simple Mode baseline for Business Ledger.
+This is the first Smart Mode release, built directly from the completed and consolidated Simple Mode V14 baseline.
+
+## Smart Mode V1 addition
+
+- The gold Planner shortcut now remembers the main workspace the user came from.
+- While Planner is open, the notebook icon becomes a Back arrow with an accessible destination label.
+- Pressing it returns to Home, Work, Money, or Records without resetting the preserved sub-tab, filter, pagination, or scroll-independent workspace state.
+- Leaving Planner through primary navigation restores the notebook shortcut normally; the next Planner visit records the new origin.
+
+## V14 addition
+
+- Consolidates the active Planner material into one Frosted Window Bays layer while preserving its final appearance, responsive geometry, and accessibility states.
+- Uses the existing `assets/atrium-primary.jpg` as the single atrium image source instead of embedding a second copy inside CSS.
+- Removes the discontinued recent-session rotation, crossfade timers, transition markup, and styles; Home continues to show the four newest sessions in chronological order.
+- Makes storage, domain calculations, rendering, record workflows, and persistent interaction wiring explicit internal boundaries in `app.js`.
+- Adds regression coverage for the consolidated asset, stylesheet, dormant-code removal, and internal boundaries.
 
 ## V13 addition
 
