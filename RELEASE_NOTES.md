@@ -1,4 +1,11 @@
-# Smart Mode V1 Planner Back release notes
+# Smart Mode V2 Background & Invoice Polish release notes
+
+## Smart Mode V2 — Deployment-safe atrium and cleaner invoices
+
+- Added a root-level compatibility copy of the atrium photo and a two-location CSS image stack so hosts that flatten or omit nested assets still display the intended scene.
+- Removed “Work session ·” from session rows in the printable/PDF invoice only.
+- Rebalanced printable description-row styling around the shorter date-and-time label.
+- Left saved invoice data, in-app invoice details, quantities, rates, totals, and prior Planner behavior unchanged.
 
 ## Smart Mode V1 — Context-aware Planner shortcut
 

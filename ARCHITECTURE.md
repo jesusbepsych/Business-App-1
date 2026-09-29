@@ -1,6 +1,6 @@
 # Business Ledger — Architecture
 
-## Smart Mode V1 product boundary
+## Smart Mode V2 product boundary
 
 Business Ledger records:
 

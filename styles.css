@@ -1128,7 +1128,10 @@ body.money-atrium-active .money-atrium-view .subfilter-trigger.category-selectio
 /* Home only. Work/Money/Records and all sheets keep the Phase 4 visual system. */
 /* ========================================================================== */
 :root {
-  --atrium-scene-image: url("./assets/atrium-primary.jpg");
+  /* Keep both locations so flat/static deployers and folder-preserving hosts
+     resolve the same bundled atrium plate. The first successfully loaded layer
+     fully covers the identical compatibility copy beneath it. */
+  --atrium-scene-image: url("./atrium-primary.jpg"), url("./assets/atrium-primary.jpg");
   --atrium-px: 0;
   --atrium-py: 0;
   --atrium-scroll: 0;

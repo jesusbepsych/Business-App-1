@@ -1,6 +1,13 @@
-# Business Ledger — Smart Mode V1 Planner Back
+# Business Ledger — Smart Mode V2 Background & Invoice Polish
 
-This is the first Smart Mode release, built directly from the completed and consolidated Simple Mode V14 baseline.
+This release builds on Smart Mode V1 while preserving the completed Simple Mode baseline.
+
+## Smart Mode V2 additions
+
+- Restores the Corporate Atrium photo reliably across flat and folder-preserving deployment workflows by including identical root and nested asset paths.
+- Removes the redundant “Work session ·” prefix from session descriptions on printable invoices and saved PDFs.
+- Preserves the complete date, time, quantity, rate, amount, totals, and internal session linkage.
+- Keeps the context-aware Planner shortcut and Back behavior introduced in Smart Mode V1.
 
 ## Smart Mode V1 addition
 
