@@ -1,4 +1,14 @@
-# Smart Mode V2 Background & Invoice Polish release notes
+# Smart Mode V3 Google Calendar Foundation release notes
+
+## Smart Mode V3 — Public-user Google Calendar foundation
+
+- Added the Google Calendar connection prompt to the existing **Choose a business** sheet.
+- Added account switching, read-only calendar selection, manual refresh, and disconnect controls.
+- Merged Google events into Planner → Agenda while preserving plans and work sessions as separate source records.
+- Added gentle duplicate suppression for matching Calendar events and work sessions.
+- Added a Node OAuth server with encrypted refresh-token persistence, state verification, same-origin POST protection, secure cookies, calendar-list retrieval, event retrieval, revocation, and static-file serving.
+- Kept Calendar unavailable—but non-breaking—when the app is opened as a static file or deployed without server credentials.
+- Added V3 regression coverage and setup documentation.
 
 ## Smart Mode V2 — Deployment-safe atrium and cleaner invoices
 

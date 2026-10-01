@@ -9,6 +9,7 @@
   const ENTRY_DEFAULTS_KEY = 'business-ledger-entry-defaults:v1';
   const SESSION_QUICK_TIMES_KEY = 'business-ledger-session-quick-times:v1';
   const RECEIPT_SEARCH_HISTORY_KEY = 'business-ledger-receipt-searches:v1';
+  const CALENDAR_API_BASE = String(window.BUSINESS_LEDGER_API_BASE || '').replace(/\/$/, '');
   const nowIso = () => new Date().toISOString();
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   const CLIENT_COLOR_KEYS = ['blue','teal','green','amber','coral','purple','pink','sky'];
@@ -260,6 +261,17 @@
   // UI state and DOM handles
   // ==========================================================================
   const ui = { activeView: 'home', plannerReturnView: 'home', modal: null, homeTab: 'snapshot', analyticsStartMonth: '', analyticsEndMonth: '', analyticsNetExpenseBasis: 'business', analyticsClientPage: 1, analyticsExpensePage: 1, analyticsPageSize: 4, workTab: 'sessions', moneyTab: 'invoices', formMode: null, formRecordId: null, sessionFilter: 'all', sessionClientFilters: [], clientFilter: 'active', sessionPage: 1, sessionPageSize: 7, invoiceFilter: 'all', invoicePage: 1, invoicePageSize: 7, paymentFilter: 'all', paymentPage: 1, paymentPageSize: 7, expenseFilter: 'all', expenseCategoryFilters: [], expensePage: 1, expensePageSize: 7, expenseReceiptsOpen: false, receiptMonthLimit: 6, receiptOpenMonths: [], receiptArchiveBusinessId: '', invoiceFormId: null, invoiceCalendarMonth: null, invoicePendingClientId: null, plannerSuggestedDueDate: '', plannerSuggestionDismissedFor: '', plannerCompletedPage: 1, plannerCompletedPageSize: 8, plannerEditingId: '', plannerCompletionLockUntil: 0 };
+  const googleCalendar = {
+    loading: true,
+    configured: false,
+    connected: false,
+    account: null,
+    calendars: [],
+    selectedCalendarIds: [],
+    events: [],
+    lastSyncedAt: '',
+    error: '',
+  };
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const views = $$('[data-page]');
@@ -905,6 +917,189 @@
     toast.hidden = false;
     clearTimeout(showToast.timer);
     showToast.timer = setTimeout(() => { toast.hidden = true; }, 2300);
+  }
+
+  // ==========================================================================
+  // Google Calendar connector — server-owned OAuth, browser-owned presentation
+  // ==========================================================================
+  function calendarApiUrl(path) {
+    return `${CALENDAR_API_BASE}${path}`;
+  }
+
+  async function calendarApi(path, options = {}) {
+    const response = await fetch(calendarApiUrl(path), {
+      credentials: 'include',
+      headers: { Accept: 'application/json', ...(options.body ? { 'Content-Type':'application/json' } : {}), ...(options.headers || {}) },
+      ...options,
+    });
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) throw new Error('Calendar service is not available from this deployment.');
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'Google Calendar request failed.');
+    return payload;
+  }
+
+  function calendarConnectionReturnPath() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('calendar', 'connected');
+    url.hash = 'planner';
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+
+  function openGoogleCalendarAuthorization({ chooseAccount = false } = {}) {
+    const returnTo = encodeURIComponent(calendarConnectionReturnPath());
+    const choose = chooseAccount ? '&chooseAccount=1' : '';
+    window.location.assign(calendarApiUrl(`/api/google-calendar/connect?returnTo=${returnTo}${choose}`));
+  }
+
+  function renderCalendarConnection() {
+    const card = $('#calendarConnectionCard');
+    const body = $('#calendarConnectionBody');
+    const summary = $('#calendarConnectionSummary');
+    const status = $('#calendarConnectionStatus');
+    const agendaButton = $('#plannerCalendarButton');
+    if (!card || !body || !summary || !status) return;
+
+    card.classList.toggle('is-connected', googleCalendar.connected);
+    card.classList.toggle('is-unavailable', !googleCalendar.loading && !googleCalendar.configured);
+    agendaButton?.classList.toggle('is-connected', googleCalendar.connected);
+    agendaButton?.setAttribute('aria-label', googleCalendar.connected ? 'Manage Google Calendar connection' : 'Connect Google Calendar');
+
+    if (googleCalendar.loading) {
+      summary.textContent = 'Checking connection…';
+      status.textContent = 'Checking';
+      body.innerHTML = '<p>Preparing the secure calendar connection.</p>';
+      return;
+    }
+    if (!googleCalendar.configured) {
+      summary.textContent = 'Setup required';
+      status.textContent = 'Not configured';
+      body.innerHTML = '<p>This build is ready for Google Calendar, but the hosted server still needs its Google OAuth credentials.</p><small class="calendar-setup-note">Your local workspaces and Planner records are unaffected.</small>';
+      return;
+    }
+    if (!googleCalendar.connected) {
+      summary.textContent = 'Not connected';
+      status.textContent = 'Optional';
+      body.innerHTML = '<p>Choose the Google account whose events should appear in Planner → Agenda. Business Ledger requests read-only calendar access.</p><button type="button" class="google-connect-btn" data-google-calendar-connect><span aria-hidden="true">G</span> Continue with Google</button>';
+      $('[data-google-calendar-connect]', body)?.addEventListener('click', () => openGoogleCalendarAuthorization());
+      return;
+    }
+
+    const email = googleCalendar.account?.email || 'Google account';
+    summary.textContent = email;
+    status.textContent = 'Connected';
+    const calendars = googleCalendar.calendars.length
+      ? `<fieldset class="calendar-choice-list"><legend>Calendars shown in Agenda</legend>${googleCalendar.calendars.map(calendar => {
+          const checked = googleCalendar.selectedCalendarIds.includes(calendar.id);
+          return `<label class="calendar-choice"><input type="checkbox" value="${escapeHtml(calendar.id)}" data-google-calendar-choice ${checked ? 'checked' : ''}/><span class="calendar-choice-color" style="--calendar-color:${escapeHtml(calendar.color || '#8ed8f7')}"></span><span><strong>${escapeHtml(calendar.name || 'Calendar')}</strong><small>${calendar.primary ? 'Primary calendar' : calendar.accessRole || 'Available calendar'}</small></span></label>`;
+        }).join('')}</fieldset>`
+      : '<p class="calendar-choice-loading">Loading available calendars…</p>';
+    body.innerHTML = `<div class="calendar-account-row"><span>${googleCalendar.account?.picture ? `<img src="${escapeHtml(googleCalendar.account.picture)}" alt="" referrerpolicy="no-referrer"/>` : '<i aria-hidden="true">G</i>'}<span><strong>${escapeHtml(googleCalendar.account?.name || email)}</strong><small>${escapeHtml(email)}</small></span></span><button type="button" data-google-calendar-change>Change</button></div>${googleCalendar.error ? `<p class="calendar-connection-error">${escapeHtml(googleCalendar.error)} Use Change to reconnect if the problem continues.</p>` : ''}${calendars}<div class="calendar-connection-actions"><small>${googleCalendar.lastSyncedAt ? `Updated ${escapeHtml(relativeSyncTime(googleCalendar.lastSyncedAt))}` : 'Ready to sync'}</small><span><button type="button" data-google-calendar-refresh>Refresh</button><button type="button" data-google-calendar-disconnect>Disconnect</button></span></div>`;
+
+    $$('[data-google-calendar-choice]', body).forEach(input => input.addEventListener('change', saveGoogleCalendarChoices));
+    $('[data-google-calendar-change]', body)?.addEventListener('click', () => openGoogleCalendarAuthorization({ chooseAccount:true }));
+    $('[data-google-calendar-refresh]', body)?.addEventListener('click', async event => {
+      event.currentTarget.disabled = true;
+      await refreshGoogleCalendar({ force:true, announce:true });
+    });
+    $('[data-google-calendar-disconnect]', body)?.addEventListener('click', disconnectGoogleCalendar);
+  }
+
+  function relativeSyncTime(value) {
+    const elapsed = Date.now() - new Date(value).getTime();
+    if (!Number.isFinite(elapsed) || elapsed < 0) return 'just now';
+    const minutes = Math.floor(elapsed / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    return hours < 24 ? `${hours}h ago` : formatDate(value,{month:'short',day:'numeric'});
+  }
+
+  async function loadGoogleCalendarChoices() {
+    if (!googleCalendar.connected) return;
+    const payload = await calendarApi('/api/google-calendar/calendars');
+    googleCalendar.calendars = Array.isArray(payload.calendars) ? payload.calendars : [];
+    googleCalendar.selectedCalendarIds = Array.isArray(payload.selectedCalendarIds) ? payload.selectedCalendarIds : [];
+    renderCalendarConnection();
+  }
+
+  async function saveGoogleCalendarChoices() {
+    const selectedCalendarIds = $$('[data-google-calendar-choice]:checked', $('#calendarConnectionBody')).map(input => input.value);
+    try {
+      const payload = await calendarApi('/api/google-calendar/calendars', { method:'POST', body:JSON.stringify({ selectedCalendarIds }) });
+      googleCalendar.selectedCalendarIds = payload.selectedCalendarIds || [];
+      await loadGoogleCalendarEvents();
+      renderCalendarConnection();
+      renderPlannerAgenda();
+    } catch (error) {
+      googleCalendar.error = error.message;
+      showToast(error.message);
+      await refreshGoogleCalendar();
+    }
+  }
+
+  async function loadGoogleCalendarEvents({ force = false } = {}) {
+    if (!googleCalendar.connected) { googleCalendar.events = []; return; }
+    const start = businessToday();
+    const end = addDays(start, 22);
+    const query = new URLSearchParams({ start, end, timezone:activeBusiness().timezone || 'UTC' });
+    if (force) query.set('force', '1');
+    const payload = await calendarApi(`/api/google-calendar/events?${query}`);
+    googleCalendar.events = Array.isArray(payload.events) ? payload.events : [];
+    googleCalendar.lastSyncedAt = payload.syncedAt || nowIso();
+  }
+
+  async function refreshGoogleCalendar({ force = false, announce = false } = {}) {
+    googleCalendar.loading = true;
+    googleCalendar.error = '';
+    renderCalendarConnection();
+    let statusLoaded = false;
+    try {
+      const status = await calendarApi('/api/google-calendar/status');
+      statusLoaded = true;
+      googleCalendar.configured = Boolean(status.configured);
+      googleCalendar.connected = Boolean(status.connected);
+      googleCalendar.account = status.account || null;
+      googleCalendar.lastSyncedAt = status.lastSyncedAt || '';
+      if (googleCalendar.connected) {
+        await loadGoogleCalendarChoices();
+        await loadGoogleCalendarEvents({ force });
+      } else {
+        googleCalendar.calendars = [];
+        googleCalendar.selectedCalendarIds = [];
+        googleCalendar.events = [];
+      }
+      if (announce) showToast('Google Calendar refreshed');
+    } catch (error) {
+      googleCalendar.error = error.message;
+      if (!statusLoaded) {
+        googleCalendar.configured = false;
+        googleCalendar.connected = false;
+        googleCalendar.events = [];
+      }
+      if (announce) showToast(error.message);
+    } finally {
+      googleCalendar.loading = false;
+      renderCalendarConnection();
+      renderPlannerAgenda();
+    }
+  }
+
+  async function disconnectGoogleCalendar() {
+    try {
+      await calendarApi('/api/google-calendar/disconnect', { method:'POST', body:'{}' });
+      googleCalendar.connected = false;
+      googleCalendar.account = null;
+      googleCalendar.calendars = [];
+      googleCalendar.selectedCalendarIds = [];
+      googleCalendar.events = [];
+      googleCalendar.lastSyncedAt = '';
+      renderCalendarConnection();
+      renderPlannerAgenda();
+      showToast('Google Calendar disconnected');
+    } catch (error) {
+      showToast(error.message);
+    }
   }
 
   // ==========================================================================
@@ -2936,6 +3131,42 @@
     suggestion.hidden = false;
   }
 
+  function instantPartsInBusinessTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone:businessTimeZone(), year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', hourCycle:'h23'
+    }).formatToParts(date);
+    const part = type => parts.find(item => item.type === type)?.value || '';
+    return { date:`${part('year')}-${part('month')}-${part('day')}`, time:`${part('hour')}:${part('minute')}` };
+  }
+
+  function googleEventAgendaItem(event) {
+    if (!event || event.status === 'cancelled') return null;
+    if (event.allDay) {
+      return { source:'google', externalId:event.id, date:event.startDate, order:1435, time:'Anytime', title:event.title || 'Untitled event', detail:event.location ? `Google Calendar · ${event.location}` : `Google Calendar · ${event.calendarName || 'Calendar'}`, color:event.color || '#8ed8f7' };
+    }
+    const start = instantPartsInBusinessTime(event.startDateTime);
+    const end = instantPartsInBusinessTime(event.endDateTime);
+    if (!start) return null;
+    const time = end && end.date === start.date ? `${clockTimeLabel(start.time)}–${clockTimeLabel(end.time)}` : clockTimeLabel(start.time);
+    return { source:'google', externalId:event.id, date:start.date, order:timeToMinutes(start.time) ?? 1440, time, title:event.title || 'Untitled event', detail:event.location ? `Google Calendar · ${event.location}` : `Google Calendar · ${event.calendarName || 'Calendar'}`, color:event.color || '#8ed8f7' };
+  }
+
+  function normalizedAgendaTitle(value) {
+    return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  }
+
+  function googleEventDuplicatesSession(event, sessions) {
+    const title = normalizedAgendaTitle(event.title);
+    return sessions.some(session => {
+      if (session.date !== event.date || Math.abs(Number(session.order) - Number(event.order)) > 10) return false;
+      const sessionTitle = normalizedAgendaTitle(session.title);
+      return title && sessionTitle && (title.includes(sessionTitle) || sessionTitle.includes(title));
+    });
+  }
+
   function plannerAgendaEvents() {
     const today = businessToday();
     const horizon = addDays(today, 21);
@@ -2943,15 +3174,18 @@
       .filter(session => session.date >= today && session.date <= horizon)
       .map(session => {
         const client = clientById(session.clientId);
-        return { date:session.date, order:timeToMinutes(session.startTime) ?? 1440, time:sessionTimeRangeLabel(session), title:client?.displayName || session.clientNameSnapshot || 'Work session', detail:`Work session · ${hoursLabel(sessionMinutes(session))}`, color:PLANNER_EVENT_COLORS[clientColorKey(client)] || PLANNER_EVENT_COLORS.sky };
+        return { source:'session', date:session.date, order:timeToMinutes(session.startTime) ?? 1440, time:sessionTimeRangeLabel(session), title:client?.displayName || session.clientNameSnapshot || 'Work session', detail:`Work session · ${hoursLabel(sessionMinutes(session))}`, color:PLANNER_EVENT_COLORS[clientColorKey(client)] || PLANNER_EVENT_COLORS.sky };
       });
     const planEvents = businessPlans()
       .filter(plan => plan.status !== 'completed' && plan.dueDate && plan.dueDate >= today && plan.dueDate <= horizon)
       .map(plan => {
         const client = clientById(plan.clientId);
-        return { date:plan.dueDate, order:1500, time:'Anytime', title:plan.title || plan.text || 'Plan', detail:client ? `Plan · ${client.displayName}` : 'Plan', color:PLANNER_EVENT_COLORS[clientColorKey(client)] || '#e8c67e' };
+        return { source:'plan', date:plan.dueDate, order:1500, time:'Anytime', title:plan.title || plan.text || 'Plan', detail:client ? `Plan · ${client.displayName}` : 'Plan', color:PLANNER_EVENT_COLORS[clientColorKey(client)] || '#e8c67e' };
       });
-    return [...sessionEvents,...planEvents].sort((a,b) => a.date.localeCompare(b.date) || a.order - b.order).slice(0,14);
+    const googleEvents = googleCalendar.events.map(googleEventAgendaItem).filter(Boolean)
+      .filter(event => event.date >= today && event.date <= horizon)
+      .filter(event => !googleEventDuplicatesSession(event, sessionEvents));
+    return [...sessionEvents,...planEvents,...googleEvents].sort((a,b) => a.date.localeCompare(b.date) || a.order - b.order).slice(0,24);
   }
 
   function renderPlannerAgenda() {
@@ -2959,12 +3193,13 @@
     if (!host) return;
     const events = plannerAgendaEvents();
     if (!events.length) {
-      host.innerHTML = `<div class="planner-agenda-empty"><strong>Your near-term agenda is clear.</strong><small>Dated plans and upcoming work sessions will arrange themselves here.</small></div>`;
+      const connectionCopy = googleCalendar.connected ? 'Dated plans, work sessions, and connected calendar events will arrange themselves here.' : 'Dated plans and upcoming work sessions will arrange themselves here. Connect Google Calendar from Choose a business to include external events.';
+      host.innerHTML = `<div class="planner-agenda-empty"><strong>Your near-term agenda is clear.</strong><small>${connectionCopy}</small></div>`;
       return;
     }
     const groups = new Map();
     events.forEach(event => { if (!groups.has(event.date)) groups.set(event.date,[]); groups.get(event.date).push(event); });
-    host.innerHTML = [...groups.entries()].map(([date,items]) => `<section class="planner-agenda-group"><header class="planner-agenda-group-head"><strong>${plannerDayHeading(date)}</strong><small>${formatDate(date,{weekday:'short',month:'short',day:'numeric'})}</small></header>${items.map(event => `<article class="planner-event"><span class="planner-event-time">${escapeHtml(event.time)}</span><span class="planner-event-rail" style="--event-color:${event.color}" aria-hidden="true"></span><span class="planner-event-copy"><strong>${escapeHtml(event.title)}</strong><small>${escapeHtml(event.detail)}</small></span></article>`).join('')}</section>`).join('');
+    host.innerHTML = [...groups.entries()].map(([date,items]) => `<section class="planner-agenda-group"><header class="planner-agenda-group-head"><strong>${plannerDayHeading(date)}</strong><small>${formatDate(date,{weekday:'short',month:'short',day:'numeric'})}</small></header>${items.map(event => `<article class="planner-event planner-event-${event.source || 'local'}"><span class="planner-event-time">${escapeHtml(event.time)}</span><span class="planner-event-rail" style="--event-color:${escapeHtml(event.color)}" aria-hidden="true"></span><span class="planner-event-copy"><strong>${escapeHtml(event.title)}</strong><small>${escapeHtml(event.detail)}</small></span></article>`).join('')}</section>`).join('');
   }
 
   function renderPlanner() {
@@ -3729,8 +3964,15 @@
   $('#mobileAddBtn').addEventListener('click', () => openModal($('#quickAddSheet')));
   $$('[data-open-add]').forEach(btn => btn.addEventListener('click', () => openModal($('#quickAddSheet'))));
   $('#searchTrigger').addEventListener('click', () => { $('#commandInput').value = ''; renderCommandPalette(); openModal($('#commandPalette')); });
-  $('#businessSwitcher').addEventListener('click', () => { renderWorkspaceOptions(); openModal($('#businessSheet')); });
-  $('#mobileBusinessSwitcher').addEventListener('click', () => { renderWorkspaceOptions(); openModal($('#businessSheet')); });
+  function openBusinessAndCalendarSheet() {
+    renderWorkspaceOptions();
+    renderCalendarConnection();
+    openModal($('#businessSheet'));
+    refreshGoogleCalendar();
+  }
+  $('#businessSwitcher').addEventListener('click', openBusinessAndCalendarSheet);
+  $('#mobileBusinessSwitcher').addEventListener('click', openBusinessAndCalendarSheet);
+  $('#plannerCalendarButton')?.addEventListener('click', openBusinessAndCalendarSheet);
   $('#openSettings').addEventListener('click', () => openModal($('#settingsSheet')));
   $('#plannerShortcutBtn').addEventListener('click', () => {
     setView(ui.activeView === 'planner' ? ui.plannerReturnView : 'planner');
@@ -3905,4 +4147,7 @@
   commitAtriumMotion();
   renderAll();
   syncHomeTabs();
+  renderCalendarConnection();
+  refreshGoogleCalendar();
+  if (window.location?.hash === '#planner') setView('planner');
 })();

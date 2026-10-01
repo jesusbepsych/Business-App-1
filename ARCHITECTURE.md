@@ -1,6 +1,6 @@
 # Business Ledger — Architecture
 
-## Smart Mode V2 product boundary
+## Smart Mode V3 product boundary
 
 Business Ledger records:
 
@@ -38,6 +38,19 @@ The app uses a versioned `LocalRepository` backed by browser localStorage. Recei
 Schema-version 9 data remains loadable. The legacy `vehicles` and `mileageTrips` arrays are accepted and preserved only to avoid destructive loading of an older workspace. They are retired compatibility fields: active application code does not read, render, search, edit, count, or derive values from them.
 
 The repository boundary keeps persistence concerns separate from calculations, rendering, and interaction handling.
+
+## Google Calendar boundary
+
+The financial ledger and Planner plans remain browser-local. Google authorization is deliberately server-owned:
+
+- the browser initiates connection and renders connection state;
+- Google handles account selection and consent;
+- `server.mjs` exchanges authorization codes, encrypts refresh tokens, and calls Calendar API endpoints;
+- the browser receives normalized read-only event records and merges them into Agenda presentation;
+- imported Calendar events never create or modify sessions, invoices, payments, expenses, or local plans;
+- disconnect revokes Google's grant when possible and removes the encrypted server record.
+
+The bundled encrypted JSON store is suitable for local development and a single server with a private persistent disk. A multi-instance public deployment should move the same connection fields into its managed database and secret-management system before general release.
 
 ## Internal code boundaries
 

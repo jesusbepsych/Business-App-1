@@ -1,6 +1,18 @@
-# Business Ledger — Smart Mode V2 Background & Invoice Polish
+# Business Ledger — Smart Mode V3 Google Calendar Foundation
 
-This release builds on Smart Mode V1 while preserving the completed Simple Mode baseline.
+This release builds on Smart Mode V2 while preserving the completed Simple Mode baseline.
+
+## Smart Mode V3 addition
+
+- Turns **Choose a business** into the entry point for selecting a Google account and the calendars that should feed Planner → Agenda.
+- Adds a read-only Google Calendar OAuth flow suitable for individual users of a published app—not a developer's personal connector.
+- Adds a dependency-free Node server that keeps the OAuth secret and refresh tokens outside the browser, encrypts saved refresh tokens with AES-256-GCM, validates OAuth state, and serves the existing app.
+- Loads timed, all-day, and recurring Google events into the existing Agenda without creating sessions or changing financial records.
+- Suppresses clear duplicates when a Google event matches an existing work session at approximately the same time.
+- Supports account switching, calendar selection, refresh, token revocation, and disconnect.
+- Keeps the static build usable when Calendar is not configured; the connection card explains that server setup is required while all local app functions continue normally.
+
+See `GOOGLE_CALENDAR_SETUP.md` for the short manual setup.
 
 ## Smart Mode V2 additions
 
@@ -120,12 +132,17 @@ The app records work performed, money received, money spent, and supporting rece
 
 ## Run
 
-Open `index.html` in a browser or serve this folder with any static-file server.
+For local-only ledger use, open `index.html` or use a static server. For Google Calendar, copy `.env.example` to `.env`, add your OAuth credentials, and run:
+
+```bash
+npm start
+```
 
 ## Verify
 
 ```bash
 node --check app.js
+node --check server.mjs
 node --test tests/*.test.js
 node tests/webkit-regression.mjs
 ```

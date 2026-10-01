@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f8fa" />
   <meta name="description" content="A fast, traceable workspace for independent business work, money, and records." />
-  <title>Business Ledger — Smart Mode V2 Background &amp; Invoice Polish</title>
+  <title>Business Ledger — Smart Mode V3 Google Calendar Foundation</title>
   <script>try{if(localStorage.getItem('business-ledger-sidebar-collapsed')!=='0')document.documentElement.classList.add('sidebar-collapsed-preload')}catch(e){document.documentElement.classList.add('sidebar-collapsed-preload')}</script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=smart-mode-v2-background-invoice-polish" />
-  <link rel="stylesheet" href="aurora-frost.css?v=smart-mode-v2-background-invoice-polish" />
-  <link rel="stylesheet" href="clock-companion.css?v=smart-mode-v2-background-invoice-polish" />
-  <link rel="stylesheet" href="compact-calendar.css?v=smart-mode-v2-background-invoice-polish" />
+  <link rel="stylesheet" href="styles.css?v=smart-mode-v3-google-calendar" />
+  <link rel="stylesheet" href="aurora-frost.css?v=smart-mode-v3-google-calendar" />
+  <link rel="stylesheet" href="clock-companion.css?v=smart-mode-v3-google-calendar" />
+  <link rel="stylesheet" href="compact-calendar.css?v=smart-mode-v3-google-calendar" />
 </head>
 <body class="home-atrium-active" data-analytics-sample="true">
 
@@ -269,7 +269,7 @@
             <aside class="planner-agenda" aria-labelledby="plannerAgendaTitle">
               <header class="planner-agenda-head">
                 <div><p class="eyebrow">UPCOMING</p><h2 id="plannerAgendaTitle">Agenda</h2></div>
-                <span class="planner-calendar-mark" aria-hidden="true">▦</span>
+                <button class="planner-calendar-mark" id="plannerCalendarButton" type="button" aria-label="Open Google Calendar connection" title="Google Calendar">▦</button>
               </header>
               <div class="planner-agenda-list" id="plannerAgendaList"></div>
             </aside>
@@ -326,6 +326,17 @@
 
   <section class="sheet compact" id="businessSheet" role="dialog" aria-modal="true" aria-labelledby="businessSheetTitle" hidden>
     <div class="sheet-handle"></div><div class="sheet-head"><div><p class="eyebrow">WORKSPACE</p><h2 id="businessSheetTitle">Choose a business</h2></div><button class="close-btn" data-close aria-label="Close">×</button></div>
+    <section class="calendar-connection-card" id="calendarConnectionCard" aria-labelledby="calendarConnectionTitle">
+      <div class="calendar-connection-heading">
+        <span class="google-calendar-badge" aria-hidden="true"><i>31</i></span>
+        <span><strong id="calendarConnectionTitle">Google Calendar</strong><small id="calendarConnectionSummary">Checking connection…</small></span>
+        <span class="calendar-connection-status" id="calendarConnectionStatus">Checking</span>
+      </div>
+      <div class="calendar-connection-body" id="calendarConnectionBody">
+        <p>Connect a Google account to bring selected calendar events into Planner → Agenda.</p>
+      </div>
+    </section>
+    <p class="workspace-section-label">Business workspaces</p>
     <div id="workspaceOptions"></div>
     <button class="workspace-option add-workspace" id="addBusinessBtn"><span class="business-icon neutral">＋</span><span><strong>Add another business or gig</strong><small>Keep income streams separate</small></span></button>
   </section>
@@ -396,6 +407,6 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=smart-mode-v2-background-invoice-polish"></script>
+  <script src="app.js?v=smart-mode-v3-google-calendar"></script>
 </body>
 </html>
