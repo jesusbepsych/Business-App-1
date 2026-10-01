@@ -817,6 +817,45 @@
     return true;
   }
 
+  function bindViewNavigation(button) {
+    let touchStart = null;
+    let suppressClickUntil = 0;
+
+    button.addEventListener('touchstart', event => {
+      if (event.touches.length !== 1) {
+        touchStart = null;
+        return;
+      }
+      const touch = event.touches[0];
+      touchStart = { identifier:touch.identifier, x:touch.clientX, y:touch.clientY };
+    }, { passive:true });
+
+    button.addEventListener('touchend', event => {
+      if (!touchStart) return;
+      const touch = [...event.changedTouches].find(item => item.identifier === touchStart.identifier);
+      const start = touchStart;
+      touchStart = null;
+      if (!touch || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 12) return;
+
+      /* Safari can interpret two close landscape taps as smart zoom before the
+         synthesized click is useful. Finish a deliberate tab tap here and
+         suppress only that synthetic click; pinch zoom elsewhere is untouched. */
+      if (event.cancelable) event.preventDefault();
+      suppressClickUntil = Date.now() + 700;
+      setView(button.dataset.view);
+    }, { passive:false });
+
+    button.addEventListener('touchcancel', () => { touchStart = null; }, { passive:true });
+    button.addEventListener('click', event => {
+      if (Date.now() < suppressClickUntil) {
+        event.preventDefault();
+        return;
+      }
+      setView(button.dataset.view);
+    });
+    button.addEventListener('dblclick', event => event.preventDefault());
+  }
+
   function guardedFormFor(modal = ui.modal) {
     if (modal === $('#invoiceSheet')) return $('#invoiceForm');
     if (modal === $('#formSheet') && guardedFormModes.has(ui.formMode)) return $('#dynamicForm');
@@ -3934,7 +3973,7 @@
   sidebarCollapseBtn?.addEventListener('click', () => {
     applySidebarCollapsed(!appShell.classList.contains('sidebar-collapsed'));
   });
-  navButtons.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+  navButtons.forEach(bindViewNavigation);
   $('#plannerComposeForm')?.addEventListener('submit', event => { event.preventDefault(); submitPlannerEntry(); });
   $('#plannerEditCancel')?.addEventListener('click', () => { resetPlannerEditor({ focus:true }); showToast('Edit cancelled'); });
   $('#plannerComposeInput')?.addEventListener('input', event => {

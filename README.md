@@ -1,4 +1,10 @@
-# Business Ledger — Smart Mode V3 Google Calendar Foundation
+# Business Ledger — Smart Mode V4 Landscape Touch Navigation
+
+## Smart Mode V4 fix
+
+- Makes landscape touchscreen tab selection immediate and deterministic.
+- Prevents Safari/WebKit double-tap smart zoom on sidebar and mobile tab controls.
+- Keeps ordinary pinch zoom available across the rest of the app.
 
 This release builds on Smart Mode V2 while preserving the completed Simple Mode baseline.
 

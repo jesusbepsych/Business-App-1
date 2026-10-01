@@ -124,12 +124,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(40,84,220,.2
   min-height:42px; border:0; background:transparent; border-radius:12px; padding:0 12px;
   display:flex; gap:12px; align-items:center; color:#5f6570; cursor:pointer; text-align:left;
   transition: background .12s var(--ease), color .12s var(--ease), transform .12s var(--ease);
+  touch-action:manipulation; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
 }
 .nav-item:hover { background:rgba(255,255,255,.7); color:var(--text); }
 .nav-item.active { background:var(--surface-solid); color:var(--text); box-shadow:0 1px 0 rgba(0,0,0,.03), 0 8px 24px rgba(20,28,50,.05); }
 .nav-item:active { transform:scale(.985); }
 .nav-icon { width:20px; text-align:center; font-size:17px; }
 .nav-item span:last-child { font-size:14px; font-weight:620; }
+.mobile-nav-item { touch-action:manipulation; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
 .sidebar-spacer { flex:1; }
 .sidebar-footer { display:flex; flex-direction:column; gap:8px; }
 .avatar-btn { background:#e8eaf0; color:#4a4e58; display:grid; place-items:center; font-size:12px; font-weight:800; }

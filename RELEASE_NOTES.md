@@ -1,4 +1,11 @@
-# Smart Mode V3 Google Calendar Foundation release notes
+# Smart Mode V4 Landscape Touch Navigation release notes
+
+## Smart Mode V4 — Landscape touchscreen navigation
+
+- Added a touch-specific tab activation path for Home, Work, Money, and Records.
+- A deliberate tap completes on `touchend`; the following synthesized click is ignored so a tab is never activated twice.
+- Finger movement beyond the tap threshold remains a gesture and does not switch tabs.
+- Disabled double-tap smart zoom only on navigation buttons with `touch-action: manipulation`; accessibility pinch zoom remains enabled everywhere else.
 
 ## Smart Mode V3 — Public-user Google Calendar foundation
 
